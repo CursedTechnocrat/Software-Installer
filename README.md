@@ -1,2 +1,2 @@
 # Software-Installer
-Using Winget To install software for clients
+Using Winget and Chocolatey To install software for clients
