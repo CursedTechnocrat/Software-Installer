@@ -269,5 +269,41 @@ Write-Host " M.A.G.I.C. Completed" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
+# ===========================
+# CLEANUP
+# ===========================
+Write-Host ""
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host " Cleanup" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Remove extracted driver directory
+if (Test-Path $ExtractRoot) {
+    try {
+        Write-Host "Cleaning up extracted drivers..." -ForegroundColor Yellow
+        Remove-Item $ExtractRoot -Recurse -Force
+        Write-Host "OK: Extracted drivers removed." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "WARNING: Failed to remove extracted drivers." -ForegroundColor Yellow
+    }
+}
+
+# Ask whether to remove installer files
+$CleanupInstallers = Read-Host "Remove downloaded driver installer files (ZIP/EXE/MSI)? (Y/N)"
+if ($CleanupInstallers -match '^[Yy]$') {
+    try {
+        Get-ChildItem -Path $ScriptPath |
+            Where-Object { $_.Extension -match '\.(zip|exe|msi)$' } |
+            Remove-Item -Force
+        Write-Host "OK: Installer files removed." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "WARNING: Failed to remove some installer files." -ForegroundColor Yellow
+    }
+}
+
+
 Write-Host "Press Enter to exit..." -ForegroundColor White
 Read-Host
