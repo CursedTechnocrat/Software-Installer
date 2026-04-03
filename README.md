@@ -1,110 +1,108 @@
-PRINT & S.P.A.R.K
-IT Deployment and Setup Automation Toolkit
+# PRINT & S.P.A.R.K
+### IT Deployment and Setup Automation Toolkit
 
-A pair of PowerShell scripts designed to simplify workstation setup by automating printer installation and core software deployment in a consistent, technician‑friendly way.
+A pair of PowerShell scripts designed to simplify **workstation setup** by automating **printer installation** and **core software deployment**.
 
-Overview
-This repository contains two complementary PowerShell tools:
+---
 
+## 📦 Included Tools
 
+| Tool | Description |
+|----|-----------|
+| **PRINT** | Printer Registration & Installation Network Tool |
+| **S.P.A.R.K** | Software Package & Resource Kit |
 
-Script	Purpose
-PRINT	Installs printer drivers and configures network printers
-S.P.A.R.K	Installs Winget and Chocolatey, then deploys core and optional software
-They can be used independently or together during new workstation builds, rebuilds, or user onboarding.
+Each tool can be used independently or together during workstation provisioning.
 
-PRINT
-Printer Registration & Installation Network Tool
+---
 
-PRINT automates the installation of printer drivers and the creation of network printers using IP addresses.
+## 🖨️ PRINT  
+### Printer Registration & Installation Network Tool
 
-Key Features
-Supports ZIP, EXE, and MSI printer driver packages
-Automatically detects installer type and installs accordingly
-Silent installation for EXE and MSI drivers
-Installs INF‑based drivers using pnputil
-Creates TCP/IP printer ports automatically
-Interactive, technician‑guided workflow
-Standardized, log‑friendly console output
-Loops until valid driver files are provided
-Supported Driver Formats
+PRINT automates printer driver installation and network printer creation using IP addresses.
 
+### ✨ Features
+- Supports **ZIP, EXE, and MSI** printer driver packages
+- Automatically detects installer type
+- Silent installs for EXE and MSI packages
+- INF driver installation via `pnputil`
+- Automatic TCP/IP printer port creation
+- Interactive, technician‑guided workflow
+- Standardized, log‑friendly console output
+- Loops until valid driver files are provided
 
-Format	Behavior
-ZIP	Extracts and installs INF drivers
-EXE	Runs installer silently
-MSI	Installs using msiexec silently
-Typical Use Case
-Download printer drivers from manufacturer
-Place driver file in the same folder as the script
-Run PRINT as Administrator
-Install drivers and add printers in one workflow
-S.P.A.R.K
-Software Package & Resource Kit
+### 📁 Supported Driver Formats
 
-S.P.A.R.K automates the installation of package managers and standard workstation software.
+| Format | Behavior |
+|------|---------|
+| ZIP | Extracts and installs INF drivers |
+| EXE | Runs vendor installer silently |
+| MSI | Installs using `msiexec` silently |
 
-Key Features
-Installs and initializes Winget and Chocolatey
-Automatically updates package managers
-Installs a predefined set of core applications
-Optional software is selected interactively
-Uses silent installs where supported
-Tracks installation results with timestamps
-Displays a clear installation summary at completion
-Core Software Installed
+### ✅ Typical Usage
+1. Download printer drivers from the manufacturer
+2. Place the driver file in the same folder as `PRINT.ps1`
+3. Run PRINT as **Administrator**
+4. Install drivers and add network printers
+
+---
+
+## ⚡ S.P.A.R.K  
+### Software Package & Resource Kit
+
+S.P.A.R.K automates package manager setup and standard software deployment.
+
+### ✨ Features
+- Installs and initializes **Winget** and **Chocolatey**
+- Automatically updates package managers
+- Installs predefined core applications
+- Optional software selected interactively
+- Silent installs where supported
+- Tracks installation results with timestamps
+- Displays a clear installation summary
+
+### 📦 Core Software Installed
 (Default list – easily customizable)
+- Microsoft Teams
+- Microsoft Office
+- 7‑Zip
+- Google Chrome
+- Adobe Acrobat Reader
+- Zoom
 
-Microsoft Teams
-Microsoft Office
-7‑Zip
-Google Chrome
-Adobe Acrobat Reader
-Zoom
-Optional Software Examples
-Zoom Outlook Plugin
-DisplayLink Graphics Driver
-Dell Command Update
-How the Scripts Work Together
+### ➕ Optional Software Examples
+- Zoom Outlook Plugin
+- DisplayLink Graphics Driver
+- Dell Command Update
+
+---
+
+## 🔁 How They Work Together
+
 PRINT and S.P.A.R.K are designed to complement each other:
 
-S.P.A.R.K prepares the workstation by installing core applications
-PRINT configures printers and drivers afterward
-Both scripts:
-Are interactive
-Require Administrator privileges
-Provide clear success and failure feedback
-They can be run in any order depending on deployment needs.
+1. **S.P.A.R.K** prepares the workstation with core applications
+2. **PRINT** installs printer drivers and configures printers
+3. Both scripts:
+   - Require Administrator privileges
+   - Are interactive and technician‑friendly
+   - Provide clear success and failure feedback
 
-Requirements
-Windows 10 or Windows 11
-PowerShell 5.1 or later
-Administrator privileges
-Internet access (for S.P.A.R.K)
-Repository Structure (Recommended)
+Scripts may be run independently or in sequence.
 
+---
 
-/PRINT
-  PRINT.ps1
-  ExtractedDrivers/
- /SPARK
-  SPARK.ps1
- README.md
-Driver files for PRINT should be placed in the same folder as PRINT.ps1.
+## ✅ Requirements
 
-Updating and Maintenance
-Updating PRINT
-Add new driver handling logic inside the driver installation function
-Vendor‑specific silent switches can be expanded as needed
-Logging or unattended mode can be added without breaking workflow
-Updating S.P.A.R.K
-Core software is defined in the $coreSoftware array
-Optional software is defined in the $optionalSoftware array
-Additional package managers can be added modularly
-Silent install flags can be tuned per application
-Both scripts are modular and intentionally structured to make future changes straightforward.
+- Windows 10 or Windows 11
+- PowerShell 5.1 or later
+- Administrator privileges
+- Internet access (required for S.P.A.R.K)
 
-Known Limitations
-Some EXE installers may not respect standard silent switches
-Some software installations may require a reboot
-Printer driver auto‑matching depends on vendor naming conventions
+---
+
+## 📂 Recommended Repository Structure
+
+/PRINT ├─ PRINT.ps1 └─ ExtractedDrivers/
+
+/SPARK └─ SPARK.ps1
