@@ -2,19 +2,24 @@
 .VERSION
     5.1 - Cleaned-up documentation format
     5.2 - Added version tracking section
+    5.3 - Standardized Formatting with MAGIC and UPKEEP
 .SYNOPSIS
     S.P.A.R.K - Automated Package Manager (Winget/Chocolatey)
 .DESCRIPTION
-    Installs/upgrades MSP packages unattended (RMM/Kaseya/Task Scheduler).
-    Logs to CSV and Windows Event Log for compliance.
+    Installs/upgrades software packages unattended via Winget or Chocolatey fallback.
+    Logs to CSV and Windows Event Log for compliance and audit trails.
+    Supports RMM/Kaseya/Task Scheduler deployment scenarios.
 .PARAMETERS
-    Mode                  - Install or Upgrade (default: prompt)
-    InstallDellCommandUpdate  - Enable Dell Command Update installation
-    InstallZoomOutlookPlugin - Enable Zoom Outlook Plugin installation
-    InstallDellCommand        - Enable Dell Command Suite installation
-    LogPath               - Path for CSV log file
+    Mode                        - Install or Upgrade (default: interactive prompt)
+    InstallDellCommandUpdate    - Enable Dell Command Update installation
+    InstallZoomOutlookPlugin    - Enable Zoom Outlook Plugin installation
+    InstallDellCommand          - Enable Dell Command Suite installation
+    LogPath                     - Custom path for CSV log file
+.EXAMPLES
+    PS C:\> .\spark.ps1 -Mode Install
+    PS C:\> .\spark.ps1 -Mode Upgrade -InstallDellCommand
+    PS C:\> .\spark.ps1 -Mode Install -LogPath "C:\Custom\Logs\install.csv"
 #>
-
 
 param(
     [ValidateSet("Install", "Upgrade")]
@@ -29,7 +34,7 @@ param(
 # CONFIGURABLE PATHS - EDIT HERE FOR CUSTOM LOCATIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
-$SPARKLogRoot   = "C:\The20dir"
+$SPARKLogRoot   = "C:\Logs"
 $DefaultLogFile = "install_log.csv"
 
 # Build the full log path if not provided via parameter
@@ -128,6 +133,21 @@ $script:OperationMode = $Mode
 # FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
+function Show-SparkBanner {
+    Write-Host @"
+
+  ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗
+  ██╔════╝██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝
+  ███████╗██████╔╝███████║██████╔╝█████╔╝ 
+  ╚════██║██╔═══╝ ██╔══██║██╔══██╗██╔═██╗ 
+  ███████║██║     ██║  ██║██║  ██║██║  ██╗
+  ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
+"@ -ForegroundColor Yellow
+    Write-Host "    Software Package & Resource Kit" -ForegroundColor Yellow
+    Write-Host "    Automated Package Manager Setup & Installation" -ForegroundColor Yellow
+    Write-Host ""
+}
+
 function Initialize-EventLog {
     <#
     .SYNOPSIS
@@ -160,7 +180,7 @@ function Write-EventLog {
     #>
     param(
         [string]$Message,
-        [string]$EventType = "Information",  # Information, Warning, or Error
+        [string]$EventType = "Information",
         [int]$EventId = 0
     )
     
@@ -184,11 +204,19 @@ function Write-EventLog {
 }
 
 function Update-EnvironmentPath {
+    <#
+    .SYNOPSIS
+        Refreshes the current session's PATH environment variable from system and user registry.
+    #>
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
                 [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
 function Initialize-Winget {
+    <#
+    .SYNOPSIS
+        Detects Winget or installs it from GitHub releases if unavailable.
+    #>
     try {
         $ver = winget --version 2>&1
         Write-Host "Winget already installed. Version: $ver" -ForegroundColor Green
@@ -229,6 +257,10 @@ function Initialize-Winget {
 }
 
 function Initialize-Chocolatey {
+    <#
+    .SYNOPSIS
+        Detects Chocolatey or installs it from the official install script if unavailable.
+    #>
     if ($script:ChocoInitialized) {
         return $true
     }
@@ -286,6 +318,11 @@ function Initialize-Chocolatey {
 }
 
 function Install-PackageViaWinget {
+    <#
+    .SYNOPSIS
+        Attempts to install or upgrade a package using Winget.
+        Falls back to Chocolatey if Winget fails.
+    #>
     param(
         [string]$PackageId,
         [ref]$LogArray
@@ -332,6 +369,10 @@ function Install-PackageViaWinget {
 }
 
 function Install-PackageViaChocolatey {
+    <#
+    .SYNOPSIS
+        Attempts to install or upgrade a package using Chocolatey.
+    #>
     param(
         [string]$PackageId,
         [ref]$LogArray,
@@ -409,6 +450,10 @@ function Install-PackageViaChocolatey {
 }
 
 function Install-Software {
+    <#
+    .SYNOPSIS
+        Iterates through software list and installs via Winget (primary) or Chocolatey (fallback).
+    #>
     param(
         [hashtable[]]$SoftwareList,
         [bool]$WingetAvailable,
@@ -452,6 +497,10 @@ function Install-Software {
 }
 
 function Export-InstallLog {
+    <#
+    .SYNOPSIS
+        Exports the installation log to CSV file for compliance and audit.
+    #>
     param(
         [array]$InstallLog,
         [string]\$Path
@@ -474,22 +523,11 @@ function Export-InstallLog {
     }
 }
 
-function Show-SparkBanner {
-    Write-Host @"
-
-  ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗
-  ██╔════╝██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝
-  ███████╗██████╔╝███████║██████╔╝█████╔╝ 
-  ╚════██║██╔═══╝ ██╔══██║██╔══██╗██╔═██╗ 
-  ███████║██║     ██║  ██║██║  ██║██║  ██╗
-  ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
-"@ -ForegroundColor Yellow
-    Write-Host "    Software Package & Resource Kit" -ForegroundColor Yellow
-    Write-Host "    Automated Package Manager Setup & Installation" -ForegroundColor Yellow
-    Write-Host ""
-}
-
 function Show-InstallationSummary {
+    <#
+    .SYNOPSIS
+        Displays a formatted installation summary report with statistics.
+    #>
     param([array]$InstallLog)
 
     $successCount = ($InstallLog | Where-Object { \$_.Status -eq "Success" }).Count
@@ -560,18 +598,18 @@ function Show-InstallationSummary {
 
 # Core packages — required for all deployments
 \$coreSoftware = @(
-    @{ Winget = "Microsoft.Edge";            Chocolatey = "microsoft-edge"   },
-    @{ Winget = "7zip.7zip";                 Chocolatey = "7zip"             },
-    @{ Winget = "Adobe.Acrobat.Reader.64-bit"; Chocolatey = "adobereader"    },
-    @{ Winget = "Zoom.Zoom";                 Chocolatey = "zoom"             },
-    @{ Winget = "Microsoft.Office";          Chocolatey = "office-deploy"    }
+    @{ Winget = "Microsoft.Edge";                    Chocolatey = "microsoft-edge"        },
+    @{ Winget = "7zip.7zip";                         Chocolatey = "7zip"                  },
+    @{ Winget = "Adobe.Acrobat.Reader.64-bit";       Chocolatey = "adobereader"           },
+    @{ Winget = "Zoom.Zoom";                         Chocolatey = "zoom"                  },
+    @{ Winget = "Microsoft.Office";                  Chocolatey = "office-deploy"         }
 )
 
 # Optional packages — controlled via script parameters
 \$optionalSoftware = @(
     @{ ParamName = "InstallDellCommandUpdate"; Winget = "Dell.CommandUpdate";        Chocolatey = "dell-command-update" },
     @{ ParamName = "InstallZoomOutlookPlugin"; Winget = "Zoom.ZoomOutlookPlugin";   Chocolatey = \$null                 },
-    @{ ParamName = "InstallDellCommand";     Winget = "Dell.Command";               Chocolatey = "dell-command-suite" }
+    @{ ParamName = "InstallDellCommand";       Winget = "Dell.Command";              Chocolatey = "dell-command-suite"  }
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -585,24 +623,5 @@ Show-SparkBanner
 # Initialize event logging
 Initialize-EventLog
 Write-EventLog -Message "S.P.A.R.K started. Mode: \$Mode | Log Path: \$(\$script:LogPath) | Time: \$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -EventType "Information" -EventId \$script:EventIds.ScriptStart
-
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "Initializing S.P.A.R.K"                  -ForegroundColor Magenta
-Write-Host "Mode: \$Mode"                              -ForegroundColor Cyan
-Write-Host "Log Path: \$(\$script:LogPath)"             -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Magenta
-
-Update-EnvironmentPath
-
-\$wingetAvailable = Initialize-Winget
-
-if (-not \$wingetAvailable) {
-    Write-Host "WARNING: Winget unavailable. Will attempt Chocolatey fallback if Winget \$(\$Mode.ToLower()) is attempted." -ForegroundColor Yellow
-    Write-EventLog -Message "Winget unavailable. Will attempt Chocolatey fallback." -EventType "Warning" -EventId \$script:EventIds.WingetInstallFailed
-}
-
-# Build the software list to install/upgrade.
-\$softwareToInstall = @()
-
-# Add core software.
-\$softwareToInstall
+Write-Host "Initializing
