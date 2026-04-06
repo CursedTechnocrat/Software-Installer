@@ -1,320 +1,166 @@
 # ================================================================
 #  M.A.G.I.C. - Machine Automated Graphical Ink Configurator
+#  Version: 2.0 (Standardized Release)
 # ================================================================
-#  Version 1.5
+#  Purpose: Automated printer driver installation and network 
+#           printer configuration via command-line interface
 # ================================================================
 
 # ===========================
-# ADMIN CHECK (AUTO-ELEVATE)
+# ADMIN PRIVILEGE CHECK
 # ===========================
 $IsAdmin = ([Security.Principal.WindowsPrincipal] `
     [Security.Principal.WindowsIdentity]::GetCurrent()
 ).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-if (-not $IsAdmin) {
+
+if (-not \$IsAdmin) {
     Write-Host "INFO: Restarting script with administrator privileges..." -ForegroundColor Yellow
     $PSExe = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh.exe' } else { 'powershell.exe' }
-    Start-Process -FilePath $PSExe `
-        -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" `
+    Start-Process -FilePath \$PSExe `
+        -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"\$PSCommandPath`"" `
         -Verb RunAs
     exit
 }
 
 # ===========================
-# SCRIPT PATH RESOLUTION
+# SCRIPT INITIALIZATION
 # ===========================
-if ($PSCommandPath) {
-    $ScriptPath = Split-Path -Parent $PSCommandPath
+
+# Resolve script execution path
+if (\$PSCommandPath) {
+    \$ScriptPath = Split-Path -Parent $PSCommandPath
 }
 elseif ($MyInvocation.MyCommand.Path) {
-    $ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+    \$ScriptPath = Split-Path -Parent \$MyInvocation.MyCommand.Path
 }
 else {
-    $ScriptPath = Get-Location
+    \$ScriptPath = Get-Location
 }
-$ExtractRoot = Join-Path $ScriptPath "ExtractedDrivers"
-$InstalledManufacturers = @()
+
+# Initialize global variables
+\$ExtractRoot = Join-Path \$ScriptPath "ExtractedDrivers"
+\$InstalledManufacturers = @()
+\$InstallationLog = @()
 
 # ===========================
-# BANNER
+# DISPLAY BANNER
 # ===========================
-function Show-MAGICBanner {
+
+function Show-Banner {
+    Clear-Host
     Write-Host @"
-  ███╗   ███╗ █████╗  ██████╗ ██╗ ██████╗ 
-  ████╗ ████║██╔══██╗██╔════╝ ██║██╔════╝ 
-  ██╔████╔██║███████║██║  ███╗██║██║      
-  ██║╚██╔╝██║██╔══██║██║   ██║██║██║      
-  ██║ ╚═╝ ██║██║  ██║╚██████╔╝██║╚██████╗ 
-  ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝ ╚═════╝ 
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║      ███╗   ███╗ █████╗  ██████╗ ██╗ ██████╗            ║
+║      ████╗ ████║██╔══██╗██╔════╝ ██║██╔════╝            ║
+║      ██╔████╔██║███████║██║  ███╗██║██║                 ║
+║      ██║╚██╔╝██║██╔══██║██║   ██║██║██║                 ║
+║      ██║ ╚═╝ ██║██║  ██║╚██████╔╝██║╚██████╗            ║
+║      ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝ ╚═════╝            ║
+║                                                            ║
+║   Machine Automated Graphical Ink Configurator            ║
+║   Printer Registration & Installation Network Tool        ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
 "@ -ForegroundColor Cyan
-    Write-Host "    Machine Automated Graphical Ink Configurator" -ForegroundColor Cyan
-    Write-Host "    Printer Registration & Installation Network Tool" -ForegroundColor Cyan
+
     Write-Host ""
-    Write-Host "Script Path: $ScriptPath" -ForegroundColor Cyan
+    Write-Host "Script Location: \$ScriptPath" -ForegroundColor Gray
+    Write-Host "Execution Time:  \$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
     Write-Host ""
 }
 
-Show-MAGICBanner
-
 # ===========================
-# DRIVER PREPARATION PROMPT
+# DISPLAY DRIVER PREP INSTRUCTIONS
 # ===========================
-function Driver-Preparation {
-    Write-Host "================================================" -ForegroundColor Cyan
-    Write-Host " Driver Preparation" -ForegroundColor Cyan
-    Write-Host "================================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Download the printer driver from the manufacturer." -ForegroundColor White
-    Write-Host "Supported formats: ZIP, EXE, MSI" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Place the file in the same folder as this script." -ForegroundColor White
-    Write-Host ""
-    Write-Host "Press Enter to continue or type Q to quit." -ForegroundColor White
 
-    $input = Read-Host
-    if ($input -match '^[Qq]$') {
-        Write-Host "WARNING: User exited script." -ForegroundColor Yellow
-        exit
-    }
+function Show-DriverPrepInstructions {
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host " Step 1: Driver Preparation" -ForegroundColor Cyan
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Instructions:" -ForegroundColor Yellow
+    Write-Host "  1. Download the printer driver from the manufacturer website" -ForegroundColor White
+    Write-Host "  2. Save the file to this location:" -ForegroundColor White
+    Write-Host "     \$ScriptPath" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Supported formats:" -ForegroundColor Yellow
+    Write-Host "  • ZIP archives (.zip)" -ForegroundColor White
+    Write-Host "  • Executable installers (.exe)" -ForegroundColor White
+    Write-Host "  • Windows Installer packages (.msi)" -ForegroundColor White
+    Write-Host ""
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # ===========================
-# DRIVER INSTALLATION ENGINE
+# PROMPT USER TO PLACE DRIVER
 # ===========================
-function Install-Drivers {
 
-    $DriverFiles = Get-ChildItem -Path $ScriptPath |
-                   Where-Object { $_.Extension -match '\.(zip|exe|msi)$' }
-
-    if ($DriverFiles.Count -eq 0) {
-        Write-Host "WARNING: No supported driver files found." -ForegroundColor Yellow
-        return $false
-    }
-
-    if (-not (Test-Path $ExtractRoot)) {
-        Write-Host "Processing: Creating extraction directory..." -ForegroundColor Yellow
-        New-Item -ItemType Directory -Path $ExtractRoot | Out-Null
-    }
-
-    foreach ($File in $DriverFiles) {
-
+function Wait-ForDriverFile {
+    do {
+        Write-Host "Ready to proceed? (Y/N/Q)" -ForegroundColor Yellow
+        Write-Host "  Y = Continue with installation" -ForegroundColor Gray
+        Write-Host "  N = Go back and check folder" -ForegroundColor Gray
+        Write-Host "  Q = Quit" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "================================================" -ForegroundColor Cyan
-        Write-Host " Processing Driver File: $($File.Name)" -ForegroundColor Cyan
-        Write-Host "================================================" -ForegroundColor Cyan
 
-        switch ($File.Extension.ToLower()) {
+        $response = Read-Host "Enter choice"
 
-            ".zip" {
-                $DriverName  = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
-                $ExtractPath = Join-Path $ExtractRoot $DriverName
-
-                if (Test-Path $ExtractPath) {
-                    Write-Host "Processing: Removing previous extraction..." -ForegroundColor Yellow
-                    Remove-Item $ExtractPath -Recurse -Force
-                }
-
-                Write-Host "Processing: Extracting ZIP package..." -ForegroundColor Yellow
-                Expand-Archive -Path $File.FullName -DestinationPath $ExtractPath -Force
-
-                $InfFiles = Get-ChildItem -Path $ExtractPath -Recurse -Filter "*.inf"
-
-                if ($InfFiles.Count -eq 0) {
-                    Write-Host "WARNING: No INF files found in $DriverName." -ForegroundColor Yellow
-                    break
-                }
-
-                foreach ($Inf in $InfFiles) {
-                    Write-Host "Processing: Installing INF $($Inf.Name)..." -ForegroundColor Yellow
-                    try {
-                        pnputil /add-driver "`"$($Inf.FullName)`"" /install | Out-Null
-                        Write-Host "OK: Installed INF $($Inf.Name)" -ForegroundColor Green
-                    }
-                    catch {
-                        Write-Host "ERROR: Failed to install INF $($Inf.Name)" -ForegroundColor Red
-                    }
-                }
-
-                $InstalledManufacturers += $DriverName
+        switch ($response.ToUpper()) {
+            "Y" {
+                return $true
             }
-
-            ".exe" {
-                Write-Host "Processing: Running EXE installer silently..." -ForegroundColor Yellow
-                try {
-                    Start-Process -FilePath $File.FullName `
-                        -ArgumentList "/s /quiet /norestart" `
-                        -Wait -NoNewWindow
-                    Write-Host "OK: EXE installer completed $($File.Name)" -ForegroundColor Green
-                    $InstalledManufacturers += $File.BaseName
-                }
-                catch {
-                    Write-Host "ERROR: EXE installer failed $($File.Name)" -ForegroundColor Red
-                }
+            "N" {
+                Write-Host ""
+                Show-DriverPrepInstructions
+                return Wait-ForDriverFile
             }
-
-            ".msi" {
-                Write-Host "Processing: Running MSI installer silently..." -ForegroundColor Yellow
-                try {
-                    Start-Process "msiexec.exe" `
-                        -ArgumentList "/i `"$($File.FullName)`" /qn /norestart" `
-                        -Wait -NoNewWindow
-                    Write-Host "OK: MSI installer completed $($File.Name)" -ForegroundColor Green
-                    $InstalledManufacturers += $File.BaseName
-                }
-                catch {
-                    Write-Host "ERROR: MSI installer failed $($File.Name)" -ForegroundColor Red
-                }
+            "Q" {
+                Write-Host ""
+                Write-Host "WARNING: Script terminated by user." -ForegroundColor Yellow
+                exit 0
+            }
+            default {
+                Write-Host "Invalid input. Please enter Y, N, or Q." -ForegroundColor Red
+                Write-Host ""
+                return Wait-ForDriverFile
             }
         }
-    }
-
-    return $true
+    } while ($true)
 }
 
 # ===========================
-# DRIVER DISCOVERY LOOP
+# LOCATE DRIVER FILES
 # ===========================
-do {
-    Driver-Preparation
-    $DriversInstalled = Install-Drivers
-} until ($DriversInstalled)
+
+function Find-DriverFiles {
+    \$DriverFiles = Get-ChildItem -Path \$ScriptPath -File |
+                   Where-Object { $_.Extension -match '\.(zip|exe|msi)$' } |
+                   Where-Object { \$_.Name -ne \$MyInvocation.ScriptName }
+
+    return $DriverFiles
+}
 
 # ===========================
-# ADD NETWORK PRINTER
+# EXTRACT AND INSTALL ZIP DRIVERS
 # ===========================
-function Add-NetworkPrinter {
 
-    if ($InstalledManufacturers.Count -eq 0) {
-        Write-Host "ERROR: No installed drivers available." -ForegroundColor Red
-        return
-    }
+function Install-ZipDriver {
+    param(
+        [System.IO.FileInfo]$ZipFile
+    )
+
+    $DriverName = [System.IO.Path]::GetFileNameWithoutExtension($ZipFile.Name)
+    \$ExtractPath = Join-Path \$ExtractRoot \$DriverName
 
     Write-Host ""
-    Write-Host "================================================" -ForegroundColor Cyan
-    Write-Host " Add Network Printer" -ForegroundColor Cyan
-    Write-Host "================================================" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Host "Processing ZIP: \$(\$ZipFile.Name)" -ForegroundColor Cyan
+    Write-Host "────────────────────────────────────────────────────────────" -ForegroundColor Cyan
 
-    Write-Host "Enter printer IP address:" -ForegroundColor White
-    $IPAddress = Read-Host
-
-    if ($IPAddress -notmatch '^\d{1,3}(\.\d{1,3}){3}$') {
-        Write-Host "ERROR: Invalid IP address format." -ForegroundColor Red
-        return
-    }
-
-    Write-Host ""
-    Write-Host "Select printer manufacturer:" -ForegroundColor White
-    for ($i = 0; $i -lt $InstalledManufacturers.Count; $i++) {
-        Write-Host " $($i + 1). $($InstalledManufacturers[$i])" -ForegroundColor White
-    }
-
-    Write-Host ""
-    Write-Host "Enter selection number:" -ForegroundColor White
-    $Selection = Read-Host
-
-    if ($Selection -notmatch '^\d+$' -or
-        $Selection -lt 1 -or
-        $Selection -gt $InstalledManufacturers.Count) {
-        Write-Host "ERROR: Invalid manufacturer selection." -ForegroundColor Red
-        return
-    }
-
-    $Manufacturer = $InstalledManufacturers[$Selection - 1]
-
-    Write-Host "Enter printer display name:" -ForegroundColor White
-    $PrinterName = Read-Host
-
-    if ([string]::IsNullOrWhiteSpace($PrinterName)) {
-        Write-Host "ERROR: Printer name cannot be empty." -ForegroundColor Red
-        return
-    }
-
-    $PortName = "IP_$IPAddress"
-
-    try {
-        if (-not (Get-PrinterPort -Name $PortName -ErrorAction SilentlyContinue)) {
-            Write-Host "Processing: Creating TCP/IP printer port..." -ForegroundColor Yellow
-            Add-PrinterPort -Name $PortName -PrinterHostAddress $IPAddress
-        }
-
-        $Driver = Get-PrinterDriver |
-                  Where-Object { $_.Name -match $Manufacturer } |
-                  Select-Object -First 1
-
-        if (-not $Driver) {
-            Write-Host "ERROR: No matching driver found for $Manufacturer." -ForegroundColor Red
-            return
-        }
-
-        Write-Host "Processing: Using driver $($Driver.Name)" -ForegroundColor Cyan
-        Write-Host "Processing: Adding network printer..." -ForegroundColor Yellow
-
-        Add-Printer -Name $PrinterName `
-                    -DriverName $Driver.Name `
-                    -PortName $PortName
-
-        Write-Host "OK: Printer added successfully - $PrinterName" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "ERROR: Failed to add network printer." -ForegroundColor Red
-    }
-}
-
-# ===========================
-# USER PROMPT
-# ===========================
-Write-Host ""
-Write-Host "Would you like to add a network printer now? (Y/N)" -ForegroundColor White
-$AddPrinter = Read-Host
-
-if ($AddPrinter -match '^[Yy]$') {
-    Add-NetworkPrinter
-}
-
-# ===========================
-# COMPLETION
-# ===========================
-Write-Host ""
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host " M.A.G.I.C. Completed" -ForegroundColor Cyan
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host ""
-
-# ===========================
-# CLEANUP
-# ===========================
-Write-Host ""
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host " Cleanup" -ForegroundColor Cyan
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Remove extracted driver directory
-if (Test-Path $ExtractRoot) {
-    try {
-        Write-Host "Cleaning up extracted drivers..." -ForegroundColor Yellow
-        Remove-Item $ExtractRoot -Recurse -Force
-        Write-Host "OK: Extracted drivers removed." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "WARNING: Failed to remove extracted drivers." -ForegroundColor Yellow
-    }
-}
-
-# Ask whether to remove installer files
-$CleanupInstallers = Read-Host "Remove downloaded driver installer files (ZIP/EXE/MSI)? (Y/N)"
-if ($CleanupInstallers -match '^[Yy]$') {
-    try {
-        Get-ChildItem -Path $ScriptPath |
-            Where-Object { $_.Extension -match '\.(zip|exe|msi)$' } |
-            Remove-Item -Force
-        Write-Host "OK: Installer files removed." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "WARNING: Failed to remove some installer files." -ForegroundColor Yellow
-    }
-}
-
-
-Write-Host "Press Enter to exit..." -ForegroundColor White
-Read-Host
+    # Clean previous extraction
+    if (Test-Path \$ExtractPath) {
+        Write-Host "Removing previous extraction directory..." -ForegroundColor Yellow
+        try {
+            Remove-Item \$ExtractPath -Recurse -Force -ErrorAction Stop
+            Write-Host "OK:
