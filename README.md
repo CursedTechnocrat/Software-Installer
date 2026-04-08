@@ -52,19 +52,13 @@ Automated software installation and management with SOC compliance tracking.
 ## Usage
 
 ### M.A.G.I.C.
-```powershell
-.\M.A.G.I.C.ps1
-```
+    .\M.A.G.I.C.ps1
 
 ### U.P.K.E.E.P.
-```powershell
-.\Upkeep.ps1
-```
+    .\Upkeep.ps1
 
 ### W.A.R.P.
-```powershell
-.\W.A.R.P.ps1 -Mode Both
-```
+    .\W.A.R.P.ps1 -Mode Both
 
 ## Configuration
 
@@ -108,5 +102,5 @@ Contributions are welcome! Please ensure scripts maintain:
 
 ---
 
-**Technician Toolkit** - Making system administration easier, one script at a time.
+**Technician Toolkit** – Making system administration easier, one script at a time.
 ```
