@@ -440,7 +440,10 @@ Write-Host ""
 Export-InstallLog
 
 $summaryMessage = "S.P.A.R.K $Mode completed. Total: $totalCount | Success: $successCount | Failed: $failureCount | Skipped: $skipCount"
-$summaryEventType = if ($failureCount -gt 0) { "Warning" } else { "Information" }
+if ($failureCount -gt 0) {
+    $summaryEventType = "Warning"
+}
+else {
+    $summaryEventType = "Information"
+}
 Write-EventLog -Message $summaryMessage -EventType $summaryEventType -EventId $script:EventIds.SummaryReport
-
-Write-EventLog -Message "S.P.A.R.K script ended" -EventType "Information" -EventId $script:EventIds.ScriptEnd
