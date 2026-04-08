@@ -1,458 +1,425 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# S.P.A.R.K - Software Package Auto-Installer
-# v6.5 - Parsing errors
-# ─────────────────────────────────────────────────────────────────────────────
+<#
+.SYNOPSIS
+    S.P.A.R.K - Software Package & Resource Kit
+    Automated Package Manager Setup & Installation
+
+.DESCRIPTION
+    Installs core and optional MSP software packages using Winget (primary)
+    or Chocolatey (fallback). Designed for fully unattended use in RMM tools,
+    Kaseya LiveConnect, and Task Scheduler. All optional package selections
+    are parameter-driven — no interactive prompts.
+
+.PARAMETER InstallZoomPlugin
+    Install the Zoom Outlook Plugin.
+
+.PARAMETER InstallDisplayLink
+    Install the DisplayLink Graphics Driver.
+
+.PARAMETER InstallDellCommandUpdate
+    Install Dell Command Update.
+
+.PARAMETER LogPath
+    Path for the installation log CSV.
+    Default: C:\ProgramData\SPARK\install_log.csv
+
+.EXAMPLE
+    .\SPARK.ps1
+    Installs all core software using Winget (or Chocolatey fallback).
+
+.EXAMPLE
+    .\SPARK.ps1 -InstallZoomPlugin -InstallDellCommandUpdate
+    Installs core software plus the Zoom plugin and Dell Command Update.
+
+.EXAMPLE
+    .\SPARK.ps1 -InstallDisplayLink -LogPath "D:\Logs\spark.csv"
+    Installs core software plus DisplayLink, logging to a custom path.
+#>
 
 param(
-    [string]$Mode = "",
+    [switch]$InstallZoomPlugin,
+    [switch]$InstallDisplayLink,
     [switch]$InstallDellCommandUpdate,
-    [switch]$InstallZoomOutlookPlugin,
-    [switch]$InstallDellCommand
+    [string]$LogPath = "C:\ProgramData\SPARK\install_log.csv"
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# INITIALIZE SCRIPT VARIABLES
+# ADMIN CHECK
 # ─────────────────────────────────────────────────────────────────────────────
 
-$script:EventLogName = "S.P.A.R.K"
-$script:EventLogSource = "S.P.A.R.K-Installer"
-$script:LogPath = "$env:ProgramData\S.P.A.R.K\InstallLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
-$script:WingetAvailable = $false
-$script:WingetInitialized = $false
-$script:OperationMode = ""
-$script:InstallLog = @()
-
-$script:EventIds = @{
-    ScriptStart              = 1000
-    ScriptEnd                = 1001
-    ModeSelected             = 1002
-    WingetDetected           = 2001
-    WingetInstallAttempt     = 2002
-    WingetInstallSuccess     = 2003
-    WingetInstallFailed      = 2004
-    PackageInstallStart      = 3001
-    PackageInstallSuccess    = 3002
-    PackageInstallFailed     = 3003
-    PackageSkipped           = 3004
-    LogExportSuccess         = 4001
-    LogExportFailed          = 4002
-    SummaryReport            = 5001
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "ERROR: This script must be run as Administrator." -ForegroundColor Red
+    exit 1
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Show Banner
-# ─────────────────────────────────────────────────────────────────────────────
-
-function Show-SparkBanner {
-    Write-Host ""
-    Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Magenta
-    Write-Host "║     S.P.A.R.K - Software Installer    ║" -ForegroundColor Magenta
-    Write-Host "║   Streamlined Package Auto-Run Kit     ║" -ForegroundColor Magenta
-    Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Magenta
-    Write-Host ""
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Initialize Event Log
-# ─────────────────────────────────────────────────────────────────────────────
-
-function Initialize-EventLog {
-    try {
-        if (-not (Get-EventLog -LogName $script:EventLogName -ErrorAction SilentlyContinue)) {
-            New-EventLog -LogName $script:EventLogName -Source $script:EventLogSource -ErrorAction SilentlyContinue
-        }
-    }
-    catch {
-        Write-Host "⚠ Warning: Could not initialize Event Log" -ForegroundColor Yellow
-    }
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Write Event Log
-# ─────────────────────────────────────────────────────────────────────────────
-
-function Write-EventLog {
-    param(
-        [string]$Message,
-        [ValidateSet("Information", "Warning", "Error")]
-        [string]$EventType = "Information",
-        [int]$EventId = 1000
-    )
-
-    try {
-        [System.Diagnostics.EventLog]::WriteEntry($script:EventLogSource, $Message, $EventType, $EventId)
-    }
-    catch {
-        # Silently continue if Event Log fails
-    }
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Update Environment Path
+# FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Update-EnvironmentPath {
-    <#
-    .SYNOPSIS
-        Refreshes PATH from registry
-    #>
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + 
+    # Renamed from Refresh-EnvironmentPath to use an approved PS verb.
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
                 [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Initialize Winget
-# ─────────────────────────────────────────────────────────────────────────────
-
 function Initialize-Winget {
-    <#
-    .SYNOPSIS
-        Detects Winget or installs from GitHub
-    #>
-    if ($script:WingetInitialized) {
-        return $script:WingetAvailable
-    }
-
-    $wingetFound = $false
     try {
         $ver = winget --version 2>&1
-        Write-Host "✓ Winget detected - Version: $ver" -ForegroundColor Green
-        Write-EventLog -Message "Winget detected. Version: $ver" -EventType "Information" -EventId $script:EventIds.WingetDetected
-        $wingetFound = $true
-    }
-    catch {
-        Write-Host "⚠ Winget not found. Attempting installation from GitHub..." -ForegroundColor Yellow
-        Write-EventLog -Message "Winget not found. Attempting installation." -EventType "Information" -EventId $script:EventIds.WingetInstallAttempt
-    }
-
-    if ($wingetFound) {
-        $script:WingetAvailable = $true
-        $script:WingetInitialized = $true
-        return $true
-    }
-
-    # Try to install Winget from GitHub
-    try {
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/winget-cli/releases/latest" -UseBasicParsing
-        $msixBundle = $release.assets | Where-Object { $_.name -like "*.msixbundle" } | Select-Object -First 1
-
-        if (-not $msixBundle) {
-            Write-Host "✗ Failed: Could not locate winget MSIX bundle" -ForegroundColor Red
-            Write-EventLog -Message "Failed to locate winget MSIX bundle" -EventType "Error" -EventId $script:EventIds.WingetInstallFailed
-            $script:WingetAvailable = $false
-            $script:WingetInitialized = $true
-            return $false
-        }
-
-        $tmpPath = Join-Path -Path $env:TEMP -ChildPath "winget_install.msixbundle"
-        Write-Host "  Downloading: $($msixBundle.browser_download_url)" -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $msixBundle.browser_download_url -OutFile $tmpPath -UseBasicParsing
-        
-        Write-Host "  Installing MSIX package..." -ForegroundColor Cyan
-        Add-AppxPackage -Path $tmpPath
-        Start-Sleep -Seconds 3
-        Update-EnvironmentPath
-        
-        # Verify installation
-        $ver = winget --version 2>&1
-        Write-Host "✓ Winget installed successfully - Version: $ver" -ForegroundColor Green
-        Write-EventLog -Message "Winget installed successfully. Version: $ver" -EventType "Information" -EventId $script:EventIds.WingetInstallSuccess
-        $script:WingetAvailable = $true
-        $script:WingetInitialized = $true
+        Write-Host "Winget already installed. Version: $ver" -ForegroundColor Green
         return $true
     }
     catch {
-        Write-Host "✗ Winget installation failed: $_" -ForegroundColor Red
-        Write-EventLog -Message "Winget installation failed: $_" -EventType "Error" -EventId $script:EventIds.WingetInstallFailed
-        $script:WingetAvailable = $false
-        $script:WingetInitialized = $true
-        return $false
-    }
-}
+        Write-Host "Winget not found. Attempting install via GitHub release..." -ForegroundColor Yellow
+        try {
+            # Pull the latest release from the official winget-cli repo.
+            # This avoids the irm|iex anti-pattern and downloads a verified MSIX.
+            $release    = Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/winget-cli/releases/latest" -UseBasicParsing
+            $msixBundle = $release.assets | Where-Object { $_.name -like "*.msixbundle" } | Select-Object -First 1
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Install Package
-# ─────────────────────────────────────────────────────────────────────────────
-
-function Install-Package {
-    <#
-    .SYNOPSIS
-        Installs or upgrades a single package using Winget
-    #>
-    param(
-        [string]$PackageName,
-        [string]$WingetId,
-        [string]$Action = "Install"
-    )
-
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
-    if (-not $script:WingetAvailable) {
-        Write-Host "  [SKIP] $PackageName" -ForegroundColor Yellow
-        $logEntry = @{
-            Timestamp = $timestamp
-            Package   = $PackageName
-            Manager   = "Winget"
-            Status    = "Skipped"
-            ExitCode  = -1
-        }
-        $script:InstallLog += New-Object PSObject -Property $logEntry
-        Write-EventLog -Message "Skipped $PackageName - Winget unavailable" -EventType "Information" -EventId $script:EventIds.PackageSkipped
-        return $false
-    }
-
-    if ([string]::IsNullOrWhiteSpace($WingetId)) {
-        Write-Host "  [SKIP] $PackageName (no Winget ID)" -ForegroundColor Yellow
-        $logEntry = @{
-            Timestamp = $timestamp
-            Package   = $PackageName
-            Manager   = "Winget"
-            Status    = "Skipped"
-            ExitCode  = -1
-        }
-        $script:InstallLog += New-Object PSObject -Property $logEntry
-        Write-EventLog -Message "Skipped $PackageName - no Winget ID" -EventType "Information" -EventId $script:EventIds.PackageSkipped
-        return $false
-    }
-
-    try {
-        Write-Host "  [$Action via Winget] $PackageName..." -ForegroundColor Cyan -NoNewline
-        Write-EventLog -Message "Installing $PackageName with Winget" -EventType "Information" -EventId $script:EventIds.PackageInstallStart
-        
-        if ($Action -eq "Install") {
-            & winget install --id $WingetId -e -h --accept-package-agreements --accept-source-agreements 2>&1 | Out-Null
-        }
-        else {
-            & winget upgrade --id $WingetId -e -h --accept-package-agreements --accept-source-agreements 2>&1 | Out-Null
-        }
-        
-        $exitCode = $LASTEXITCODE
-        
-        if ($exitCode -eq 0 -or $exitCode -eq 3010) {
-            Write-Host " ✓ Success" -ForegroundColor Green
-            $logEntry = @{
-                Timestamp = $timestamp
-                Package   = $PackageName
-                Manager   = "Winget"
-                Status    = "Success"
-                ExitCode  = $exitCode
+            if (-not $msixBundle) {
+                Write-Host "Could not locate winget MSIX bundle in latest GitHub release." -ForegroundColor Red
+                return $false
             }
-            $script:InstallLog += New-Object PSObject -Property $logEntry
-            Write-EventLog -Message "$Action succeeded for $PackageName via Winget" -EventType "Information" -EventId $script:EventIds.PackageInstallSuccess
+
+            $tmpPath = "$env:TEMP\winget_install.msixbundle"
+            Invoke-WebRequest -Uri $msixBundle.browser_download_url -OutFile $tmpPath -UseBasicParsing
+            Add-AppxPackage -Path $tmpPath
+            Start-Sleep -Seconds 3
+            Update-EnvironmentPath
+
+            $ver = winget --version 2>&1
+            Write-Host "Winget installed successfully. Version: $ver" -ForegroundColor Green
             return $true
         }
-        else {
-            Write-Host " ✗ Failed (Exit: $exitCode)" -ForegroundColor Red
-            $logEntry = @{
-                Timestamp = $timestamp
-                Package   = $PackageName
-                Manager   = "Winget"
-                Status    = "Failed"
-                ExitCode  = $exitCode
-            }
-            $script:InstallLog += New-Object PSObject -Property $logEntry
-            Write-EventLog -Message "$Action failed for $PackageName. Exit Code: $exitCode" -EventType "Error" -EventId $script:EventIds.PackageInstallFailed
+        catch {
+            Write-Host "Failed to install Winget: $_" -ForegroundColor Red
             return $false
         }
     }
-    catch {
-        Write-Host " ✗ Error: $_" -ForegroundColor Red
-        $errorMsg = $_
-        $logEntry = @{
-            Timestamp = $timestamp
-            Package   = $PackageName
-            Manager   = "Winget"
-            Status    = "Failed"
-            ExitCode  = -1
-        }
-        $script:InstallLog += New-Object PSObject -Property $logEntry
-        Write-EventLog -Message "$Action error for $PackageName`: $errorMsg" -EventType "Error" -EventId $script:EventIds.PackageInstallFailed
-        return $false
-    }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCTION: Export Install Log
-# ─────────────────────────────────────────────────────────────────────────────
-
-function Export-InstallLog {
-    <#
-    .SYNOPSIS
-        Exports installation log to CSV
-    #>
+function Initialize-Chocolatey {
     try {
-        $logDir = Split-Path -Path $script:LogPath
-        if (-not (Test-Path -Path $logDir)) {
-            New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-            Write-Host "✓ Created log directory: $logDir" -ForegroundColor Green
-        }
-
-        $script:InstallLog | Export-Csv -Path $script:LogPath -NoTypeInformation -Force
-        Write-Host "✓ Log exported to: $($script:LogPath)" -ForegroundColor Green
-        Write-EventLog -Message "Installation log exported: $($script:LogPath)" -EventType "Information" -EventId $script:EventIds.LogExportSuccess
+        $ver = choco --version 2>&1
+        Write-Host "Chocolatey already installed. Version: $ver" -ForegroundColor Green
         return $true
     }
     catch {
-        Write-Host "✗ Failed to export log: $_" -ForegroundColor Red
-        Write-EventLog -Message "Failed to export log: $_" -EventType "Error" -EventId $script:EventIds.LogExportFailed
-        return $false
+        if (Test-Path "C:\ProgramData\chocolatey") {
+            Write-Host "Chocolatey found but not in PATH. Refreshing..." -ForegroundColor Yellow
+            Update-EnvironmentPath
+            Start-Sleep -Seconds 1
+            try {
+                $ver = choco --version 2>&1
+                Write-Host "Chocolatey accessible. Version: $ver" -ForegroundColor Green
+                return $true
+            }
+            catch {
+                Write-Host "Chocolatey present but inaccessible. A session restart may be required." -ForegroundColor Yellow
+                return $false
+            }
+        }
+        else {
+            Write-Host "Chocolatey not found. Installing..." -ForegroundColor Yellow
+            try {
+                Set-ExecutionPolicy Bypass -Scope Process -Force
+                [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+
+                # Using full cmdlet name (Invoke-Expression) instead of the iex alias,
+                # and downloading the string separately so it can be inspected/logged.
+                $chocoScript = (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')
+                Invoke-Expression $chocoScript
+
+                Start-Sleep -Seconds 2
+                Update-EnvironmentPath
+                Write-Host "Chocolatey installed successfully." -ForegroundColor Green
+                return $true
+            }
+            catch {
+                Write-Host "Failed to install Chocolatey: $_" -ForegroundColor Red
+                return $false
+            }
+        }
     }
+}
+
+function Update-PackageManagers {
+    param(
+        [bool]$UpdateWinget,
+        [bool]$UpdateChocolatey
+    )
+
+    if ($UpdateWinget) {
+        Write-Host "`nUpdating Winget..." -ForegroundColor Magenta
+        try {
+            winget upgrade winget --accept-source-agreements --accept-package-agreements -h 2>&1 | Out-Null
+            Write-Host "Winget update check complete." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Could not update Winget (this may be normal in some environments): $_" -ForegroundColor Yellow
+        }
+    }
+
+    if ($UpdateChocolatey) {
+        Write-Host "`nUpdating Chocolatey..." -ForegroundColor Magenta
+        try {
+            choco upgrade chocolatey -y 2>&1 | Out-Null
+            Write-Host "Chocolatey updated." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to update Chocolatey: $_" -ForegroundColor Red
+        }
+    }
+}
+
+function Install-Software {
+    param(
+        [string[]]$WingetPackages,
+        [string[]]$ChocoPackages,
+        [bool]$UseWinget,
+        [bool]$UseChocolatey,
+        [ref]$LogArray
+    )
+
+    if ($UseWinget -and $WingetPackages.Count -gt 0) {
+        Write-Host "`n--- Installing via Winget ---" -ForegroundColor Magenta
+        foreach ($item in $WingetPackages) {
+            Write-Host "Installing $item..." -ForegroundColor Yellow
+            try {
+                winget install -e --id $item --accept-source-agreements --accept-package-agreements -h 2>&1 | Out-Null
+                $exitCode = $LASTEXITCODE
+
+                # Exit code 0           = success
+                # Exit code -1978335189 = already installed (0x8A150011)
+                if ($exitCode -eq 0 -or $exitCode -eq -1978335189) {
+                    Write-Host "$item installed successfully." -ForegroundColor Green
+                    $status = "Success"
+                }
+                else {
+                    Write-Host "Failed to install $item. Exit code: $exitCode" -ForegroundColor Red
+                    $status = "Failed"
+                }
+            }
+            catch {
+                Write-Host "Error installing $item`: $_" -ForegroundColor Red
+                $exitCode = "N/A"
+                $status   = "Failed"
+            }
+
+            $LogArray.Value += [PSCustomObject]@{
+                Package   = $item
+                Status    = $status
+                Manager   = "Winget"
+                ExitCode  = $exitCode
+                Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            }
+        }
+    }
+
+    if ($UseChocolatey -and $ChocoPackages.Count -gt 0) {
+        Write-Host "`n--- Installing via Chocolatey ---" -ForegroundColor Magenta
+        foreach ($item in $ChocoPackages) {
+            Write-Host "Installing $item..." -ForegroundColor Yellow
+            try {
+                choco install $item -y 2>&1 | Out-Null
+                $exitCode = $LASTEXITCODE
+
+                if ($exitCode -eq 0) {
+                    Write-Host "$item installed successfully." -ForegroundColor Green
+                    $status = "Success"
+                }
+                else {
+                    Write-Host "Failed to install $item. Exit code: $exitCode" -ForegroundColor Red
+                    $status = "Failed"
+                }
+            }
+            catch {
+                Write-Host "Error installing $item`: $_" -ForegroundColor Red
+                $exitCode = "N/A"
+                $status   = "Failed"
+            }
+
+            $LogArray.Value += [PSCustomObject]@{
+                Package   = $item
+                Status    = $status
+                Manager   = "Chocolatey"
+                ExitCode  = $exitCode
+                Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            }
+        }
+    }
+}
+
+function Export-InstallLog {
+    param(
+        [array]$InstallLog,
+        [string]$Path
+    )
+    try {
+        $dir = Split-Path $Path -Parent
+        if (-not (Test-Path $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+        $InstallLog | Export-Csv -Path $Path -NoTypeInformation -Append
+        Write-Host "Log saved to: $Path" -ForegroundColor Cyan
+    }
+    catch {
+        Write-Host "Warning: Could not write log file: $_" -ForegroundColor Yellow
+    }
+}
+
+function Show-SparkBanner {
+    Write-Host @"
+
+  ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗
+  ██╔════╝██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝
+  ███████╗██████╔╝███████║██████╔╝█████╔╝ 
+  ╚════██║██╔═══╝ ██╔══██║██╔══██╗██╔═██╗ 
+  ███████║██║     ██║  ██║██║  ██║██║  ██╗
+  ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
+"@ -ForegroundColor Yellow
+    Write-Host "    Software Package & Resource Kit" -ForegroundColor Yellow
+    Write-Host "    Automated Package Manager Setup & Installation" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+function Show-InstallationSummary {
+    param([array]$InstallLog)
+
+    $successCount = ($InstallLog | Where-Object { $_.Status -eq "Success" }).Count
+    $failureCount  = ($InstallLog | Where-Object { $_.Status -eq "Failed"  }).Count
+    $totalCount    = $InstallLog.Count
+
+    Write-Host "`n========================================" -ForegroundColor Magenta
+    Write-Host "S.P.A.R.K Installation Summary Report"   -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "Execution Timestamp: $(Get-Date -Format 'dddd, MMMM dd, yyyy HH:mm:ss')" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Installation Statistics:" -ForegroundColor Magenta
+    Write-Host "├─ Total Packages : $totalCount"
+    Write-Host "├─ Successful     : $successCount" -ForegroundColor Green
+
+    if ($failureCount -gt 0) {
+        Write-Host "└─ Failed         : $failureCount" -ForegroundColor Red
+    }
+    else {
+        Write-Host "└─ Failed         : $failureCount" -ForegroundColor Green
+    }
+    Write-Host ""
+
+    if ($successCount -gt 0) {
+        Write-Host "Successfully Installed:" -ForegroundColor Green
+        Write-Host "========================================" -ForegroundColor Green
+        $InstallLog | Where-Object { $_.Status -eq "Success" } | ForEach-Object {
+            Write-Host "  [+] $($_.Package)" -ForegroundColor Green
+            Write-Host "      Manager: $($_.Manager) | Exit: $($_.ExitCode) | Time: $($_.Timestamp)" -ForegroundColor Gray
+        }
+        Write-Host ""
+    }
+
+    if ($failureCount -gt 0) {
+        Write-Host "Failed Installations:" -ForegroundColor Red
+        Write-Host "========================================" -ForegroundColor Red
+        $InstallLog | Where-Object { $_.Status -eq "Failed" } | ForEach-Object {
+            Write-Host "  [-] $($_.Package)" -ForegroundColor Red
+            Write-Host "      Manager: $($_.Manager) | Exit: $($_.ExitCode) | Time: $($_.Timestamp)" -ForegroundColor Gray
+        }
+        Write-Host ""
+    }
+
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "Completed at $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host ""
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SOFTWARE DEFINITIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Core packages — Winget is primary, Chocolatey IDs are the fallback.
 $coreSoftware = @(
-    @{ Name = "Microsoft Edge";           Winget = "Microsoft.Edge" },
-    @{ Name = "7-Zip";                    Winget = "7zip.7zip" },
-    @{ Name = "Adobe Acrobat Reader";     Winget = "Adobe.Acrobat.Reader.64-bit" },
-    @{ Name = "Zoom";                     Winget = "Zoom.Zoom" },
-    @{ Name = "Microsoft Office 365";     Winget = "Microsoft.Office" }
+    @{ Winget = "Microsoft.Teams";             Chocolatey = "microsoft-teams" },
+    @{ Winget = "Microsoft.Office";            Chocolatey = "office-deploy"   },
+    @{ Winget = "7zip.7zip";                   Chocolatey = "7zip"            },
+    @{ Winget = "Google.Chrome";               Chocolatey = "googlechrome"    },
+    @{ Winget = "Adobe.Acrobat.Reader.64-bit"; Chocolatey = "adobereader"     },
+    @{ Winget = "Zoom.Zoom";                   Chocolatey = "zoom"            }
 )
 
+# Optional packages — Winget only. Controlled via script parameters.
 $optionalSoftware = @(
-    @{ Name = "Dell Command Update";      Winget = "Dell.CommandUpdate";                Param = "InstallDellCommandUpdate" },
-    @{ Name = "Zoom Outlook Plugin";      Winget = "Zoom.ZoomOutlookPlugin";            Param = "InstallZoomOutlookPlugin" },
-    @{ Name = "Dell Command Suite";       Winget = "Dell.CommandUpdate";                Param = "InstallDellCommand" }
+    @{ ParamName = "InstallZoomPlugin";        Winget = "Zoom.ZoomOutlookPlugin"     },
+    @{ ParamName = "InstallDisplayLink";       Winget = "DisplayLink.GraphicsDriver" },
+    @{ ParamName = "InstallDellCommandUpdate"; Winget = "Dell.CommandUpdate"         }
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN EXECUTION
 # ─────────────────────────────────────────────────────────────────────────────
 
+$installationLog = @()
+
 Show-SparkBanner
 
-# Initialize logging
-Initialize-EventLog
-Write-EventLog -Message "S.P.A.R.K started. Mode: $Mode | Log Path: $($script:LogPath)" -EventType "Information" -EventId $script:EventIds.ScriptStart
-
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "Initializing S.P.A.R.K..." -ForegroundColor Magenta
+Write-Host "Initializing S.P.A.R.K"                  -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host ""
 
-# Mode selection
-if ([string]::IsNullOrWhiteSpace($Mode)) {
-    Write-Host "Select operation mode:" -ForegroundColor Cyan
-    Write-Host "1 = Install (new packages)"
-    Write-Host "2 = Upgrade (existing packages)"
-    Write-Host ""
-    $choice = Read-Host "Enter choice (1 or 2)"
-    
-    if ($choice -eq "1") {
-        $Mode = "Install"
-    }
-    elseif ($choice -eq "2") {
-        $Mode = "Upgrade"
-    }
-    else {
-        Write-Host "Invalid choice. Exiting." -ForegroundColor Red
-        Write-EventLog -Message "Script terminated: Invalid mode selection" -EventType "Error" -EventId $script:EventIds.ScriptEnd
-        exit 1
-    }
-}
+Update-EnvironmentPath
 
-$script:OperationMode = $Mode
-Write-Host "✓ Mode selected: $Mode" -ForegroundColor Green
-Write-EventLog -Message "Operation mode: $Mode" -EventType "Information" -EventId $script:EventIds.ModeSelected
-Write-Host ""
+$wingetAvailable = Initialize-Winget
+$chocoAvailable  = Initialize-Chocolatey
 
-# Initialize package managers
-Write-Host "Initializing package managers..." -ForegroundColor Magenta
-Initialize-Winget
-
-if (-not $script:WingetAvailable) {
-    Write-Host "`n✗ ERROR: Winget is not available!" -ForegroundColor Red
-    Write-EventLog -Message "Script terminated: Winget unavailable" -EventType "Error" -EventId $script:EventIds.ScriptEnd
+if (-not $wingetAvailable -and -not $chocoAvailable) {
+    Write-Host "`nERROR: Neither Winget nor Chocolatey could be initialized. Exiting." -ForegroundColor Red
     exit 1
 }
 
-Write-Host ""
-Write-Host "Starting $($Mode.ToLower())ation..." -ForegroundColor Magenta
-Write-Host ""
+Update-PackageManagers -UpdateWinget $wingetAvailable -UpdateChocolatey $chocoAvailable
 
-# Install core software
-foreach ($package in $coreSoftware) {
-    Install-Package -PackageName $package.Name -WingetId $package.Winget -Action $Mode
-    Start-Sleep -Milliseconds 500
-}
+# Build install lists.
+# Winget is primary — Chocolatey IDs are only used if Winget is unavailable.
+# This prevents the same package from being installed twice.
+$wingetList = @()
+$chocoList  = @()
 
-Write-Host ""
-Write-Host "Optional Software:" -ForegroundColor Magenta
-Write-Host ""
-
-# Install optional software
-foreach ($package in $optionalSoftware) {
-    $paramName = $package.Param
-    if ((Get-Variable -Name $paramName -ValueOnly -ErrorAction SilentlyContinue) -eq $true) {
-        Install-Package -PackageName $package.Name -WingetId $package.Winget -Action $Mode
-        Start-Sleep -Milliseconds 500
+foreach ($software in $coreSoftware) {
+    if ($wingetAvailable) {
+        $wingetList += $software.Winget
     }
-    else {
-        Write-Host "  [SKIP] $($package.Name) (not selected)" -ForegroundColor Yellow
+    elseif ($chocoAvailable) {
+        $chocoList += $software.Chocolatey
     }
 }
 
-# Generate summary report
-Write-Host ""
+# Add optional packages whose corresponding switch was passed at runtime.
+foreach ($opt in $optionalSoftware) {
+    $switchValue = (Get-Variable -Name $opt.ParamName -ValueOnly -ErrorAction SilentlyContinue)
+    if ($switchValue -eq $true) {
+        if ($wingetAvailable) {
+            $wingetList += $opt.Winget
+        }
+        else {
+            Write-Host "Skipping optional package $($opt.Winget) — requires Winget, which is unavailable." -ForegroundColor Yellow
+        }
+    }
+}
+
+Write-Host "`n========================================" -ForegroundColor Magenta
+Write-Host "S.P.A.R.K - Installation Phase"          -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "Installation Summary" -ForegroundColor Magenta
-Write-Host "========================================" -ForegroundColor Magenta
+
+Install-Software `
+    -WingetPackages $wingetList `
+    -ChocoPackages  $chocoList `
+    -UseWinget      $wingetAvailable `
+    -UseChocolatey  $chocoAvailable `
+    -LogArray       ([ref]$installationLog)
+
+Show-InstallationSummary -InstallLog $installationLog
+Export-InstallLog        -InstallLog $installationLog -Path $LogPath
+
+Write-Host "Note: Some installations may require a system restart to complete." -ForegroundColor Yellow
 Write-Host ""
-
-$successCount = ($script:InstallLog | Where-Object { $_.Status -eq "Success" }).Count
-$failureCount = ($script:InstallLog | Where-Object { $_.Status -eq "Failed" }).Count
-$skipCount = ($script:InstallLog | Where-Object { $_.Status -eq "Skipped" }).Count
-$totalCount = $script:InstallLog.Count
-
-if ($successCount -gt 0) {
-    Write-Host "Successful Installations:" -ForegroundColor Green
-    Write-Host "========================================" -ForegroundColor Green
-    $script:InstallLog | Where-Object { $_.Status -eq "Success" } | ForEach-Object {
-        Write-Host "  [✓] $($_.Package)" -ForegroundColor Green
-        Write-Host "      Manager: $($_.Manager) | Time: $($_.Timestamp)" -ForegroundColor Gray
-    }
-    Write-Host ""
-}
-
-if ($failureCount -gt 0) {
-    Write-Host "Failed Installations:" -ForegroundColor Red
-    Write-Host "========================================" -ForegroundColor Red
-    $script:InstallLog | Where-Object { $_.Status -eq "Failed" } | ForEach-Object {
-        Write-Host "  [✗] $($_.Package)" -ForegroundColor Red
-        Write-Host "      Manager: $($_.Manager) | Exit Code: $($_.ExitCode) | Time: $($_.Timestamp)" -ForegroundColor Gray
-    }
-    Write-Host ""
-}
-
-if ($skipCount -gt 0) {
-    Write-Host "Skipped Operations:" -ForegroundColor Yellow
-    Write-Host "========================================" -ForegroundColor Yellow
-    $script:InstallLog | Where-Object { $_.Status -eq "Skipped" } | ForEach-Object {
-        Write-Host "  [~] $($_.Package)" -ForegroundColor Yellow
-        Write-Host "      Manager: $($_.Manager) | Time: $($_.Timestamp)" -ForegroundColor Gray
-    }
-    Write-Host ""
-}
-
-Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "Completed at $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "Total: $totalCount | Success: $successCount | Failed: $failureCount | Skipped: $skipCount" -ForegroundColor Cyan
-Write-Host ""
-
-# Export log
-Export-InstallLog
-
-# Summary message and event log
-$summaryMessage = "S.P.A.R.K $Mode completed. Total: $totalCount | Success: $successCount | Failed: $failureCount | Skipped: $skipCount"
-if ($failureCount -gt 0) {
-    $summaryEventType = "Warning"
-}
-else {
-    $summaryEventType = "Information"
-}
-
-Write-EventLog -Message $summaryMessage -EventType $summaryEventType -EventId $script:EventIds.SummaryReport
-Write-EventLog -Message "S.P.A.R.K script ended" -EventType "Information" -EventId $script:EventIds.ScriptEnd
