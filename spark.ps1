@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # S.P.A.R.K - Software Package Auto-Installer
-# v6.3 - Removed Chocolatey useage to improve flow and iteration.
+# v6.4 - Fixed Parsing errors
 # ─────────────────────────────────────────────────────────────────────────────
 
 param(
@@ -439,6 +439,7 @@ Write-Host ""
 # Export log
 Export-InstallLog
 
+# Summary message and event log
 $summaryMessage = "S.P.A.R.K $Mode completed. Total: $totalCount | Success: $successCount | Failed: $failureCount | Skipped: $skipCount"
 if ($failureCount -gt 0) {
     $summaryEventType = "Warning"
@@ -446,4 +447,6 @@ if ($failureCount -gt 0) {
 else {
     $summaryEventType = "Information"
 }
+
 Write-EventLog -Message $summaryMessage -EventType $summaryEventType -EventId $script:EventIds.SummaryReport
+Write-EventLog -Message "S.P.A.R.K script ended" -EventType "Information" -EventId $script:EventIds.ScriptEnd
