@@ -69,10 +69,12 @@ function Show-WarpBanner {
 }
 
 param(
+    [Parameter(Mandatory=$false)]
     [ValidateSet("Install", "Update", "Both")]
-    [string]$Mode = "Both",
-    [switch]$SkipOptional
+    [string]$Mode,  # No default - will be $null if not provided
+    ...
 )
+
 
 # Define software lists
 $RequiredSoftware = @(
