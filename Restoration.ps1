@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    U.P.K.E.E.P. — Update Package Keeping Everything Efficiently Prepared
-    Automated Windows Update & Maintenance Tool for PowerShell 5.1+
+    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite
+    Automating The Installation Of New updates — Windows Update & Maintenance Tool for PowerShell 5.1+
 
 .DESCRIPTION
     Automates Windows Update management with minimal user intervention.
@@ -20,7 +20,7 @@
     - PSWindowsUpdate module (auto-installed if missing)
 
 .USAGE
-    PS C:\> .\Upkeep.ps1      # Must be run as Administrator
+    PS C:\> .\restoration.ps1      # Must be run as Administrator
 
 .NOTES
     Version : 1.1
@@ -37,8 +37,10 @@
     Blue     Progress bars and accents
 
     Part of the toolbox alongside:
-    M.A.G.I.C. — Machine Automated Graphical Ink Configurator
-    S.P.A.R.K. — Software Package & Resource Kit
+    R.U.N.E.P.R.E.S.S. — Remote Utility for Networked Equipment — Printer Registration, Extraction & Silent Setup
+    C.O.N.J.U.R.E.     — Centrally Orchestrates Network-Joined Updates, Rollouts & Executables
+    O.R.A.C.L.E.       — Observes, Reports & Audits Computer Logs & Environments
+    C.O.V.E.N.A.N.T.   — Configures Onboarding Via Entra — Network, Accounts, Naming & Timezone
 
 .TROUBLESHOOTING
     "Must be run as Administrator"
@@ -69,23 +71,26 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit 1
 }
 
+# Set console to UTF-8 so Unicode block characters render correctly
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 # ─────────────────────────────────────────────────────────────────────────────
 # BANNER DISPLAY
 # ─────────────────────────────────────────────────────────────────────────────
 
-function Show-UpkeepBanner {
+function Show-RestorationBanner {
     Write-Host @"
 
-  ██╗   ██╗██████╗ ██╗  ██╗███████╗███████╗██████╗
-  ██║   ██║██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔══██╗
-  ██║   ██║██████╔╝█████╔╝ █████╗  █████╗  ██████╔╝
-  ██║   ██║██╔═══╝ ██╔═██╗ ██╔══╝  ██╔══╝  ██╔═══╝
-  ╚██╗ ██╔╝██║     ██║  ██╗███████╗███████╗██║
-   ╚████╔╝ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝
+  ██████╗ ███████╗███████╗████████╗ ██████╗ ██████╗  █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+  ██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+  ██████╔╝█████╗  ███████╗   ██║   ██║   ██║██████╔╝███████║   ██║   ██║██║   ██║██╔██╗ ██║
+  ██╔══██╗██╔══╝  ╚════██╗   ██║   ██║   ██║██╔══██╗██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+  ██║  ██║███████╗███████║   ██║   ╚██████╔╝██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+  ╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 
 "@ -ForegroundColor Cyan
-    Write-Host "    Update Package Keeping Everything Efficiently Prepared" -ForegroundColor Cyan
-    Write-Host "    Automated Windows Update & Maintenance Tool" -ForegroundColor Cyan
+    Write-Host "    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite" -ForegroundColor Cyan
+    Write-Host "    Automating The Installation Of New updates" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -109,7 +114,7 @@ $ColorSchema = @{
 
 $transcriptPath = $null
 try {
-    $transcriptPath = "$env:TEMP\UPKEEP_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    $transcriptPath = "$env:TEMP\RESTORATION_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     Start-Transcript -Path $transcriptPath | Out-Null
 }
 catch {
@@ -120,7 +125,7 @@ catch {
 # DISPLAY BANNER
 # ─────────────────────────────────────────────────────────────────────────────
 
-Show-UpkeepBanner
+Show-RestorationBanner
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor $ColorSchema.Header
