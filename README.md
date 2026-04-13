@@ -1,106 +1,145 @@
-```markdown
 # Technician Toolkit
 
-A comprehensive PowerShell-based toolkit for IT technicians to automate common system administration tasks.
+> A PowerShell-based toolkit for IT technicians to automate common system administration tasks.
 
-## Tools Included
+---
 
-### M.A.G.I.C. (Machine Automated Graphical Ink Configurator)
-Automated printer driver installation and network printer configuration via command-line interface.
+## Table of Contents
 
-**Features:**
-- Automatic driver extraction and installation
-- Support for ZIP, EXE, and MSI formats
-- Network printer configuration
-- Installation logging
+- [Tools Overview](#tools-overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Logging](#logging)
+- [Contributing](#contributing)
+- [Disclaimer](#disclaimer)
 
-### U.P.K.E.E.P. (Update Package Keeping Everything Efficiently Prepared)
-Automated Windows Update & Maintenance Tool
+---
 
-**Features:**
-- System sleep configuration management
-- PSWindowsUpdate module installation and management
-- Automated Windows update detection and installation
-- Intelligent reboot detection
-- User-friendly reboot countdown with cancel option
+## Tools Overview
 
-### W.A.R.P. (Winget Application Rollout Platform)
-Automated software installation and management with SOC compliance tracking.
+| Tool | Full Name | Purpose |
+|------|-----------|---------|
+| **M.A.G.I.C.** | Machine Automated Graphical Ink Configurator | Printer driver installation and network printer configuration |
+| **U.P.K.E.E.P.** | Update Package Keeping Everything Efficiently Prepared | Automated Windows Update management and maintenance |
+| **W.A.R.P.** | Winget Application Rollout Platform | Software deployment and SOC compliance tracking |
 
-**Features:**
-- Required and optional software installation
-- Winget package manager integration
-- Update management
-- Compliance logging and tracking
-- Detailed installation reports
+---
+
+### M.A.G.I.C.
+
+Automates printer driver extraction, installation, and network printer configuration via a command-line interface.
+
+- Supports ZIP, EXE, and MSI driver formats
+- Handles automatic driver extraction and installation
+- Configures network printers post-install
+- Generates installation logs
+
+---
+
+### U.P.K.E.E.P.
+
+Automates Windows Update detection, installation, and reboot handling with minimal user intervention.
+
+- Disables sleep/display timeout for the duration of the run; restores monitor timeout on exit
+- Ensures NuGet provider and PSWindowsUpdate module are installed and current
+- Installs available updates (drivers excluded), no forced reboot
+- Checks reboot status and prompts only when required
+- 30-second reboot countdown with Escape key cancel
+
+---
+
+### W.A.R.P.
+
+Manages software deployment using the Windows Package Manager (winget) with compliance tracking.
+
+- Installs required and optional software packages
+- Tracks installation status for SOC compliance
+- Generates detailed installation and compliance reports
+
+---
 
 ## Requirements
 
-- Windows PowerShell 5.1 or later
-- Administrator privileges
-- Internet connectivity
-- Windows Package Manager (winget) for W.A.R.P.
+| Requirement | Notes |
+|-------------|-------|
+| Windows PowerShell 5.1+ | All tools |
+| Administrator privileges | All tools |
+| Internet connectivity | All tools |
+| Windows Package Manager (winget) | W.A.R.P. only |
+
+---
 
 ## Installation
 
 1. Clone or download this repository
-2. Extract files to desired location
+2. Extract files to your desired location
 3. Open PowerShell as Administrator
 4. Navigate to the toolkit directory
-5. Run desired script
+
+```powershell
+cd C:\Path\To\Toolkit
+```
+
+---
 
 ## Usage
 
-### M.A.G.I.C.
-    .\M.A.G.I.C.ps1
+```powershell
+# Printer driver installation and configuration
+.\M.A.G.I.C.ps1
 
-### U.P.K.E.E.P.
-    .\Upkeep.ps1
+# Windows Update management
+.\Upkeep.ps1
 
-### W.A.R.P.
-    .\W.A.R.P.ps1 -Mode Both
+# Software deployment (install required + optional packages)
+.\W.A.R.P.ps1 -Mode Both
+```
+
+---
 
 ## Configuration
 
-Each script includes configurable variables at the top:
+Each script exposes configurable variables at the top of the file.
 
-- **M.A.G.I.C.**: Driver file locations and installation paths
-- **U.P.K.E.E.P.**: Power settings and update preferences
-- **W.A.R.P.**: Log directory, required/optional software lists
+| Tool | Configurable Options |
+|------|----------------------|
+| **M.A.G.I.C.** | Driver file locations, installation paths |
+| **U.P.K.E.E.P.** | Power settings, update preferences |
+| **W.A.R.P.** | Log directory, required/optional software lists |
+
+---
 
 ## Logging
 
-All tools generate comprehensive logs:
+All tools write logs automatically.
 
-- **M.A.G.I.C.**: Installation logs in script directory
-- **U.P.K.E.E.P.**: Update logs with timestamps
-- **W.A.R.P.**: Detailed installation and compliance logs in configured directory
+| Tool | Log Location |
+|------|--------------|
+| **M.A.G.I.C.** | Script directory |
+| **U.P.K.E.E.P.** | `%TEMP%\UPKEEP_<timestamp>.log` |
+| **W.A.R.P.** | Configured log directory |
 
-## Support
-
-For issues or questions:
-1. Check the troubleshooting section in each script
-2. Review log files for error details
-3. Ensure you're running as Administrator
-4. Verify system requirements are met
-
-## Disclaimer
-
-These scripts modify system settings and may install updates/software that require a system reboot. Ensure all unsaved work is backed up before running. Use at your own risk.
-
-## License
-
-[Add your license information here]
+---
 
 ## Contributing
 
-Contributions are welcome! Please ensure scripts maintain:
+Contributions are welcome. Please ensure all additions maintain:
+
 - Consistent formatting and naming conventions
 - Comprehensive error handling
-- Detailed logging capabilities
+- Detailed logging
 - Clear user prompts and feedback
 
 ---
 
-**Technician Toolkit** – Making system administration easier, one script at a time.
-```
+## Disclaimer
+
+These scripts modify system settings and may install software or updates that require a reboot. Save all work before running. Use at your own risk.
+
+---
+
+## License
+
+[Add license information here]
