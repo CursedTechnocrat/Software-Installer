@@ -48,24 +48,21 @@ $InstallationLog = @()
 function Show-Banner {
     Clear-Host
     Write-Host @"
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║      ███╗   ███╗ █████╗  ██████╗ ██╗ ██████╗            ║
-║      ████╗ ████║██╔══██╗██╔════╝ ██║██╔════╝            ║
-║      ██╔████╔██║███████║██║  ███╗██║██║                 ║
-║      ██║╚██╔╝██║██╔══██║██║   ██║██║██║                 ║
-║      ██║ ╚═╝ ██║██║  ██║╚██████╔╝██║╚██████╗            ║
-║      ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝ ╚═════╝            ║
-║                                                            ║
-║   Machine Automated Graphical Ink Configurator            ║
-║   Printer Registration & Installation Network Tool        ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
+
+  ███╗   ███╗  █████╗   ██████╗  ██╗   ██████╗
+  ████╗ ████║ ██╔══██╗ ██╔════╝  ██║  ██╔════╝
+  ██╔████╔██║ ███████║ ██║  ███╗ ██║  ██║
+  ██║╚██╔╝██║ ██╔══██║ ██║   ██║ ██║  ██║
+  ██║ ╚═╝ ██║ ██║  ██║ ╚██████╔╝ ██║  ╚██████╗
+  ╚═╝     ╚═╝ ╚═╝  ╚═╝  ╚═════╝  ╚═╝   ╚═════╝
+
 "@ -ForegroundColor Cyan
 
+    Write-Host "    M.A.G.I.C. - Machine Automated Graphical Ink Configurator" -ForegroundColor Cyan
+    Write-Host "    Printer Registration & Installation Network Tool" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Script Location: $ScriptPath" -ForegroundColor Gray
-    Write-Host "Execution Time:  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
+    Write-Host "    Script Location: $ScriptPath" -ForegroundColor Gray
+    Write-Host "    Execution Time:  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
     Write-Host ""
 }
 
