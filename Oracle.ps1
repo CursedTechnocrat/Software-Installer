@@ -4,31 +4,25 @@
     System Diagnostic & Health Assessment Tool for PowerShell 5.1+
 
 .DESCRIPTION
-    Audits and reports on the current state of a Windows machine.
-    Collects hardware specs, OS info, network config, uptime, pending updates,
-    installed software, and recent event log errors — then exports an HTML report.
-
-.STEPS
-    1. Hardware         — CPU, RAM, disk capacity and usage, system model/serial
-    2. Operating System — Version, build, edition, activation status
-    3. Network          — Adapters, IP, MAC, DNS, default gateway
-    4. System Health    — Uptime, last reboot, battery (if present)
-    5. Pending Updates  — Scans for available Windows Updates without installing
-    6. Installed Apps   — Top installed applications via registry
-    7. Event Log        — Recent system errors and warnings (last 24 hours)
-    8. Report Export    — Saves full report as HTML to the Desktop
-
-.REQUIREMENTS
-    - PowerShell 5.1+
-    - Administrator privileges
-    - Internet connectivity (for update scan)
+    Audits and reports on the current state of a Windows machine. Collects
+    hardware specs, OS info, network config, uptime, pending Windows Updates,
+    installed software, and recent event log errors — then exports a
+    dark-themed HTML report with color-coded indicators to the Desktop.
 
 .USAGE
     PS C:\> .\oracle.ps1      # Must be run as Administrator
 
 .NOTES
     Version : 1.0
-    Author  : [Your Name/Organization]
+
+    Tools Available
+    ─────────────────────────────────────────────────────────────────
+    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
+    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
+    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
+    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
+    O.R.A.C.L.E.           — System diagnostics & HTML report generation
+    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
 
     Color Schema
     ─────────────────────────────────────────
@@ -38,31 +32,6 @@
     Yellow   Warnings and cautions
     Red      Critical errors
     Gray     Information and details
-    Blue     Progress bars and accents
-
-    Part of the toolbox alongside:
-    R.U.N.E.P.R.E.S.S.  — Remote Utility for Networked Equipment — Printer Registration, Extraction & Silent Setup
-    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite — Automating The Installation Of New updates
-    C.O.N.J.U.R.E.      — Centrally Orchestrates Network-Joined Updates, Rollouts & Executables
-    C.O.V.E.N.A.N.T.    — Configures Onboarding Via Entra — Network, Accounts, Naming & Timezone
-
-.TROUBLESHOOTING
-    "Must be run as Administrator"
-      → Right-click PowerShell and select Run as Administrator
-
-    Update scan fails
-      → Check internet connectivity
-      → Ensure PSWindowsUpdate module is installed (run R.E.S.T.O.R.A.T.I.O.N. first)
-
-    Event log access denied
-      → Confirm Administrator privileges
-
-    Report fails to save
-      → Verify write permissions to Desktop path
-
-.DISCLAIMER
-    This script is read-only — it does not modify system settings or install anything.
-    Safe to run on any Windows machine. Use at your own risk.
 #>
 
 # ─────────────────────────────────────────────────────────────────────────────
