@@ -168,7 +168,7 @@ Only `conjure.ps1` exposes configurable variables at the top of the file. All ot
 | **runepress.ps1** | `$ExtractRoot` — driver extraction staging folder (defaults to `.\ExtractedDrivers`) |
 | **restoration.ps1** | None — power settings are detected and restored automatically |
 | **conjure.ps1** | `$RequiredSoftware` / `$RequiredSoftwareChoco` — required package IDs; `$OptionalSoftware` / `$OptionalSoftwareChoco` — optional package IDs; `$PackageManager` — default manager (`winget` or `choco`) |
-| **oracle.ps1** | None — report is always saved to `%USERPROFILE%\Desktop` |
+| **oracle.ps1** | `$ReportOutputPath` — folder where the HTML report is saved (defaults to `%USERPROFILE%\Desktop`; accepts any local or UNC path) |
 | **covenant.ps1** | None — all settings entered interactively at each step |
 
 ---
@@ -181,7 +181,7 @@ Only `conjure.ps1` exposes configurable variables at the top of the file. All ot
 | **runepress.ps1** | Script directory — `RUNEPRESS_InstallLog_<timestamp>.csv` |
 | **restoration.ps1** | `%TEMP%\RESTORATION_<timestamp>.log` (PowerShell transcript of the full session) |
 | **conjure.ps1** | Console — per-package status table printed at completion |
-| **oracle.ps1** | Desktop — `ORACLE_<timestamp>.html` (full diagnostic report) |
+| **oracle.ps1** | `$ReportOutputPath` — `ORACLE_<timestamp>.html` (defaults to Desktop; configurable) |
 | **covenant.ps1** | Console — action summary printed at completion |
 
 ---
