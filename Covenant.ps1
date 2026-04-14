@@ -6,29 +6,23 @@
 .DESCRIPTION
     Guides a technician through the full setup of a new Windows machine:
     computer rename, Entra ID (Azure AD) domain join with interactive credential
-    entry, network drive mapping, local admin account creation, and timezone config.
-
-.STEPS
-    1. Pre-Flight     — Checks current join status, OS version, and admin rights
-    2. Computer Name  — Optional rename of the machine before domain join
-    3. Entra ID Join  — Joins the machine to Entra ID; prompts for UPN and password
-    4. Drive Mapping  — Maps network shares to drive letters (repeatable)
-    5. Local Admin    — Optional creation of a local administrator account
-    6. Timezone       — Optional timezone configuration
-    7. Summary        — Displays results and prompts for reboot
-
-.REQUIREMENTS
-    - PowerShell 5.1+
-    - Administrator privileges
-    - Internet connectivity (for Entra ID join)
-    - Machine must NOT already be joined to a conflicting on-prem domain
+    entry, network drive mapping, local admin account creation, and timezone
+    configuration. Ends with an action summary and optional reboot countdown.
 
 .USAGE
     PS C:\> .\covenant.ps1      # Must be run as Administrator
 
 .NOTES
     Version : 1.0
-    Author  : [Your Name/Organization]
+
+    Tools Available
+    ─────────────────────────────────────────────────────────────────
+    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
+    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
+    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
+    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
+    O.R.A.C.L.E.           — System diagnostics & HTML report generation
+    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
 
     Color Schema
     ─────────────────────────────────────────
@@ -38,33 +32,6 @@
     Yellow   Warnings and cautions
     Red      Critical errors
     Gray     Information and details
-    Blue     Progress bars and accents
-
-    Part of the toolbox alongside:
-    R.U.N.E.P.R.E.S.S.  — Remote Utility for Networked Equipment — Printer Registration, Extraction & Silent Setup
-    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite — Automating The Installation Of New updates
-    C.O.N.J.U.R.E.      — Centrally Orchestrates Network-Joined Updates, Rollouts & Executables
-    O.R.A.C.L.E.        — Observes, Reports & Audits Computer Logs & Environments
-
-.TROUBLESHOOTING
-    "Must be run as Administrator"
-      → Right-click PowerShell and select Run as Administrator
-
-    Entra ID join fails with credential error
-      → Verify the UPN and password are correct
-      → Confirm the account has permission to join devices (Azure AD > Devices > Device settings)
-      → Accounts with MFA or Conditional Access may require an interactive browser auth
-
-    Drive mapping fails
-      → Confirm UNC path is reachable on the network
-      → Check that the account used has share permissions
-
-    Rename fails or is not applied
-      → Reboot the machine and re-run the script, or rename manually via sysdm.cpl
-
-.DISCLAIMER
-    Joining a domain and renaming a machine are significant changes that require a reboot.
-    Ensure all user work is saved before running this script. Use at your own risk.
 #>
 
 # ─────────────────────────────────────────────────────────────────────────────
