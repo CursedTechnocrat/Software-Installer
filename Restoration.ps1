@@ -1,30 +1,28 @@
 <#
 .SYNOPSIS
-    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite
-    Automating The Installation Of New updates — Windows Update & Maintenance Tool for PowerShell 5.1+
+    R.E.S.T.O.R.A.T.I.O.N. — Renews Every System Through Orderly Rite — Automating The Installation Of New updates
+    Windows Update & Maintenance Tool for PowerShell 5.1+
 
 .DESCRIPTION
     Automates Windows Update management with minimal user intervention.
-    Handles power settings, module installation, update deployment, and reboot detection.
-
-.STEPS
-    1. Power Settings    — Saves monitor timeout, disables sleep/display for duration, restores on exit
-    2. Module Prep       — Ensures NuGet provider and PSWindowsUpdate are installed and current
-    3. Install Updates   — Scans and installs available updates (drivers excluded), no forced reboot
-    4. Reboot Check      — Prompts only if reboot is needed; 30s countdown with Escape to cancel
-
-.REQUIREMENTS
-    - PowerShell 5.1+
-    - Administrator privileges
-    - Internet connectivity
-    - PSWindowsUpdate module (auto-installed if missing)
+    Handles power settings, module installation, update deployment, and
+    reboot detection. Disables sleep for the duration and restores settings
+    on exit. PSWindowsUpdate module is auto-installed if missing.
 
 .USAGE
     PS C:\> .\restoration.ps1      # Must be run as Administrator
 
 .NOTES
     Version : 1.1
-    Author  : [Your Name/Organization]
+
+    Tools Available
+    ─────────────────────────────────────────────────────────────────
+    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
+    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
+    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
+    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
+    O.R.A.C.L.E.           — System diagnostics & HTML report generation
+    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
 
     Color Schema
     ─────────────────────────────────────────
@@ -34,32 +32,6 @@
     Yellow   Warnings and cautions
     Red      Critical errors
     Gray     Information and details
-    Blue     Progress bars and accents
-
-    Part of the toolbox alongside:
-    R.U.N.E.P.R.E.S.S. — Remote Utility for Networked Equipment — Printer Registration, Extraction & Silent Setup
-    C.O.N.J.U.R.E.     — Centrally Orchestrates Network-Joined Updates, Rollouts & Executables
-    O.R.A.C.L.E.       — Observes, Reports & Audits Computer Logs & Environments
-    C.O.V.E.N.A.N.T.   — Configures Onboarding Via Entra — Network, Accounts, Naming & Timezone
-
-.TROUBLESHOOTING
-    "Must be run as Administrator"
-      → Right-click PowerShell and select Run as Administrator
-
-    Module install fails
-      → Check internet connectivity
-      → Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-    Updates fail to install
-      → Verify Windows Update service is running (services.msc)
-      → Ensure at least 2GB free disk space
-
-    Reboot status not detected
-      → Re-run the script, or manually check: Get-WindowsUpdateRebootStatus
-
-.DISCLAIMER
-    Modifies system power settings and may install updates requiring a reboot.
-    Save all work before running. Use at your own risk.
 #>
 
 # ─────────────────────────────────────────────────────────────────────────────
