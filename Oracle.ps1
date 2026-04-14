@@ -67,6 +67,14 @@ function Show-OracleBanner {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Folder where the HTML report will be saved.
+# Change this to any valid path, e.g. "C:\Reports" or "\\server\share\Reports"
+$ReportOutputPath = "$env:USERPROFILE\Desktop"
+
+# ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA DEFINITION
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -88,7 +96,7 @@ Show-OracleBanner
 
 $reportTimestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $reportFilename  = "ORACLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-$reportPath      = "$env:USERPROFILE\Desktop\$reportFilename"
+$reportPath      = "$ReportOutputPath\$reportFilename"
 
 Write-Host "════════════════════════════════════════════════" -ForegroundColor $ColorSchema.Header
 Write-Host "     SYSTEM DIAGNOSTIC REPORT" -ForegroundColor $ColorSchema.Header
