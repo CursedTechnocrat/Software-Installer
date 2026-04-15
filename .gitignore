@@ -1,0 +1,37 @@
+# ─── Runtime Output ───────────────────────────────────────────────────────────
+# ORACLE — HTML diagnostic reports (saved to Desktop by default)
+ORACLE_*.html
+
+# RUNEPRESS — CSV install logs (saved alongside the script)
+RUNEPRESS_InstallLog_*.csv
+
+# RESTORATION — transcript logs (saved to %TEMP%, but guard against local copies)
+RESTORATION_*.log
+
+# ─── General Log / Report Files ───────────────────────────────────────────────
+*.log
+*.csv
+*.html
+
+# ─── Windows & PowerShell ─────────────────────────────────────────────────────
+# PowerShell transcript files
+*_transcript_*.txt
+
+# Compiled script caches
+*.ps1xml~
+
+# ─── OS Artifacts ─────────────────────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS (if ever opened on a Mac)
+.DS_Store
+
+# ─── Editor & IDE ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ─── Claude Code ──────────────────────────────────────────────────────────────
+.claude/settings.local.json
