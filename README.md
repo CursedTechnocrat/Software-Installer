@@ -31,6 +31,8 @@
 | **cipher.ps1** | **C.I.P.H.E.R.** — Configures & Implements Policy-based Hardware Encryption & Recovery | BitLocker drive encryption management — enable, disable, key backup |
 | **ward.ps1** | **W.A.R.D.** — Watches Accounts, Reviews Roles & Detects anomalies | Local user account audit with role, last logon, flags, and HTML report |
 | **archive.ps1** | **A.R.C.H.I.V.E.** — Automated Repository Compressing & Housing Important Volume Exports | Pre-reimaging profile backup — ZIP to local path or network share |
+| **sigil.ps1** | **S.I.G.I.L.** — Secures Infrastructure: Governs via Integrated Lockdown | Security baseline enforcement — telemetry, UAC, firewall, audit policy, password policy |
+| **specter.ps1** | **S.P.E.C.T.E.R.** — Sends PowerShell Execution Commands To External Remotes | Remote machine execution via WinRM — run toolkit tools without physical access |
 
 ---
 
@@ -154,6 +156,43 @@ Audits all local user accounts and exports a dark-themed HTML report to the scri
 
 ---
 
+### S.I.G.I.L.
+
+Applies a standardized security and configuration baseline to a Windows machine. Pairs naturally with C.O.V.E.N.A.N.T. as a post-onboarding hardening step.
+
+- Select individual categories or apply all at once
+- **Telemetry & Privacy** — minimize Windows telemetry, disable advertising ID and ink personalization
+- **Screensaver & Display Lock** — 10-minute lock timeout, password required on resume, machine-level inactivity policy
+- **UAC** — enable UAC, set to Always Notify, prompt on secure desktop
+- **Autorun & Autoplay** — disable for all drive types (machine and user scope)
+- **Windows Firewall** — enable all profiles, block inbound on Public profile
+- **Guest Account** — disable if present
+- **Password Policy** — minimum length 8, max age 90 days, lockout after 5 attempts
+- **Remote Desktop** — enable (with NLA) or disable with firewall rule update
+- **Audit Policy** — enable logon, logoff, lockout, policy change, and account management auditing
+- **Windows Update Behavior** — exclude driver updates, no auto-reboot with logged-on users
+- Domain Group Policy takes precedence over local settings where applicable
+- Changes logged to `SIGIL_BaselineLog_<timestamp>.csv` in the script directory
+
+---
+
+### S.P.E.C.T.E.R.
+
+Connects to a remote Windows machine via WinRM and runs Technician Toolkit scripts without needing physical access.
+
+- Enter target hostname or IP; supports current credentials (domain/Kerberos) or manual entry
+- WinRM connectivity test with step-by-step enable instructions if unreachable
+- **Run O.R.A.C.L.E.** — copies script to remote, executes, retrieves HTML report locally
+- **Run W.A.R.D.** — copies script to remote, executes, retrieves HTML report locally
+- **Run R.E.S.T.O.R.A.T.I.O.N.** — installs Windows Updates on target (reboot warning shown)
+- **Run S.I.G.I.L.** — applies full security baseline on target, retrieves CSV log
+- **Interactive session** — opens a full `Enter-PSSession` shell on the target
+- All output files retrieved to `SPECTER_<MachineName>\` in the script directory
+- Remote staging folder cleaned up automatically after each operation
+- Target machine prerequisite: `Enable-PSRemoting -Force` (run as Administrator)
+
+---
+
 ### A.R.C.H.I.V.E.
 
 Creates a compressed ZIP backup of a selected user profile before a machine is reimaged or wiped.
@@ -183,6 +222,7 @@ Creates a compressed ZIP backup of a selected user profile before a machine is r
 | Entra ID account with device join permissions | `covenant.ps1` |
 | Robocopy (built into Windows) | `phantom.ps1`, `archive.ps1` |
 | BitLocker-capable Windows edition (Pro/Enterprise) | `cipher.ps1` |
+| WinRM enabled on target machine | `specter.ps1` |
 
 ---
 
@@ -243,6 +283,8 @@ Only `conjure.ps1` exposes configurable variables at the top of the file. All ot
 | **cipher.ps1** | None — drive and action selected interactively at runtime |
 | **ward.ps1** | None — audit runs automatically; stale threshold is 90 days (editable in script) |
 | **archive.ps1** | None — profile, items, and destination selected interactively at runtime |
+| **sigil.ps1** | None — categories selected interactively; screensaver timeout editable in script (default 600 s) |
+| **specter.ps1** | None — target, credentials, and operation selected interactively at runtime |
 
 ---
 
@@ -260,6 +302,8 @@ Only `conjure.ps1` exposes configurable variables at the top of the file. All ot
 | **cipher.ps1** | Console only — no log file |
 | **ward.ps1** | Script directory — `WARD_<timestamp>.html` (dark-themed HTML report) |
 | **archive.ps1** | Script directory — `ARCHIVE_Log_<timestamp>.csv`; manifest inside ZIP |
+| **sigil.ps1** | Script directory — `SIGIL_BaselineLog_<timestamp>.csv` |
+| **specter.ps1** | Script directory — `SPECTER_<MachineName>\` folder containing retrieved output files |
 
 ---
 

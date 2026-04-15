@@ -25,6 +25,8 @@
     C.I.P.H.E.R.           — BitLocker drive encryption management
     W.A.R.D.               — User account & local security audit
     A.R.C.H.I.V.E.         — Pre-reimaging profile backup
+    S.I.G.I.L.             — Security baseline & policy enforcement
+    S.P.E.C.T.E.R.         — Remote machine execution via WinRM
 
     Color Schema
     ─────────────────────────────────────────
@@ -137,6 +139,20 @@ $Tools = @(
         File        = 'archive.ps1'
         Description = 'Pre-reimaging profile backup — ZIP to local or network share'
         Color       = 'Magenta'
+    },
+    [PSCustomObject]@{
+        Key         = '10'
+        Name        = 'S.I.G.I.L.'
+        File        = 'sigil.ps1'
+        Description = 'Security baseline enforcement — telemetry, UAC, firewall, audit policy'
+        Color       = 'Red'
+    },
+    [PSCustomObject]@{
+        Key         = '11'
+        Name        = 'S.P.E.C.T.E.R.'
+        File        = 'specter.ps1'
+        Description = 'Remote execution via WinRM — run toolkit tools on a remote machine'
+        Color       = 'White'
     }
 )
 
@@ -255,7 +271,7 @@ do {
     }
     else {
         Write-Host ""
-        Write-Host "  [!!] Invalid selection. Enter 1-9 or Q to quit." -ForegroundColor $ColorSchema.Warning
+        Write-Host "  [!!] Invalid selection. Enter 1-11 or Q to quit." -ForegroundColor $ColorSchema.Warning
         Start-Sleep -Seconds 1
     }
 
