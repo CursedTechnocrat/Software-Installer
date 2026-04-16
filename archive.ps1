@@ -9,7 +9,9 @@
     a manifest file listing every archived item and a timestamped CSV log.
 
 .USAGE
-    PS C:\> .\archive.ps1      # Must be run as Administrator
+    PS C:\> .\archive.ps1                                                           # Must be run as Administrator
+    PS C:\> .\archive.ps1 -Unattended -Username "John"                              # Archive all items for user John
+    PS C:\> .\archive.ps1 -Unattended -Username "John" -Items "1,2,3" -Destination "\\server\backup"
 
 .NOTES
     Version : 1.0
@@ -36,6 +38,13 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param(
+    [switch]$Unattended,
+    [string]$Username    = "",
+    [string]$Items       = "A",
+    [string]$Destination = ""
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -100,7 +109,7 @@ function Add-ArchiveRecord {
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Show-ArchiveBanner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
    █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗
@@ -215,7 +224,7 @@ function Stage-Item {
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
-Show-ArchiveBanner
+if (-not $Unattended) { Show-ArchiveBanner }
 
 Write-Host "  [!!] Run this tool BEFORE reimaging or wiping the machine." -ForegroundColor $ColorSchema.Warning
 Write-Host "       Ensure the destination has sufficient free space." -ForegroundColor $ColorSchema.Warning
@@ -235,27 +244,45 @@ if ($profiles.Count -eq 0) {
     exit 1
 }
 
-for ($i = 0; $i -lt $profiles.Count; $i++) {
-    $lastUseStr = if ($profiles[$i].LastUse) { $profiles[$i].LastUse.ToString("yyyy-MM-dd") } else { "Never" }
-    Write-Host ("  [{0,2}]  {1,-22}  {2,-42}  Last use: {3}" -f ($i + 1), $profiles[$i].Username, $profiles[$i].Path, $lastUseStr) -ForegroundColor $ColorSchema.Info
-}
+$profileRoot     = ""
+$profileUsername = ""
 
-Write-Host ""
-Write-Host -NoNewline "  Select profile number: " -ForegroundColor $ColorSchema.Header
-$idx = (Read-Host).Trim()
+if ($Unattended) {
+    if ([string]::IsNullOrWhiteSpace($Username)) {
+        Write-Host "  [-] -Username is required in unattended mode." -ForegroundColor $ColorSchema.Error
+        exit 1
+    }
+    $selectedProfile = $profiles | Where-Object { $_.Username -ieq $Username } | Select-Object -First 1
+    if (-not $selectedProfile) {
+        Write-Host "  [-] Profile not found for username: $Username" -ForegroundColor $ColorSchema.Error
+        exit 1
+    }
+    $profileRoot     = $selectedProfile.Path
+    $profileUsername = $selectedProfile.Username
+    Write-Host "  [+] Profile: $profileRoot" -ForegroundColor $ColorSchema.Success
+} else {
+    for ($i = 0; $i -lt $profiles.Count; $i++) {
+        $lastUseStr = if ($profiles[$i].LastUse) { $profiles[$i].LastUse.ToString("yyyy-MM-dd") } else { "Never" }
+        Write-Host ("  [{0,2}]  {1,-22}  {2,-42}  Last use: {3}" -f ($i + 1), $profiles[$i].Username, $profiles[$i].Path, $lastUseStr) -ForegroundColor $ColorSchema.Info
+    }
 
-if (-not ($idx -match '^\d+$' -and [int]$idx -ge 1 -and [int]$idx -le $profiles.Count)) {
     Write-Host ""
-    Write-Host "  [-] Invalid selection." -ForegroundColor $ColorSchema.Error
-    exit 1
+    Write-Host -NoNewline "  Select profile number: " -ForegroundColor $ColorSchema.Header
+    $idx = (Read-Host).Trim()
+
+    if (-not ($idx -match '^\d+$' -and [int]$idx -ge 1 -and [int]$idx -le $profiles.Count)) {
+        Write-Host ""
+        Write-Host "  [-] Invalid selection." -ForegroundColor $ColorSchema.Error
+        exit 1
+    }
+
+    $selectedProfile  = $profiles[[int]$idx - 1]
+    $profileRoot      = $selectedProfile.Path
+    $profileUsername  = $selectedProfile.Username
+
+    Write-Host ""
+    Write-Host "  [+] Profile: $profileRoot" -ForegroundColor $ColorSchema.Success
 }
-
-$selectedProfile  = $profiles[[int]$idx - 1]
-$profileRoot      = $selectedProfile.Path
-$profileUsername  = $selectedProfile.Username
-
-Write-Host ""
-Write-Host "  [+] Profile: $profileRoot" -ForegroundColor $ColorSchema.Success
 
 $oneDrivePath = Get-OneDriveBusinessPath -ProfileRoot $profileRoot
 if ($oneDrivePath) {
@@ -273,23 +300,28 @@ Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host "  SELECT ITEMS TO ARCHIVE" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
-Write-Host "  Enter numbers separated by commas, or A for all." -ForegroundColor $ColorSchema.Info
-Write-Host ""
-Write-Host "  [1]  Desktop" -ForegroundColor $ColorSchema.Info
-Write-Host "  [2]  Documents" -ForegroundColor $ColorSchema.Info
-Write-Host "  [3]  Downloads" -ForegroundColor $ColorSchema.Info
-Write-Host "  [4]  Pictures" -ForegroundColor $ColorSchema.Info
-Write-Host "  [5]  Videos" -ForegroundColor $ColorSchema.Info
-Write-Host "  [6]  Music" -ForegroundColor $ColorSchema.Info
-Write-Host "  [7]  Outlook Profiles & Data Files" -ForegroundColor $ColorSchema.Info
-Write-Host "  [8]  Email Signatures" -ForegroundColor $ColorSchema.Info
-Write-Host "  [9]  Chrome Bookmarks" -ForegroundColor $ColorSchema.Info
-Write-Host "  [10] Edge Bookmarks" -ForegroundColor $ColorSchema.Info
-Write-Host "  [11] Firefox Profiles" -ForegroundColor $ColorSchema.Info
-Write-Host "  [12] OneDrive for Business" -ForegroundColor $ColorSchema.Info
-Write-Host ""
-Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-$rawInput = (Read-Host).Trim().ToUpper()
+
+if ($Unattended) {
+    $rawInput = $Items.ToUpper()
+} else {
+    Write-Host "  Enter numbers separated by commas, or A for all." -ForegroundColor $ColorSchema.Info
+    Write-Host ""
+    Write-Host "  [1]  Desktop" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [2]  Documents" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [3]  Downloads" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [4]  Pictures" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [5]  Videos" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [6]  Music" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [7]  Outlook Profiles & Data Files" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [8]  Email Signatures" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [9]  Chrome Bookmarks" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [10] Edge Bookmarks" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [11] Firefox Profiles" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [12] OneDrive for Business" -ForegroundColor $ColorSchema.Info
+    Write-Host ""
+    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+    $rawInput = (Read-Host).Trim().ToUpper()
+}
 
 $selectedItems = @()
 
@@ -317,49 +349,69 @@ Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host "  BACKUP DESTINATION" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
-Write-Host "  [1] Script directory  ($ScriptPath)" -ForegroundColor $ColorSchema.Info
-Write-Host "  [2] Enter a custom path  (local or UNC share)" -ForegroundColor $ColorSchema.Info
-Write-Host ""
-Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-$destChoice = (Read-Host).Trim()
 
 $DestRoot = ""
 
-if ($destChoice -eq "1") {
-    $DestRoot = $ScriptPath
-}
-elseif ($destChoice -eq "2") {
+if ($Unattended) {
+    if ([string]::IsNullOrWhiteSpace($Destination)) {
+        $DestRoot = $ScriptPath
+        Write-Host "  [*] No -Destination provided — using script directory." -ForegroundColor $ColorSchema.Info
+    } else {
+        $DestRoot = $Destination.TrimEnd('\')
+        if (-not (Test-Path $DestRoot)) {
+            try {
+                $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop
+                Write-Host "  [+] Destination created: $DestRoot" -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Could not create destination: $_" -ForegroundColor $ColorSchema.Error
+                exit 1
+            }
+        }
+    }
+    Write-Host "  [+] Destination: $DestRoot" -ForegroundColor $ColorSchema.Success
+} else {
+    Write-Host "  [1] Script directory  ($ScriptPath)" -ForegroundColor $ColorSchema.Info
+    Write-Host "  [2] Enter a custom path  (local or UNC share)" -ForegroundColor $ColorSchema.Info
     Write-Host ""
-    Write-Host -NoNewline "  Enter destination path: " -ForegroundColor $ColorSchema.Header
-    $DestRoot = (Read-Host).Trim().TrimEnd('\')
+    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+    $destChoice = (Read-Host).Trim()
 
-    if ([string]::IsNullOrWhiteSpace($DestRoot)) {
+    if ($destChoice -eq "1") {
+        $DestRoot = $ScriptPath
+    }
+    elseif ($destChoice -eq "2") {
         Write-Host ""
-        Write-Host "  [-] No path entered." -ForegroundColor $ColorSchema.Error
+        Write-Host -NoNewline "  Enter destination path: " -ForegroundColor $ColorSchema.Header
+        $DestRoot = (Read-Host).Trim().TrimEnd('\')
+
+        if ([string]::IsNullOrWhiteSpace($DestRoot)) {
+            Write-Host ""
+            Write-Host "  [-] No path entered." -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+
+        if (-not (Test-Path $DestRoot)) {
+            Write-Host ""
+            Write-Host "  [*] Destination not found — attempting to create it..." -ForegroundColor $ColorSchema.Progress
+            try {
+                $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop
+                Write-Host "  [+] Destination created." -ForegroundColor $ColorSchema.Success
+            }
+            catch {
+                Write-Host "  [-] Could not create destination: $_" -ForegroundColor $ColorSchema.Error
+                exit 1
+            }
+        }
+    }
+    else {
+        Write-Host ""
+        Write-Host "  [-] Invalid selection." -ForegroundColor $ColorSchema.Error
         exit 1
     }
 
-    if (-not (Test-Path $DestRoot)) {
-        Write-Host ""
-        Write-Host "  [*] Destination not found — attempting to create it..." -ForegroundColor $ColorSchema.Progress
-        try {
-            $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop
-            Write-Host "  [+] Destination created." -ForegroundColor $ColorSchema.Success
-        }
-        catch {
-            Write-Host "  [-] Could not create destination: $_" -ForegroundColor $ColorSchema.Error
-            exit 1
-        }
-    }
-}
-else {
     Write-Host ""
-    Write-Host "  [-] Invalid selection." -ForegroundColor $ColorSchema.Error
-    exit 1
+    Write-Host "  [+] Destination: $DestRoot" -ForegroundColor $ColorSchema.Success
 }
-
-Write-Host ""
-Write-Host "  [+] Destination: $DestRoot" -ForegroundColor $ColorSchema.Success
 
 # ── STAGE FILES ───────────────────────────────────────────────────────────────
 
@@ -511,4 +563,4 @@ Write-Host "  A.R.C.H.I.V.E. COMPLETE" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
-Read-Host "  Press Enter to exit"
+if (-not $Unattended) { Read-Host "  Press Enter to exit" }

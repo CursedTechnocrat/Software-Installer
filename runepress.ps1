@@ -10,7 +10,8 @@
     port configuration. Generates a timestamped CSV installation log.
 
 .USAGE
-    PS C:\> .\runepress.ps1      # Must be run as Administrator
+    PS C:\> .\runepress.ps1                    # Must be run as Administrator
+    PS C:\> .\runepress.ps1 -Unattended        # Silent mode — auto-selects first INF, skips printer config
 
 .NOTES
     Version : 3.0
@@ -33,6 +34,8 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param([switch]$Unattended)
 
 # ===========================
 # ADMIN PRIVILEGE CHECK
@@ -77,7 +80,7 @@ $InstallationLog = @()
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Show-Banner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
   ██████╗ ██╗   ██╗███╗   ██╗███████╗██████╗ ██████╗ ███████╗███████╗
@@ -219,6 +222,10 @@ function Install-ZipDriver {
 
     # Select INF - prompt if multiple found
     if ($InfFiles.Count -eq 1) {
+        $SelectedInf = $InfFiles[0]
+    }
+    elseif ($Unattended) {
+        Write-Host "    [*] Multiple INFs found — auto-selecting first: $($InfFiles[0].Name)" -ForegroundColor Gray
         $SelectedInf = $InfFiles[0]
     }
     else {
@@ -624,6 +631,17 @@ function Show-InstallationSummary {
 function Invoke-CleanupPrompt {
     if (-not (Test-Path $ExtractRoot)) { return }
 
+    if ($Unattended) {
+        try {
+            Remove-Item $ExtractRoot -Recurse -Force -ErrorAction Stop
+            Write-Host "OK: Extracted files removed (unattended cleanup)." -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Could not remove extracted files: $($_.Exception.Message)" -ForegroundColor Red
+        }
+        return
+    }
+
     Write-Host ""
     $response = Read-Host "Delete extracted driver files in '$ExtractRoot'? (Y/N)"
     if ($response.ToUpper() -ne "Y") { return }
@@ -641,9 +659,11 @@ function Invoke-CleanupPrompt {
 # MAIN
 # ===========================
 
-Show-Banner
-Show-DriverPrepInstructions
-Wait-ForDriverFile
+if (-not $Unattended) { Show-Banner }
+if (-not $Unattended) {
+    Show-DriverPrepInstructions
+    Wait-ForDriverFile
+}
 
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host " Step 2: Driver Installation" -ForegroundColor Cyan
@@ -674,7 +694,7 @@ foreach ($file in $DriverFiles) {
     }
 }
 
-Add-NetworkPrinter
+if (-not $Unattended) { Add-NetworkPrinter }
 
 Show-InstallationSummary
 

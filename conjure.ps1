@@ -10,7 +10,8 @@
     installation status per package.
 
 .USAGE
-    PS C:\> .\conjure.ps1      # Must be run as Administrator
+    PS C:\> .\conjure.ps1                 # Interactive mode — Must be run as Administrator
+    PS C:\> .\conjure.ps1 -Unattended     # Unattended mode — Required packages only, no prompts
 
 .NOTES
     Version : 1.0
@@ -33,6 +34,10 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param(
+    [switch]$Unattended
+)
 
 # ===========================
 # CONFIGURATION
@@ -101,7 +106,7 @@ $Colors = @{
 # ===========================
 
 function Show-Banner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
    ██████╗  ██████╗ ███╗   ██╗     ██╗██╗   ██╗██████╗ ███████╗
@@ -432,23 +437,23 @@ function Show-InstallationSummary {
 # MAIN EXECUTION
 # ===========================
 
-Show-Banner
+if (-not $Unattended) { Show-Banner }
 
 # Select package manager
-Select-PackageManager
+if (-not $Unattended) { Select-PackageManager }
 
 # Check that the selected package manager is available
 if ($PackageManager -eq "chocolatey") {
     if (-not (Test-ChocolateyAvailable)) {
         Write-Host "[ERROR] Cannot proceed without Chocolatey" -ForegroundColor $Colors.Error
-        Read-Host "Press Enter to exit"
+        if (-not $Unattended) { Read-Host "Press Enter to exit" }
         exit 1
     }
 }
 else {
     if (-not (Test-WingetAvailable)) {
         Write-Host "[ERROR] Cannot proceed without Winget" -ForegroundColor $Colors.Error
-        Read-Host "Press Enter to exit"
+        if (-not $Unattended) { Read-Host "Press Enter to exit" }
         exit 1
     }
 }
@@ -457,14 +462,19 @@ else {
 $ActiveRequired = if ($PackageManager -eq "chocolatey") { $RequiredSoftwareChoco } else { $RequiredSoftware }
 $ActiveOptional = if ($PackageManager -eq "chocolatey") { $OptionalSoftwareChoco } else { $OptionalSoftware }
 
-Write-Host ""
-Write-Host "Choose operation:" -ForegroundColor $Colors.Header
-Write-Host "  [1] Install software" -ForegroundColor $Colors.Info
-Write-Host "  [2] Upgrade all software" -ForegroundColor $Colors.Info
-Write-Host "  [3] Install and then Upgrade" -ForegroundColor $Colors.Info
-Write-Host ""
-
-$operation = Read-Host "Enter your choice (1/2/3)"
+if ($Unattended) {
+    Write-Host "[*] Unattended mode: installing required packages only" -ForegroundColor $Colors.Info
+    $operation = "1"
+}
+else {
+    Write-Host ""
+    Write-Host "Choose operation:" -ForegroundColor $Colors.Header
+    Write-Host "  [1] Install software" -ForegroundColor $Colors.Info
+    Write-Host "  [2] Upgrade all software" -ForegroundColor $Colors.Info
+    Write-Host "  [3] Install and then Upgrade" -ForegroundColor $Colors.Info
+    Write-Host ""
+    $operation = Read-Host "Enter your choice (1/2/3)"
+}
 
 switch ($operation) {
     "1" {
@@ -473,11 +483,13 @@ switch ($operation) {
         # Install required software
         Install-Software -SoftwareList $ActiveRequired -Type "Required"
 
-        # Ask for optional software
-        $optionalList = Select-OptionalSoftware -SoftwareList $ActiveOptional
+        # Ask for optional software (interactive mode only)
+        if (-not $Unattended) {
+            $optionalList = Select-OptionalSoftware -SoftwareList $ActiveOptional
 
-        if ($optionalList.Count -gt 0) {
-            Install-Software -SoftwareList $optionalList -Type "Optional"
+            if ($optionalList.Count -gt 0) {
+                Install-Software -SoftwareList $optionalList -Type "Optional"
+            }
         }
     }
     "2" {
@@ -490,11 +502,13 @@ switch ($operation) {
         # Install required software
         Install-Software -SoftwareList $ActiveRequired -Type "Required"
 
-        # Ask for optional software
-        $optionalList = Select-OptionalSoftware -SoftwareList $ActiveOptional
+        # Ask for optional software (interactive mode only)
+        if (-not $Unattended) {
+            $optionalList = Select-OptionalSoftware -SoftwareList $ActiveOptional
 
-        if ($optionalList.Count -gt 0) {
-            Install-Software -SoftwareList $optionalList -Type "Optional"
+            if ($optionalList.Count -gt 0) {
+                Install-Software -SoftwareList $optionalList -Type "Optional"
+            }
         }
 
         # Then upgrade
@@ -502,7 +516,7 @@ switch ($operation) {
     }
     default {
         Write-Host "[ERROR] Invalid choice. Exiting." -ForegroundColor $Colors.Error
-        Read-Host "Press Enter to exit"
+        if (-not $Unattended) { Read-Host "Press Enter to exit" }
         exit 1
     }
 }
@@ -512,4 +526,4 @@ Show-InstallationSummary
 
 Write-Host "[OK] C.O.N.J.U.R.E. Script completed!" -ForegroundColor $Colors.Success
 Write-Host ""
-Read-Host "Press Enter to exit"
+if (-not $Unattended) { Read-Host "Press Enter to exit" }

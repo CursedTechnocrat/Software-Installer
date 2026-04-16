@@ -10,7 +10,8 @@
     dark-themed HTML report with color-coded indicators to the Desktop.
 
 .USAGE
-    PS C:\> .\oracle.ps1      # Must be run as Administrator
+    PS C:\> .\oracle.ps1                    # Must be run as Administrator
+    PS C:\> .\oracle.ps1 -Unattended        # Silent mode — no prompts, no banner
 
 .NOTES
     Version : 1.0
@@ -33,6 +34,8 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param([switch]$Unattended)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -104,7 +107,7 @@ $ColorSchema = @{
 # DISPLAY BANNER
 # ─────────────────────────────────────────────────────────────────────────────
 
-Show-OracleBanner
+if (-not $Unattended) { Show-OracleBanner }
 
 $reportTimestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $reportFilename  = "ORACLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
@@ -129,7 +132,7 @@ $reportData = [ordered]@{}
 # STEP 1: HARDWARE
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[1/7] Collecting Hardware Info..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[1/8] Collecting Hardware Info..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $cs        = Get-CimInstance -ClassName Win32_ComputerSystem
@@ -189,7 +192,7 @@ Write-Host ""
 # STEP 2: OPERATING SYSTEM
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[2/7] Collecting OS Info..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[2/8] Collecting OS Info..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $os          = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -238,7 +241,7 @@ Write-Host ""
 # STEP 3: NETWORK CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[3/7] Collecting Network Configuration..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[3/8] Collecting Network Configuration..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $adapters = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -Filter "IPEnabled=True"
@@ -278,7 +281,7 @@ Write-Host ""
 # STEP 4: SYSTEM HEALTH & UPTIME
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[4/7] Collecting System Health..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[4/8] Collecting System Health..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $os        = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -322,10 +325,85 @@ catch {
 Write-Host ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 5: PENDING WINDOWS UPDATES
+# STEP 5: STORAGE & RAID HEALTH
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[5/7] Scanning for Pending Updates..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[5/8] Collecting Storage & RAID Health..." -ForegroundColor $ColorSchema.Progress
+
+$physicalDiskSummary = @()
+$virtualDiskSummary  = @()
+
+try {
+    $physicalDisks = Get-PhysicalDisk -ErrorAction Stop
+
+    foreach ($pd in $physicalDisks) {
+        $sizeGB = if ($pd.Size -gt 0) { [math]::Round($pd.Size / 1GB, 1) } else { 0 }
+        $healthColor = switch ($pd.HealthStatus) {
+            'Healthy' { $ColorSchema.Success }
+            'Warning' { $ColorSchema.Warning }
+            default   { $ColorSchema.Error   }
+        }
+        Write-Host "    [$($pd.DeviceId)] $($pd.FriendlyName) | $($pd.MediaType) | $sizeGB GB | Health: $($pd.HealthStatus) | Status: $($pd.OperationalStatus)" -ForegroundColor $healthColor
+
+        $physicalDiskSummary += [PSCustomObject]@{
+            ID                = $pd.DeviceId
+            Name              = $pd.FriendlyName
+            MediaType         = $pd.MediaType
+            BusType           = $pd.BusType
+            SizeGB            = $sizeGB
+            HealthStatus      = $pd.HealthStatus
+            OperationalStatus = $pd.OperationalStatus
+        }
+    }
+
+    # Storage Spaces virtual disks (software RAID)
+    $virtualDisks = Get-VirtualDisk -ErrorAction SilentlyContinue
+    if ($virtualDisks) {
+        Write-Host "    Storage Spaces (virtual disks):" -ForegroundColor $ColorSchema.Info
+        foreach ($vd in $virtualDisks) {
+            $vHealthColor = switch ($vd.HealthStatus) {
+                'Healthy' { $ColorSchema.Success }
+                'Warning' { $ColorSchema.Warning }
+                default   { $ColorSchema.Error   }
+            }
+            $vSizeGB = if ($vd.Size -gt 0) { [math]::Round($vd.Size / 1GB, 1) } else { 0 }
+            Write-Host "      VDisk: $($vd.FriendlyName) | $($vd.ResiliencySettingName) | $vSizeGB GB | Health: $($vd.HealthStatus) / Op: $($vd.OperationalStatus)" -ForegroundColor $vHealthColor
+
+            $virtualDiskSummary += [PSCustomObject]@{
+                Name              = $vd.FriendlyName
+                ResiliencyType    = $vd.ResiliencySettingName
+                SizeGB            = $vSizeGB
+                HealthStatus      = $vd.HealthStatus
+                OperationalStatus = $vd.OperationalStatus
+            }
+        }
+    }
+    else {
+        Write-Host "    No Storage Spaces virtual disks detected" -ForegroundColor $ColorSchema.Info
+    }
+
+    $reportData['Storage'] = [PSCustomObject]@{
+        PhysicalDisks = $physicalDiskSummary
+        VirtualDisks  = $virtualDiskSummary
+    }
+
+    Write-Host "[+] Storage health collected" -ForegroundColor $ColorSchema.Success
+}
+catch {
+    Write-Host "[-] Error collecting storage health: $_" -ForegroundColor $ColorSchema.Error
+    $reportData['Storage'] = [PSCustomObject]@{
+        PhysicalDisks = @()
+        VirtualDisks  = @()
+    }
+}
+
+Write-Host ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 6: PENDING WINDOWS UPDATES
+# ─────────────────────────────────────────────────────────────────────────────
+
+Write-Host "[6/8] Scanning for Pending Updates..." -ForegroundColor $ColorSchema.Progress
 Write-Host "    This may take a moment..." -ForegroundColor $ColorSchema.Info
 
 $pendingUpdates = @()
@@ -363,7 +441,7 @@ Write-Host ""
 # STEP 6: INSTALLED SOFTWARE
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[6/7] Collecting Installed Software..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[7/8] Collecting Installed Software..." -ForegroundColor $ColorSchema.Progress
 
 $installedApps = @()
 try {
@@ -402,7 +480,7 @@ Write-Host ""
 # STEP 7: RECENT EVENT LOG ERRORS
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[7/7] Scanning Event Logs (last 24 hours)..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[8/8] Scanning Event Logs (last 24 hours)..." -ForegroundColor $ColorSchema.Progress
 
 $eventSummary = @()
 try {
@@ -474,6 +552,34 @@ function ConvertTo-HtmlTable {
     }
     $html += "</tbody></table>"
     return $html
+}
+
+# Storage health badge
+$storageUnhealthy = ($reportData['Storage'].PhysicalDisks | Where-Object { $_.HealthStatus -ne 'Healthy' }).Count
+$storageBadge = if ($storageUnhealthy -eq 0) {
+    "<span class='badge badge-ok'>Healthy</span>"
+} else {
+    "<span class='badge badge-err'>$storageUnhealthy degraded</span>"
+}
+
+# Physical disk rows
+$physDiskRows = ""
+foreach ($pd in $reportData['Storage'].PhysicalDisks) {
+    $hColor = switch ($pd.HealthStatus) {
+        'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' }
+    }
+    $physDiskRows += "<tr><td>$($pd.ID)</td><td>$($pd.Name)</td><td>$($pd.MediaType)</td><td>$($pd.BusType)</td><td>$($pd.SizeGB) GB</td>"
+    $physDiskRows += "<td style='color:$hColor;font-weight:600;'>$($pd.HealthStatus)</td><td>$($pd.OperationalStatus)</td></tr>"
+}
+
+# Virtual disk rows
+$virtDiskRows = ""
+foreach ($vd in $reportData['Storage'].VirtualDisks) {
+    $hColor = switch ($vd.HealthStatus) {
+        'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' }
+    }
+    $virtDiskRows += "<tr><td>$($vd.Name)</td><td>$($vd.ResiliencyType)</td><td>$($vd.SizeGB) GB</td>"
+    $virtDiskRows += "<td style='color:$hColor;font-weight:600;'>$($vd.HealthStatus)</td><td>$($vd.OperationalStatus)</td></tr>"
 }
 
 # Disk rows for hardware section
@@ -586,6 +692,7 @@ $htmlReport = @"
     <span><strong>Machine:</strong> $env:COMPUTERNAME</span>
     <span><strong>Run As:</strong> $env:USERDOMAIN\$env:USERNAME</span>
     <span><strong>Generated:</strong> $reportTimestamp</span>
+    <span><strong>Storage:</strong> $storageBadge</span>
     <span><strong>Updates:</strong> $updateBadge</span>
     <span><strong>Events (24h):</strong> $eventBadge</span>
   </div>
@@ -649,6 +756,24 @@ $htmlReport = @"
     </div>
   </section>
 
+  <!-- STORAGE & RAID HEALTH -->
+  <section>
+    <h2>Storage &amp; RAID Health $storageBadge</h2>
+    <div class="content">
+      <h3 style="color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Physical Disks</h3>
+      $(if ($physDiskRows) {
+        "<table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Bus</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$physDiskRows</tbody></table>"
+      } else {
+        "<p class='empty'>No physical disk data available.</p>"
+      })
+      $(if ($virtDiskRows) {
+        "<h3 style='color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;'>Storage Spaces (Virtual Disks)</h3><table><thead><tr><th>Name</th><th>Resiliency</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$virtDiskRows</tbody></table>"
+      } else {
+        "<p style='color:#666;font-size:0.85em;margin-top:12px;'>No Storage Spaces virtual disks detected.</p>"
+      })
+    </div>
+  </section>
+
   <!-- PENDING UPDATES -->
   <section>
     <h2>Pending Windows Updates $updateBadge</h2>
@@ -699,6 +824,13 @@ Write-Host "  OS         : $($reportData['OS'].Caption)" -ForegroundColor $Color
 Write-Host "  RAM        : $($reportData['Hardware'].RAMGB) GB" -ForegroundColor $ColorSchema.Info
 Write-Host "  Uptime     : $($reportData['Health'].Uptime)" -ForegroundColor $ColorSchema.Info
 
+$physDiskCount = $reportData['Storage'].PhysicalDisks.Count
+if ($storageUnhealthy -gt 0) {
+    Write-Host "  Storage    : $storageUnhealthy degraded disk(s) detected!" -ForegroundColor $ColorSchema.Error
+} else {
+    Write-Host "  Storage    : $physDiskCount disk(s) — all healthy" -ForegroundColor $ColorSchema.Success
+}
+
 if ($updateCount -gt 0) {
     Write-Host "  Updates    : $updateCount pending" -ForegroundColor $ColorSchema.Warning
 }
@@ -717,14 +849,16 @@ Write-Host ""
 Write-Host "  Report     : $reportPath" -ForegroundColor $ColorSchema.Accent
 Write-Host ""
 
-$openReport = Read-Host "Open the HTML report now? (Y/N)"
-if ($openReport -eq 'Y' -or $openReport -eq 'y') {
-    try {
-        Start-Process $reportPath
-        Write-Host "[+] Opening report in default browser..." -ForegroundColor $ColorSchema.Success
-    }
-    catch {
-        Write-Host "[-] Could not open report automatically. Navigate to: $reportPath" -ForegroundColor $ColorSchema.Warning
+if (-not $Unattended) {
+    $openReport = Read-Host "Open the HTML report now? (Y/N)"
+    if ($openReport -eq 'Y' -or $openReport -eq 'y') {
+        try {
+            Start-Process $reportPath
+            Write-Host "[+] Opening report in default browser..." -ForegroundColor $ColorSchema.Success
+        }
+        catch {
+            Write-Host "[-] Could not open report automatically. Navigate to: $reportPath" -ForegroundColor $ColorSchema.Warning
+        }
     }
 }
 

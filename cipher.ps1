@@ -10,7 +10,11 @@
     BitLocker protection.
 
 .USAGE
-    PS C:\> .\cipher.ps1      # Must be run as Administrator
+    PS C:\> .\cipher.ps1                                           # Must be run as Administrator
+    PS C:\> .\cipher.ps1 -Unattended -Action Status                # Show drive status and exit
+    PS C:\> .\cipher.ps1 -Unattended -Action Disable -Drive C      # Disable BitLocker on C:
+    PS C:\> .\cipher.ps1 -Unattended -Action Suspend -Drive C      # Suspend BitLocker on C:
+    PS C:\> .\cipher.ps1 -Unattended -Action BackupAD -Drive C     # Backup recovery key to AD
 
 .NOTES
     Version : 1.0
@@ -37,6 +41,13 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param(
+    [switch]$Unattended,
+    [ValidateSet('Status','Enable','Disable','Suspend','Resume','BackupAD','BackupEntraID')]
+    [string]$Action = "Status",
+    [string]$Drive  = "C"
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -68,7 +79,7 @@ $ColorSchema = @{
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Show-CipherBanner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
    ██████╗██╗██████╗ ██╗  ██╗███████╗██████╗
@@ -389,54 +400,114 @@ function Resume-DriveProtection {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN MENU LOOP
+# MAIN — UNATTENDED OR INTERACTIVE
 # ─────────────────────────────────────────────────────────────────────────────
 
-$choice = ""
-
-do {
-    Show-CipherBanner
+if ($Unattended) {
     Show-DriveStatus
 
-    Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
-    Write-Host "  ACTIONS" -ForegroundColor $ColorSchema.Header
-    Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
-    Write-Host ""
-    Write-Host "  [1] Enable BitLocker on a drive" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [2] Disable BitLocker on a drive" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [3] Backup recovery key  (AD / Entra ID)" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [4] Show recovery key" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [5] Suspend BitLocker protection" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [6] Resume BitLocker protection" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [R] Refresh drive status" -ForegroundColor $ColorSchema.Info
-    Write-Host "  [Q] Quit" -ForegroundColor $ColorSchema.Info
-    Write-Host ""
-    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-    $choice = (Read-Host).Trim().ToUpper()
+    $mountPoint = "$($Drive.ToUpper().TrimEnd(':')):"
 
-    switch ($choice) {
-        "1" { Enable-DriveEncryption }
-        "2" { Disable-DriveEncryption }
-        "3" { Backup-RecoveryKey }
-        "4" { Show-RecoveryKey }
-        "5" { Suspend-DriveProtection }
-        "6" { Resume-DriveProtection }
-        "R" { }
-        "Q" {
-            Write-Host ""
-            Write-Host "  Closing C.I.P.H.E.R." -ForegroundColor $ColorSchema.Header
-            Write-Host ""
+    switch ($Action) {
+        "Status"      { Write-Host "[OK] Status displayed above." -ForegroundColor $ColorSchema.Success }
+        "Enable"      {
+            Write-Host "  [*] Unattended enable not supported — requires key protector selection and key confirmation." -ForegroundColor $ColorSchema.Warning
+            Write-Host "  [!!] Run cipher.ps1 interactively to enable BitLocker." -ForegroundColor $ColorSchema.Warning
         }
-        default {
-            Write-Host ""
-            Write-Host "  [!!] Invalid selection. Enter 1-6, R, or Q." -ForegroundColor $ColorSchema.Warning
-            Start-Sleep -Seconds 1
+        "Disable"     {
+            try {
+                Disable-BitLocker -MountPoint $mountPoint -ErrorAction Stop | Out-Null
+                Write-Host "  [+] Decryption started on $mountPoint." -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Failed: $_" -ForegroundColor $ColorSchema.Error
+            }
+        }
+        "Suspend"     {
+            try {
+                Suspend-BitLocker -MountPoint $mountPoint -RebootCount 1 -ErrorAction Stop | Out-Null
+                Write-Host "  [+] BitLocker suspended on $mountPoint — resumes after next reboot." -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Failed: $_" -ForegroundColor $ColorSchema.Error
+            }
+        }
+        "Resume"      {
+            try {
+                Resume-BitLocker -MountPoint $mountPoint -ErrorAction Stop | Out-Null
+                Write-Host "  [+] BitLocker resumed on $mountPoint." -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Failed: $_" -ForegroundColor $ColorSchema.Error
+            }
+        }
+        "BackupAD"    {
+            try {
+                $vol = Get-BitLockerVolume -MountPoint $mountPoint -ErrorAction Stop
+                $kp  = $vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
+                if (-not $kp) { Write-Host "  [-] No recovery password found." -ForegroundColor $ColorSchema.Error; break }
+                Backup-BitLockerKeyProtector -MountPoint $mountPoint -KeyProtectorId $kp.KeyProtectorId -ErrorAction Stop | Out-Null
+                Write-Host "  [+] Recovery key backed up to Active Directory." -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Backup failed: $_" -ForegroundColor $ColorSchema.Error
+            }
+        }
+        "BackupEntraID" {
+            try {
+                $vol = Get-BitLockerVolume -MountPoint $mountPoint -ErrorAction Stop
+                $kp  = $vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
+                if (-not $kp) { Write-Host "  [-] No recovery password found." -ForegroundColor $ColorSchema.Error; break }
+                BackupToAAD-BitLockerKeyProtector -MountPoint $mountPoint -KeyProtectorId $kp.KeyProtectorId -ErrorAction Stop | Out-Null
+                Write-Host "  [+] Recovery key backed up to Entra ID." -ForegroundColor $ColorSchema.Success
+            } catch {
+                Write-Host "  [-] Backup failed: $_" -ForegroundColor $ColorSchema.Error
+            }
         }
     }
+} else {
+    $choice = ""
 
-    if ($choice -notin @("Q", "R")) {
-        Write-Host -NoNewline "  Press Enter to return to menu..." -ForegroundColor $ColorSchema.Info
-        Read-Host | Out-Null
-    }
+    do {
+        Show-CipherBanner
+        Show-DriveStatus
 
-} while ($choice -ne "Q")
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
+        Write-Host "  ACTIONS" -ForegroundColor $ColorSchema.Header
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
+        Write-Host ""
+        Write-Host "  [1] Enable BitLocker on a drive" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [2] Disable BitLocker on a drive" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [3] Backup recovery key  (AD / Entra ID)" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [4] Show recovery key" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [5] Suspend BitLocker protection" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [6] Resume BitLocker protection" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [R] Refresh drive status" -ForegroundColor $ColorSchema.Info
+        Write-Host "  [Q] Quit" -ForegroundColor $ColorSchema.Info
+        Write-Host ""
+        Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+        $choice = (Read-Host).Trim().ToUpper()
+
+        switch ($choice) {
+            "1" { Enable-DriveEncryption }
+            "2" { Disable-DriveEncryption }
+            "3" { Backup-RecoveryKey }
+            "4" { Show-RecoveryKey }
+            "5" { Suspend-DriveProtection }
+            "6" { Resume-DriveProtection }
+            "R" { }
+            "Q" {
+                Write-Host ""
+                Write-Host "  Closing C.I.P.H.E.R." -ForegroundColor $ColorSchema.Header
+                Write-Host ""
+            }
+            default {
+                Write-Host ""
+                Write-Host "  [!!] Invalid selection. Enter 1-6, R, or Q." -ForegroundColor $ColorSchema.Warning
+                Start-Sleep -Seconds 1
+            }
+        }
+
+        if ($choice -notin @("Q", "R")) {
+            Write-Host -NoNewline "  Press Enter to return to menu..." -ForegroundColor $ColorSchema.Info
+            Read-Host | Out-Null
+        }
+
+    } while ($choice -ne "Q")
+}

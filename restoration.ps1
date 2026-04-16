@@ -10,7 +10,9 @@
     on exit. PSWindowsUpdate module is auto-installed if missing.
 
 .USAGE
-    PS C:\> .\restoration.ps1      # Must be run as Administrator
+    PS C:\> .\restoration.ps1                          # Must be run as Administrator
+    PS C:\> .\restoration.ps1 -Unattended              # Silent mode — skip prompts and countdown
+    PS C:\> .\restoration.ps1 -Unattended -AutoReboot  # Silent mode — reboot automatically if needed
 
 .NOTES
     Version : 1.1
@@ -33,6 +35,11 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param(
+    [switch]$Unattended,
+    [switch]$AutoReboot
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -268,44 +275,85 @@ else {
 # ─────────────────────────────────────────────────────────────────────────────
 
 if ($rebootRequired) {
-    Write-Host "The computer is ready to be rebooted." -ForegroundColor $ColorSchema.Warning
+    Write-Host "  *** REBOOT REQUIRED ***" -ForegroundColor $ColorSchema.Warning
     Write-Host ""
 
-    $rebootPrompt = Read-Host "Is it safe to reboot this computer now? (Y/N)"
-
-    if ($rebootPrompt -eq 'Y' -or $rebootPrompt -eq 'y') {
-        Write-Host ""
-        Write-Host "Initiating reboot in 30 seconds. Press Escape to cancel..." -ForegroundColor $ColorSchema.Warning
-        Write-Host ""
-        Write-Host "   30 [============================================]" -ForegroundColor $ColorSchema.Accent
-
-        # 30-second countdown with Escape key detection
-        $cancelled = $false
-        for ($i = 30; $i -gt 0; $i--) {
-            $progress = [math]::Floor((30 - $i) / 30 * 44)
-            $bar = "=" * $progress
-            $remaining = " " * (44 - $progress)
-            Write-Host -NoNewline "`r   $i  [$bar$remaining]" -ForegroundColor $ColorSchema.Accent
-
-            # Poll for Escape key in 100ms intervals
-            for ($tick = 0; $tick -lt 10; $tick++) {
-                if ([Console]::KeyAvailable) {
-                    $key = [Console]::ReadKey($true)
-                    if ($key.Key -eq [ConsoleKey]::Escape) {
-                        $cancelled = $true
-                        break
-                    }
-                }
-                Start-Sleep -Milliseconds 100
-            }
-            if ($cancelled) { break }
+    if ($Unattended) {
+        if ($AutoReboot) {
+            Write-Host "  [*] Unattended mode: AutoReboot enabled — rebooting in 10 seconds..." -ForegroundColor $ColorSchema.Warning
+            Write-Host ""
+            Start-Sleep -Seconds 10
+            Write-Host "Restoring monitor timeout before reboot..." -ForegroundColor $ColorSchema.Info
+            powercfg /change monitor-timeout-ac $script:originalMonitorAC
+            powercfg /change monitor-timeout-dc $script:originalMonitorDC
+            if ($transcriptPath) { try { Stop-Transcript } catch {} }
+            Restart-Computer -Force
+        } else {
+            Write-Host "  [*] Unattended mode: reboot required but -AutoReboot not set. Skipping." -ForegroundColor $ColorSchema.Warning
+            Write-Host "  [!!] Reboot this machine when ready: Restart-Computer" -ForegroundColor $ColorSchema.Warning
+            Write-Host ""
         }
-
+    } else {
+        Write-Host "The computer is ready to be rebooted." -ForegroundColor $ColorSchema.Warning
         Write-Host ""
-        Write-Host ""
 
-        if ($cancelled) {
-            Write-Host "  Reboot cancelled." -ForegroundColor $ColorSchema.Warning
+        $rebootPrompt = Read-Host "Is it safe to reboot this computer now? (Y/N)"
+
+        if ($rebootPrompt -eq 'Y' -or $rebootPrompt -eq 'y') {
+            Write-Host ""
+            Write-Host "Initiating reboot in 30 seconds. Press Escape to cancel..." -ForegroundColor $ColorSchema.Warning
+            Write-Host ""
+            Write-Host "   30 [============================================]" -ForegroundColor $ColorSchema.Accent
+
+            # 30-second countdown with Escape key detection
+            $cancelled = $false
+            for ($i = 30; $i -gt 0; $i--) {
+                $progress = [math]::Floor((30 - $i) / 30 * 44)
+                $bar = "=" * $progress
+                $remaining = " " * (44 - $progress)
+                Write-Host -NoNewline "`r   $i  [$bar$remaining]" -ForegroundColor $ColorSchema.Accent
+
+                # Poll for Escape key in 100ms intervals
+                for ($tick = 0; $tick -lt 10; $tick++) {
+                    if ([Console]::KeyAvailable) {
+                        $key = [Console]::ReadKey($true)
+                        if ($key.Key -eq [ConsoleKey]::Escape) {
+                            $cancelled = $true
+                            break
+                        }
+                    }
+                    Start-Sleep -Milliseconds 100
+                }
+                if ($cancelled) { break }
+            }
+
+            Write-Host ""
+            Write-Host ""
+
+            if ($cancelled) {
+                Write-Host "  Reboot cancelled." -ForegroundColor $ColorSchema.Warning
+                Write-Host ""
+                Write-Host "  !!! REBOOT SKIPPED !!!" -ForegroundColor $ColorSchema.Error
+                Write-Host ""
+                Write-Host "  IMPORTANT: You must reboot your computer to complete" -ForegroundColor $ColorSchema.Error
+                Write-Host "  the updates!" -ForegroundColor $ColorSchema.Error
+                Write-Host ""
+                Write-Host "  When you are ready to reboot, use one of these methods:" -ForegroundColor $ColorSchema.Warning
+                Write-Host "  | Command: Restart-Computer" -ForegroundColor $ColorSchema.Info
+                Write-Host "  | Or manually restart through Settings > System > Power" -ForegroundColor $ColorSchema.Info
+                Write-Host ""
+            }
+            else {
+                Write-Host "Restoring monitor timeout before reboot..." -ForegroundColor $ColorSchema.Info
+                powercfg /change monitor-timeout-ac $script:originalMonitorAC
+                powercfg /change monitor-timeout-dc $script:originalMonitorDC
+                Write-Host "Rebooting now..." -ForegroundColor $ColorSchema.Warning
+                Write-Host ""
+                if ($transcriptPath) { try { Stop-Transcript } catch {} }
+                Restart-Computer -Force
+            }
+        }
+        else {
             Write-Host ""
             Write-Host "  !!! REBOOT SKIPPED !!!" -ForegroundColor $ColorSchema.Error
             Write-Host ""
@@ -317,31 +365,10 @@ if ($rebootRequired) {
             Write-Host "  | Or manually restart through Settings > System > Power" -ForegroundColor $ColorSchema.Info
             Write-Host ""
         }
-        else {
-            Write-Host "Restoring monitor timeout before reboot..." -ForegroundColor $ColorSchema.Info
-            powercfg /change monitor-timeout-ac $script:originalMonitorAC
-            powercfg /change monitor-timeout-dc $script:originalMonitorDC
-            Write-Host "Rebooting now..." -ForegroundColor $ColorSchema.Warning
-            Write-Host ""
-            if ($transcriptPath) { try { Stop-Transcript } catch {} }
-            Restart-Computer -Force
-        }
-    }
-    else {
-        Write-Host ""
-        Write-Host "  !!! REBOOT SKIPPED !!!" -ForegroundColor $ColorSchema.Error
-        Write-Host ""
-        Write-Host "  IMPORTANT: You must reboot your computer to complete" -ForegroundColor $ColorSchema.Error
-        Write-Host "  the updates!" -ForegroundColor $ColorSchema.Error
-        Write-Host ""
-        Write-Host "  When you are ready to reboot, use one of these methods:" -ForegroundColor $ColorSchema.Warning
-        Write-Host "  | Command: Restart-Computer" -ForegroundColor $ColorSchema.Info
-        Write-Host "  | Or manually restart through Settings > System > Power" -ForegroundColor $ColorSchema.Info
-        Write-Host ""
     }
 }
 else {
-    Write-Host "[+] No reboot action required. System is ready to use." -ForegroundColor $ColorSchema.Success
+    Write-Host "[+] No reboot required at this time" -ForegroundColor $ColorSchema.Success
     Write-Host ""
 }
 

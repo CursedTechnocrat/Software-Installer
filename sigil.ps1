@@ -11,7 +11,9 @@
     to a timestamped CSV in the script directory.
 
 .USAGE
-    PS C:\> .\sigil.ps1      # Must be run as Administrator
+    PS C:\> .\sigil.ps1                              # Must be run as Administrator
+    PS C:\> .\sigil.ps1 -Unattended                  # Apply all categories silently (default)
+    PS C:\> .\sigil.ps1 -Unattended -Categories "1,3,5"  # Apply specific categories silently
 
 .NOTES
     Version : 1.0
@@ -40,6 +42,11 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param(
+    [switch]$Unattended,
+    [string]$Categories = "A"
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -106,7 +113,7 @@ function Add-ActionRecord {
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Show-SigilBanner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
    ███████╗██╗ ██████╗ ██╗██╗
@@ -389,8 +396,12 @@ function Apply-RemoteDesktop {
     Write-Host "  [1] Enable RDP (for remote tech access)" -ForegroundColor $ColorSchema.Info
     Write-Host "  [2] Disable RDP (recommended for end-user workstations)" -ForegroundColor $ColorSchema.Info
     Write-Host ""
-    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-    $rdpChoice = (Read-Host).Trim()
+    if (-not $Unattended) {
+        Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+        $rdpChoice = (Read-Host).Trim()
+    } else {
+        $rdpChoice = "2"
+    }
 
     $rdpValue = if ($rdpChoice -eq "1") { 0 } else { 1 }
     $rdpLabel = if ($rdpChoice -eq "1") { "Enable" } else { "Disable" }
@@ -487,7 +498,7 @@ function Apply-WindowsUpdatePolicy {
 # MAIN MENU
 # ─────────────────────────────────────────────────────────────────────────────
 
-Show-SigilBanner
+if (-not $Unattended) { Show-SigilBanner }
 
 Write-Host "  [!!] This script modifies registry keys and local security policy." -ForegroundColor $ColorSchema.Warning
 Write-Host "       Domain Group Policy will override local settings where applicable." -ForegroundColor $ColorSchema.Warning
@@ -510,16 +521,22 @@ Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host "  SELECT BASELINE CATEGORIES" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
-Write-Host "  Enter numbers separated by commas, or A for all." -ForegroundColor $ColorSchema.Info
-Write-Host ""
 
-foreach ($key in $categories.Keys) {
-    Write-Host ("  [{0,2}] {1}" -f $key, $categories[$key].Label) -ForegroundColor $ColorSchema.Info
+if ($Unattended) {
+    Write-Host "  [*] Unattended mode: applying categories — $Categories" -ForegroundColor $ColorSchema.Info
+    $rawInput = $Categories.ToUpper()
+} else {
+    Write-Host "  Enter numbers separated by commas, or A for all." -ForegroundColor $ColorSchema.Info
+    Write-Host ""
+
+    foreach ($key in $categories.Keys) {
+        Write-Host ("  [{0,2}] {1}" -f $key, $categories[$key].Label) -ForegroundColor $ColorSchema.Info
+    }
+
+    Write-Host ""
+    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+    $rawInput = (Read-Host).Trim().ToUpper()
 }
-
-Write-Host ""
-Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-$rawInput = (Read-Host).Trim().ToUpper()
 
 $selectedKeys = @()
 
@@ -600,4 +617,4 @@ Write-Host "  S.I.G.I.L. BASELINE COMPLETE" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
-Read-Host "  Press Enter to exit"
+if (-not $Unattended) { Read-Host "  Press Enter to exit" }

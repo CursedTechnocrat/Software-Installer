@@ -10,7 +10,8 @@
     script directory.
 
 .USAGE
-    PS C:\> .\ward.ps1      # Must be run as Administrator
+    PS C:\> .\ward.ps1                    # Must be run as Administrator
+    PS C:\> .\ward.ps1 -Unattended        # Silent mode — no prompts, no banner
 
 .NOTES
     Version : 1.0
@@ -37,6 +38,8 @@
     Red      Critical errors
     Gray     Information and details
 #>
+
+param([switch]$Unattended)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -80,7 +83,7 @@ $ColorSchema = @{
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Show-WardBanner {
-    Clear-Host
+    if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
   ██╗    ██╗ █████╗ ██████╗ ██████╗
@@ -276,7 +279,7 @@ function Build-HtmlReport {
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
-Show-WardBanner
+if (-not $Unattended) { Show-WardBanner }
 
 $machineName      = $env:COMPUTERNAME
 $reportTimestamp  = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -367,4 +370,4 @@ Write-Host "  W.A.R.D. AUDIT COMPLETE" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
-Read-Host "  Press Enter to exit"
+if (-not $Unattended) { Read-Host "  Press Enter to exit" }
