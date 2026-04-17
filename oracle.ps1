@@ -382,9 +382,59 @@ try {
         Write-Host "    No Storage Spaces virtual disks detected" -ForegroundColor $ColorSchema.Info
     }
 
+    # Hardware RAID controller detection via WMI
+    $raidControllers = @()
+    try {
+        $scsiControllers = Get-CimInstance -ClassName Win32_SCSIController -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match 'RAID|MegaRAID|PERC|Smart Array|LSI|Adaptec|Avago|Broadcom|RST|Intel.*RAID|Areca|3ware' }
+
+        foreach ($ctrl in $scsiControllers) {
+            $ctrlColor = if ($ctrl.Status -eq 'OK') { $ColorSchema.Success } else { $ColorSchema.Warning }
+            Write-Host "    RAID Controller : $($ctrl.Name) [$($ctrl.Status)]" -ForegroundColor $ctrlColor
+            $raidControllers += [PSCustomObject]@{
+                Name         = $ctrl.Name
+                Manufacturer = if ($ctrl.Manufacturer) { $ctrl.Manufacturer } else { 'N/A' }
+                Status       = $ctrl.Status
+                DriverName   = if ($ctrl.DriverName) { $ctrl.DriverName } else { 'N/A' }
+            }
+        }
+
+        if ($raidControllers.Count -eq 0) {
+            Write-Host "    No dedicated hardware RAID controllers detected" -ForegroundColor $ColorSchema.Info
+        }
+    }
+    catch {
+        Write-Host "    Could not query RAID controllers: $_" -ForegroundColor $ColorSchema.Warning
+    }
+
+    # Vendor CLI tools — capture detailed RAID config if available
+    $raidVendorOutput = @()
+    $cliCandidates = @(
+        @{ Name = 'StorCLI';   Exe = 'StorCLI64.exe'; Dirs = @('C:\Windows\System32','C:\Program Files\MegaRAID\StorCLI','C:\Program Files (x86)\MegaRAID\StorCLI');         Args = @('/call','show') },
+        @{ Name = 'PERCCLI';   Exe = 'perccli64.exe'; Dirs = @('C:\Windows\System32','C:\Program Files\PERCCLI','C:\Program Files (x86)\PERCCLI');                            Args = @('/call','show') },
+        @{ Name = 'HP SSACLI'; Exe = 'ssacli.exe';    Dirs = @('C:\Program Files\Smart Storage Administrator\ssacli\bin','C:\Program Files (x86)\Compaq\Hpacucli\Bin');       Args = @('ctrl','all','show','config') }
+    )
+
+    foreach ($cli in $cliCandidates) {
+        $exePath = $cli.Dirs | ForEach-Object { Join-Path $_ $cli.Exe } | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if ($exePath) {
+            try {
+                Write-Host "    Found $($cli.Name): $exePath" -ForegroundColor $ColorSchema.Info
+                $rawOutput = & "$exePath" @($cli.Args) 2>&1 | Out-String
+                $raidVendorOutput += [PSCustomObject]@{ Tool = $cli.Name; Output = $rawOutput.Trim() }
+                Write-Host "    [+] $($cli.Name) output captured" -ForegroundColor $ColorSchema.Success
+            }
+            catch {
+                Write-Host "    $($cli.Name) found but failed to run: $_" -ForegroundColor $ColorSchema.Warning
+            }
+        }
+    }
+
     $reportData['Storage'] = [PSCustomObject]@{
-        PhysicalDisks = $physicalDiskSummary
-        VirtualDisks  = $virtualDiskSummary
+        PhysicalDisks    = $physicalDiskSummary
+        VirtualDisks     = $virtualDiskSummary
+        RaidControllers  = $raidControllers
+        RaidVendorOutput = $raidVendorOutput
     }
 
     Write-Host "[+] Storage health collected" -ForegroundColor $ColorSchema.Success
@@ -392,8 +442,10 @@ try {
 catch {
     Write-Host "[-] Error collecting storage health: $_" -ForegroundColor $ColorSchema.Error
     $reportData['Storage'] = [PSCustomObject]@{
-        PhysicalDisks = @()
-        VirtualDisks  = @()
+        PhysicalDisks    = @()
+        VirtualDisks     = @()
+        RaidControllers  = @()
+        RaidVendorOutput = @()
     }
 }
 
@@ -605,9 +657,12 @@ function ConvertTo-HtmlTable {
 }
 
 # Storage health badge
-$storageUnhealthy = ($reportData['Storage'].PhysicalDisks | Where-Object { $_.HealthStatus -ne 'Healthy' }).Count
-$storageBadge = if ($storageUnhealthy -eq 0) {
+$storageUnhealthy  = ($reportData['Storage'].PhysicalDisks   | Where-Object { $_.HealthStatus -ne 'Healthy' }).Count
+$raidCtrlUnhealthy = ($reportData['Storage'].RaidControllers  | Where-Object { $_.Status       -ne 'OK'      }).Count
+$storageBadge = if ($storageUnhealthy -eq 0 -and $raidCtrlUnhealthy -eq 0) {
     "<span class='badge badge-ok'>Healthy</span>"
+} elseif ($raidCtrlUnhealthy -gt 0) {
+    "<span class='badge badge-err'>$raidCtrlUnhealthy controller issue(s)</span>"
 } else {
     "<span class='badge badge-err'>$storageUnhealthy degraded</span>"
 }
@@ -630,6 +685,22 @@ foreach ($vd in $reportData['Storage'].VirtualDisks) {
     }
     $virtDiskRows += "<tr><td>$($vd.Name)</td><td>$($vd.ResiliencyType)</td><td>$($vd.SizeGB) GB</td>"
     $virtDiskRows += "<td style='color:$hColor;font-weight:600;'>$($vd.HealthStatus)</td><td>$($vd.OperationalStatus)</td></tr>"
+}
+
+# RAID controller rows
+$raidCtrlRows = ""
+foreach ($rc in $reportData['Storage'].RaidControllers) {
+    $rcColor = if ($rc.Status -eq 'OK') { '#2ecc71' } else { '#f39c12' }
+    $raidCtrlRows += "<tr><td>$($rc.Name)</td><td>$($rc.Manufacturer)</td>"
+    $raidCtrlRows += "<td style='color:$rcColor;font-weight:600;'>$($rc.Status)</td><td>$($rc.DriverName)</td></tr>"
+}
+
+# Vendor CLI output blocks
+$raidVendorHtml = ""
+foreach ($rv in $reportData['Storage'].RaidVendorOutput) {
+    $escaped = $rv.Output -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;'
+    $raidVendorHtml += "<h4 style='color:#aaa;font-size:0.82em;letter-spacing:1px;text-transform:uppercase;margin:14px 0 6px;'>$($rv.Tool) Output</h4>"
+    $raidVendorHtml += "<pre style='background:#0a1628;padding:12px;border-radius:4px;font-size:0.78em;color:#ccc;overflow-x:auto;white-space:pre-wrap;'>$escaped</pre>"
 }
 
 # Disk rows for hardware section
@@ -834,6 +905,15 @@ $htmlReport = @"
       } else {
         "<p style='color:#666;font-size:0.85em;margin-top:12px;'>No Storage Spaces virtual disks detected.</p>"
       })
+      <h3 style="color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">Hardware RAID Controllers</h3>
+      $(if ($raidCtrlRows) {
+        "<table><thead><tr><th>Name</th><th>Manufacturer</th><th>Status</th><th>Driver</th></tr></thead><tbody>$raidCtrlRows</tbody></table>"
+      } else {
+        "<p style='color:#666;font-size:0.85em;'>No dedicated hardware RAID controllers detected.</p>"
+      })
+      $(if ($raidVendorHtml) {
+        "<h3 style='color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 6px;'>Vendor CLI Detail</h3>$raidVendorHtml"
+      })
     </div>
   </section>
 
@@ -892,11 +972,21 @@ Write-Host "  OS         : $($reportData['OS'].Caption)" -ForegroundColor $Color
 Write-Host "  RAM        : $($reportData['Hardware'].RAMGB) GB" -ForegroundColor $ColorSchema.Info
 Write-Host "  Uptime     : $($reportData['Health'].Uptime)" -ForegroundColor $ColorSchema.Info
 
-$physDiskCount = $reportData['Storage'].PhysicalDisks.Count
+$physDiskCount  = $reportData['Storage'].PhysicalDisks.Count
+$raidCtrlCount  = $reportData['Storage'].RaidControllers.Count
 if ($storageUnhealthy -gt 0) {
     Write-Host "  Storage    : $storageUnhealthy degraded disk(s) detected!" -ForegroundColor $ColorSchema.Error
 } else {
     Write-Host "  Storage    : $physDiskCount disk(s) — all healthy" -ForegroundColor $ColorSchema.Success
+}
+if ($raidCtrlCount -gt 0) {
+    if ($raidCtrlUnhealthy -gt 0) {
+        Write-Host "  RAID       : $raidCtrlUnhealthy controller(s) reporting issues!" -ForegroundColor $ColorSchema.Error
+    } else {
+        Write-Host "  RAID       : $raidCtrlCount controller(s) — all OK" -ForegroundColor $ColorSchema.Success
+    }
+} else {
+    Write-Host "  RAID       : No hardware RAID controllers detected" -ForegroundColor $ColorSchema.Info
 }
 
 if ($updateCount -gt 0) {
