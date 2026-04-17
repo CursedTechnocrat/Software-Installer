@@ -274,7 +274,14 @@ function Enable-DriveEncryption {
 
         Write-Host "  [*] Starting encryption on $($vol.MountPoint)..." -ForegroundColor $ColorSchema.Progress
         Enable-BitLocker -MountPoint $vol.MountPoint -EncryptionMethod XtsAes256 -UsedSpaceOnly -ErrorAction Stop | Out-Null
-        Write-Host "  [+] Encryption started on $($vol.MountPoint). This runs in the background." -ForegroundColor $ColorSchema.Success
+
+        $volCheck = Get-BitLockerVolume -MountPoint $vol.MountPoint -ErrorAction SilentlyContinue
+        if ($volCheck -and $volCheck.ProtectionStatus -ne "On") {
+            Write-Host "  [*] Activating BitLocker protection..." -ForegroundColor $ColorSchema.Progress
+            Resume-BitLocker -MountPoint $vol.MountPoint -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        Write-Host "  [+] Encryption started on $($vol.MountPoint). BitLocker protection is ON." -ForegroundColor $ColorSchema.Success
     }
     catch {
         Write-Host "  [-] Failed to enable BitLocker: $_" -ForegroundColor $ColorSchema.Error
