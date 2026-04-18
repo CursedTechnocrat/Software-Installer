@@ -27,6 +27,14 @@
     A.R.C.H.I.V.E.         — Pre-reimaging profile backup
     S.I.G.I.L.             — Security baseline & policy enforcement
     S.P.E.C.T.E.R.         — Remote machine execution via WinRM
+    L.E.Y.L.I.N.E.         — Network diagnostics & remediation
+    F.O.R.G.E.             — Driver update detection & installation
+    A.E.G.I.S.             — Azure environment assessment & reporting
+    B.A.S.T.I.O.N.         — Active Directory & identity management
+    L.A.N.T.E.R.N.         — Network discovery & asset inventory
+    T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
+    V.A.U.L.T.             — M365 license & mailbox auditing
+    S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
 
     Color Schema
     ─────────────────────────────────────────
@@ -168,6 +176,48 @@ $Tools = @(
         File        = 'forge.ps1'
         Description = 'Driver detection & installation — problem devices, Windows Update, local packages'
         Color       = 'Yellow'
+    },
+    [PSCustomObject]@{
+        Key         = '14'
+        Name        = 'A.E.G.I.S.'
+        File        = 'aegis.ps1'
+        Description = 'Azure environment assessment — security posture, RBAC, backup coverage, HTML report'
+        Color       = 'Cyan'
+    },
+    [PSCustomObject]@{
+        Key         = '15'
+        Name        = 'B.A.S.T.I.O.N.'
+        File        = 'bastion.ps1'
+        Description = 'Active Directory management — search, unlock, reset passwords, group membership, stale accounts'
+        Color       = 'Blue'
+    },
+    [PSCustomObject]@{
+        Key         = '16'
+        Name        = 'L.A.N.T.E.R.N.'
+        File        = 'lantern.ps1'
+        Description = 'Network discovery & asset inventory — subnet sweep, DNS, MAC, port scan, HTML report'
+        Color       = 'Cyan'
+    },
+    [PSCustomObject]@{
+        Key         = '17'
+        Name        = 'T.H.R.E.S.H.O.L.D.'
+        File        = 'threshold.ps1'
+        Description = 'Disk & storage health — physical disk status, volume space, cleanup, old profiles, HTML report'
+        Color       = 'Yellow'
+    },
+    [PSCustomObject]@{
+        Key         = '18'
+        Name        = 'V.A.U.L.T.'
+        File        = 'vault.ps1'
+        Description = 'M365 license & mailbox audit — SKU inventory, unlicensed users, MFA status, HTML report'
+        Color       = 'Green'
+    },
+    [PSCustomObject]@{
+        Key         = '19'
+        Name        = 'S.E.N.T.I.N.E.L.'
+        File        = 'sentinel.ps1'
+        Description = 'Service & task monitor — critical services, scheduled tasks, event log errors, HTML report'
+        Color       = 'Red'
     }
 )
 
@@ -299,7 +349,7 @@ do {
     }
     else {
         Write-Host ""
-        Write-Host "  [!!] Invalid selection. Enter 1-13 or Q to quit." -ForegroundColor $ColorSchema.Warning
+        Write-Host "  [!!] Invalid selection. Enter 1-19 or Q to quit." -ForegroundColor $ColorSchema.Warning
         Start-Sleep -Seconds 1
     }
 
