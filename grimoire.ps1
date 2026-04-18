@@ -85,139 +85,173 @@ $ColorSchema = @{
 # TOOL REGISTRY
 # ===========================
 
+$CategoryOrder = @(
+    'Deployment & Onboarding'
+    'Diagnostics & Reporting'
+    'Security'
+    'Network & Remote'
+    'Cloud & Identity'
+    'Data & Migration'
+)
+
 $Tools = @(
+    # ── Deployment & Onboarding ──────────────────────────────────────
     [PSCustomObject]@{
         Key         = '1'
-        Name        = 'R.U.N.E.P.R.E.S.S.'
-        File        = 'runepress.ps1'
-        Description = 'Printer driver installation and network printer configuration'
-        Color       = 'Cyan'
-    },
-    [PSCustomObject]@{
-        Key         = '2'
-        Name        = 'R.E.S.T.O.R.A.T.I.O.N.'
-        File        = 'restoration.ps1'
-        Description = 'Automated Windows Update management and maintenance'
-        Color       = 'Green'
-    },
-    [PSCustomObject]@{
-        Key         = '3'
-        Name        = 'C.O.N.J.U.R.E.'
-        File        = 'conjure.ps1'
-        Description = 'Software deployment via Windows Package Manager or Chocolatey'
-        Color       = 'Magenta'
-    },
-    [PSCustomObject]@{
-        Key         = '4'
-        Name        = 'O.R.A.C.L.E.'
-        File        = 'oracle.ps1'
-        Description = 'System diagnostics, health assessment, and HTML report generation'
-        Color       = 'Yellow'
-    },
-    [PSCustomObject]@{
-        Key         = '5'
         Name        = 'C.O.V.E.N.A.N.T.'
         File        = 'covenant.ps1'
         Description = 'Machine onboarding, Entra ID domain join, and new device setup'
         Color       = 'Blue'
+        Category    = 'Deployment & Onboarding'
     },
     [PSCustomObject]@{
-        Key         = '6'
-        Name        = 'P.H.A.N.T.O.M.'
-        File        = 'phantom.ps1'
-        Description = 'Profile migration and data transfer to a new machine'
-        Color       = 'Cyan'
-    },
-    [PSCustomObject]@{
-        Key         = '7'
-        Name        = 'C.I.P.H.E.R.'
-        File        = 'cipher.ps1'
-        Description = 'BitLocker drive encryption — enable, disable, backup keys'
-        Color       = 'Green'
-    },
-    [PSCustomObject]@{
-        Key         = '8'
-        Name        = 'W.A.R.D.'
-        File        = 'ward.ps1'
-        Description = 'User account audit — roles, last logon, flags, HTML report'
-        Color       = 'Yellow'
-    },
-    [PSCustomObject]@{
-        Key         = '9'
-        Name        = 'A.R.C.H.I.V.E.'
-        File        = 'archive.ps1'
-        Description = 'Pre-reimaging profile backup — ZIP to local or network share'
+        Key         = '2'
+        Name        = 'C.O.N.J.U.R.E.'
+        File        = 'conjure.ps1'
+        Description = 'Software deployment via Windows Package Manager or Chocolatey'
         Color       = 'Magenta'
+        Category    = 'Deployment & Onboarding'
     },
     [PSCustomObject]@{
-        Key         = '10'
-        Name        = 'S.I.G.I.L.'
-        File        = 'sigil.ps1'
-        Description = 'Security baseline enforcement — telemetry, UAC, firewall, audit policy'
-        Color       = 'Red'
-    },
-    [PSCustomObject]@{
-        Key         = '11'
-        Name        = 'S.P.E.C.T.E.R.'
-        File        = 'specter.ps1'
-        Description = 'Remote execution via WinRM — run toolkit tools on a remote machine'
-        Color       = 'White'
-    },
-    [PSCustomObject]@{
-        Key         = '12'
-        Name        = 'L.E.Y.L.I.N.E.'
-        File        = 'leyline.ps1'
-        Description = 'Network diagnostics & remediation — adapters, ping, DNS, port tests'
+        Key         = '3'
+        Name        = 'R.U.N.E.P.R.E.S.S.'
+        File        = 'runepress.ps1'
+        Description = 'Printer driver installation and network printer configuration'
         Color       = 'Cyan'
+        Category    = 'Deployment & Onboarding'
     },
     [PSCustomObject]@{
-        Key         = '13'
+        Key         = '4'
         Name        = 'F.O.R.G.E.'
         File        = 'forge.ps1'
         Description = 'Driver detection & installation — problem devices, Windows Update, local packages'
         Color       = 'Yellow'
+        Category    = 'Deployment & Onboarding'
+    },
+    [PSCustomObject]@{
+        Key         = '5'
+        Name        = 'R.E.S.T.O.R.A.T.I.O.N.'
+        File        = 'restoration.ps1'
+        Description = 'Automated Windows Update management and maintenance'
+        Color       = 'Green'
+        Category    = 'Deployment & Onboarding'
+    },
+    # ── Diagnostics & Reporting ──────────────────────────────────────
+    [PSCustomObject]@{
+        Key         = '6'
+        Name        = 'O.R.A.C.L.E.'
+        File        = 'oracle.ps1'
+        Description = 'System diagnostics, health assessment, and HTML report generation'
+        Color       = 'Yellow'
+        Category    = 'Diagnostics & Reporting'
+    },
+    [PSCustomObject]@{
+        Key         = '7'
+        Name        = 'W.A.R.D.'
+        File        = 'ward.ps1'
+        Description = 'User account audit — roles, last logon, flags, HTML report'
+        Color       = 'Yellow'
+        Category    = 'Diagnostics & Reporting'
+    },
+    [PSCustomObject]@{
+        Key         = '8'
+        Name        = 'T.H.R.E.S.H.O.L.D.'
+        File        = 'threshold.ps1'
+        Description = 'Disk & storage health — physical disk status, volume space, cleanup, old profiles'
+        Color       = 'Yellow'
+        Category    = 'Diagnostics & Reporting'
+    },
+    [PSCustomObject]@{
+        Key         = '9'
+        Name        = 'S.E.N.T.I.N.E.L.'
+        File        = 'sentinel.ps1'
+        Description = 'Service & task monitor — critical services, scheduled tasks, event log errors'
+        Color       = 'Red'
+        Category    = 'Diagnostics & Reporting'
+    },
+    # ── Security ─────────────────────────────────────────────────────
+    [PSCustomObject]@{
+        Key         = '10'
+        Name        = 'C.I.P.H.E.R.'
+        File        = 'cipher.ps1'
+        Description = 'BitLocker drive encryption — enable, disable, backup keys'
+        Color       = 'Green'
+        Category    = 'Security'
+    },
+    [PSCustomObject]@{
+        Key         = '11'
+        Name        = 'S.I.G.I.L.'
+        File        = 'sigil.ps1'
+        Description = 'Security baseline enforcement — telemetry, UAC, firewall, audit policy'
+        Color       = 'Red'
+        Category    = 'Security'
+    },
+    [PSCustomObject]@{
+        Key         = '12'
+        Name        = 'B.A.S.T.I.O.N.'
+        File        = 'bastion.ps1'
+        Description = 'Active Directory management — search, unlock, reset passwords, group membership'
+        Color       = 'Blue'
+        Category    = 'Security'
+    },
+    # ── Network & Remote ─────────────────────────────────────────────
+    [PSCustomObject]@{
+        Key         = '13'
+        Name        = 'L.E.Y.L.I.N.E.'
+        File        = 'leyline.ps1'
+        Description = 'Network diagnostics & remediation — adapters, ping, DNS, port tests'
+        Color       = 'Cyan'
+        Category    = 'Network & Remote'
     },
     [PSCustomObject]@{
         Key         = '14'
+        Name        = 'S.P.E.C.T.E.R.'
+        File        = 'specter.ps1'
+        Description = 'Remote execution via WinRM — run toolkit tools on a remote machine'
+        Color       = 'White'
+        Category    = 'Network & Remote'
+    },
+    [PSCustomObject]@{
+        Key         = '15'
+        Name        = 'L.A.N.T.E.R.N.'
+        File        = 'lantern.ps1'
+        Description = 'Network discovery & asset inventory — subnet sweep, DNS, MAC, port scan'
+        Color       = 'Cyan'
+        Category    = 'Network & Remote'
+    },
+    # ── Cloud & Identity ─────────────────────────────────────────────
+    [PSCustomObject]@{
+        Key         = '16'
         Name        = 'A.E.G.I.S.'
         File        = 'aegis.ps1'
         Description = 'Azure environment assessment — security posture, RBAC, backup coverage, HTML report'
         Color       = 'Cyan'
-    },
-    [PSCustomObject]@{
-        Key         = '15'
-        Name        = 'B.A.S.T.I.O.N.'
-        File        = 'bastion.ps1'
-        Description = 'Active Directory management — search, unlock, reset passwords, group membership, stale accounts'
-        Color       = 'Blue'
-    },
-    [PSCustomObject]@{
-        Key         = '16'
-        Name        = 'L.A.N.T.E.R.N.'
-        File        = 'lantern.ps1'
-        Description = 'Network discovery & asset inventory — subnet sweep, DNS, MAC, port scan, HTML report'
-        Color       = 'Cyan'
+        Category    = 'Cloud & Identity'
     },
     [PSCustomObject]@{
         Key         = '17'
-        Name        = 'T.H.R.E.S.H.O.L.D.'
-        File        = 'threshold.ps1'
-        Description = 'Disk & storage health — physical disk status, volume space, cleanup, old profiles, HTML report'
-        Color       = 'Yellow'
-    },
-    [PSCustomObject]@{
-        Key         = '18'
         Name        = 'V.A.U.L.T.'
         File        = 'vault.ps1'
-        Description = 'M365 license & mailbox audit — SKU inventory, unlicensed users, MFA status, HTML report'
+        Description = 'M365 license & mailbox audit — SKU inventory, unlicensed users, MFA status'
         Color       = 'Green'
+        Category    = 'Cloud & Identity'
+    },
+    # ── Data & Migration ─────────────────────────────────────────────
+    [PSCustomObject]@{
+        Key         = '18'
+        Name        = 'P.H.A.N.T.O.M.'
+        File        = 'phantom.ps1'
+        Description = 'Profile migration and data transfer to a new machine'
+        Color       = 'Cyan'
+        Category    = 'Data & Migration'
     },
     [PSCustomObject]@{
         Key         = '19'
-        Name        = 'S.E.N.T.I.N.E.L.'
-        File        = 'sentinel.ps1'
-        Description = 'Service & task monitor — critical services, scheduled tasks, event log errors, HTML report'
-        Color       = 'Red'
+        Name        = 'A.R.C.H.I.V.E.'
+        File        = 'archive.ps1'
+        Description = 'Pre-reimaging profile backup — ZIP to local or network share'
+        Color       = 'Magenta'
+        Category    = 'Data & Migration'
     }
 )
 
@@ -252,14 +286,23 @@ function Show-Menu {
     Write-Host "  Select a tool to launch:" -ForegroundColor $ColorSchema.Header
     Write-Host ""
 
-    foreach ($tool in $Tools) {
-        $label = "  [$($tool.Key)]  $($tool.Name)"
-        Write-Host $label -ForegroundColor $tool.Color -NoNewline
+    foreach ($category in $CategoryOrder) {
+        $categoryTools = $Tools | Where-Object { $_.Category -eq $category }
+        if (-not $categoryTools) { continue }
+
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
+        Write-Host "  $category" -ForegroundColor $ColorSchema.Header
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
         Write-Host ""
-        Write-Host "       $($tool.Description)" -ForegroundColor $ColorSchema.Info
-        Write-Host ""
+
+        foreach ($tool in $categoryTools) {
+            Write-Host "  [$($tool.Key)]  $($tool.Name)" -ForegroundColor $tool.Color
+            Write-Host "       $($tool.Description)" -ForegroundColor $ColorSchema.Info
+            Write-Host ""
+        }
     }
 
+    Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
     Write-Host "  [Q]  Exit GRIMOIRE" -ForegroundColor $ColorSchema.Warning
     Write-Host ""
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
