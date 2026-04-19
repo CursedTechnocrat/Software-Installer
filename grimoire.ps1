@@ -132,7 +132,7 @@ $Tools = @(
         Category    = 'Deployment & Onboarding'
     },
     [PSCustomObject]@{
-        Key         = '21'
+        Key         = '6'
         Name        = 'H.E.A.R.T.H.'
         File        = 'hearth.ps1'
         Description = 'Toolkit setup wizard — configure org name, log paths, and default values'
@@ -141,7 +141,7 @@ $Tools = @(
     },
     # ── Diagnostics & Reporting ──────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '6'
+        Key         = '7'
         Name        = 'O.R.A.C.L.E.'
         File        = 'oracle.ps1'
         Description = 'System diagnostics, health assessment, and HTML report generation'
@@ -149,7 +149,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '7'
+        Key         = '8'
         Name        = 'W.A.R.D.'
         File        = 'ward.ps1'
         Description = 'User account audit — roles, last logon, flags, HTML report'
@@ -157,7 +157,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '8'
+        Key         = '9'
         Name        = 'T.H.R.E.S.H.O.L.D.'
         File        = 'threshold.ps1'
         Description = 'Disk & storage health — physical disk status, volume space, cleanup, old profiles'
@@ -165,7 +165,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '9'
+        Key         = '10'
         Name        = 'S.E.N.T.I.N.E.L.'
         File        = 'sentinel.ps1'
         Description = 'Service & task monitor — critical services, scheduled tasks, event log errors'
@@ -174,7 +174,7 @@ $Tools = @(
     },
     # ── Security ─────────────────────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '10'
+        Key         = '11'
         Name        = 'C.I.P.H.E.R.'
         File        = 'cipher.ps1'
         Description = 'BitLocker drive encryption — enable, disable, backup keys'
@@ -182,7 +182,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '11'
+        Key         = '12'
         Name        = 'S.I.G.I.L.'
         File        = 'sigil.ps1'
         Description = 'Security baseline enforcement — telemetry, UAC, firewall, audit policy'
@@ -190,7 +190,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '12'
+        Key         = '13'
         Name        = 'B.A.S.T.I.O.N.'
         File        = 'bastion.ps1'
         Description = 'Active Directory management — search, unlock, reset passwords, group membership'
@@ -198,7 +198,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '20'
+        Key         = '14'
         Name        = 'R.E.L.I.C.'
         File        = 'relic.ps1'
         Description = 'Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report'
@@ -207,7 +207,7 @@ $Tools = @(
     },
     # ── Network & Remote ─────────────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '13'
+        Key         = '15'
         Name        = 'L.E.Y.L.I.N.E.'
         File        = 'leyline.ps1'
         Description = 'Network diagnostics & remediation — adapters, ping, DNS, port tests'
@@ -215,7 +215,7 @@ $Tools = @(
         Category    = 'Network & Remote'
     },
     [PSCustomObject]@{
-        Key         = '14'
+        Key         = '16'
         Name        = 'S.P.E.C.T.E.R.'
         File        = 'specter.ps1'
         Description = 'Remote execution via WinRM — run toolkit tools on a remote machine'
@@ -223,7 +223,7 @@ $Tools = @(
         Category    = 'Network & Remote'
     },
     [PSCustomObject]@{
-        Key         = '15'
+        Key         = '17'
         Name        = 'L.A.N.T.E.R.N.'
         File        = 'lantern.ps1'
         Description = 'Network discovery & asset inventory — subnet sweep, DNS, MAC, port scan'
@@ -232,7 +232,7 @@ $Tools = @(
     },
     # ── Cloud & Identity ─────────────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '16'
+        Key         = '18'
         Name        = 'A.E.G.I.S.'
         File        = 'aegis.ps1'
         Description = 'Azure environment assessment — security posture, RBAC, backup coverage, HTML report'
@@ -240,7 +240,7 @@ $Tools = @(
         Category    = 'Cloud & Identity'
     },
     [PSCustomObject]@{
-        Key         = '17'
+        Key         = '19'
         Name        = 'V.A.U.L.T.'
         File        = 'vault.ps1'
         Description = 'M365 license & mailbox audit — SKU inventory, unlicensed users, MFA status'
@@ -249,7 +249,7 @@ $Tools = @(
     },
     # ── Data & Migration ─────────────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '18'
+        Key         = '20'
         Name        = 'P.H.A.N.T.O.M.'
         File        = 'phantom.ps1'
         Description = 'Profile migration and data transfer to a new machine'
@@ -257,7 +257,7 @@ $Tools = @(
         Category    = 'Data & Migration'
     },
     [PSCustomObject]@{
-        Key         = '19'
+        Key         = '21'
         Name        = 'A.R.C.H.I.V.E.'
         File        = 'archive.ps1'
         Description = 'Pre-reimaging profile backup — ZIP to local or network share'
