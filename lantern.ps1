@@ -402,7 +402,7 @@ function Build-HtmlReport {
 
     $timestamp    = Get-Date -Format 'yyyyMMdd_HHmmss'
     $reportName   = "LANTERN_$timestamp.html"
-    $reportPath   = Join-Path $ScriptPath $reportName
+    $reportPath   = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportName
     $generated    = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
     $totalHosts   = $script:DiscoveredHosts.Count
@@ -605,7 +605,7 @@ function Export-CsvReport {
     }
 
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $csvPath   = Join-Path $ScriptPath "LANTERN_$timestamp.csv"
+    $csvPath   = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "LANTERN_$timestamp.csv"
 
     try {
         $script:DiscoveredHosts |

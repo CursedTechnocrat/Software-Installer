@@ -326,7 +326,7 @@ function Export-DriverReport {
 
     Write-Host "  [*] Collecting driver information..." -ForegroundColor $C.Progress
 
-    $logPath = Join-Path $ScriptPath ("FORGE_DriverReport_{0}.csv" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
+    $logPath = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) ("FORGE_DriverReport_{0}.csv" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
 
     try {
         $drivers = Get-WmiObject Win32_PnPSignedDriver -ErrorAction SilentlyContinue |

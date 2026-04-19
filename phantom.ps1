@@ -368,9 +368,15 @@ Write-Host ""
 
 $DestRoot = ""
 
+$_cfg = Get-TKConfig
+
 if ($Unattended) {
+    if ([string]::IsNullOrWhiteSpace($DestPath) -and -not [string]::IsNullOrWhiteSpace($_cfg.Phantom.DefaultDestination)) {
+        $DestPath = $_cfg.Phantom.DefaultDestination
+        Write-Host "  [*] No -DestPath provided — using config default: $DestPath" -ForegroundColor $ColorSchema.Info
+    }
     if ([string]::IsNullOrWhiteSpace($DestPath)) {
-        Write-Host "  [-] -DestPath is required in unattended mode." -ForegroundColor $ColorSchema.Error
+        Write-Host "  [-] -DestPath is required in unattended mode (or set Phantom.DefaultDestination in config.json)." -ForegroundColor $ColorSchema.Error
         exit 1
     }
     $DestRoot = $DestPath.TrimEnd('\')
@@ -532,7 +538,7 @@ if ($IsArchiveZip -and $TempExtractDir -and (Test-Path $TempExtractDir)) {
 
 # ── LOG ───────────────────────────────────────────────────────────────────────
 
-$logFile = Join-Path $ScriptPath "PHANTOM_MigrationLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+$logFile = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "PHANTOM_MigrationLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
 try {
     $MigrationLog | Export-Csv -Path $logFile -NoTypeInformation -Encoding UTF8

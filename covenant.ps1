@@ -116,6 +116,11 @@ if ($WhatIf) {
     Write-Host ""
 }
 
+# Apply config defaults for parameters not supplied on the command line
+$_cfg = Get-TKConfig
+if ([string]::IsNullOrWhiteSpace($Timezone)       -and -not [string]::IsNullOrWhiteSpace($_cfg.Covenant.DefaultTimezone))       { $Timezone      = $_cfg.Covenant.DefaultTimezone }
+if ([string]::IsNullOrWhiteSpace($LocalAdminUser) -and -not [string]::IsNullOrWhiteSpace($_cfg.Covenant.DefaultLocalAdminUser)) { $LocalAdminUser = $_cfg.Covenant.DefaultLocalAdminUser }
+
 $executionTime = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $rebootRequired = $false
 

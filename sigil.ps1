@@ -566,7 +566,7 @@ foreach ($key in $selectedKeys) {
 
 # ── LOG ───────────────────────────────────────────────────────────────────────
 
-$logFile = Join-Path $ScriptPath "SIGIL_BaselineLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+$logFile = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "SIGIL_BaselineLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
 try {
     $ActionLog | Export-Csv -Path $logFile -NoTypeInformation -Encoding UTF8

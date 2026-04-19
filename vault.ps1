@@ -855,7 +855,7 @@ function Export-HtmlReport {
 
     $html      = Build-HtmlReport -LicenseData $LicenseData -UnlicensedData $UnlicensedData -InactiveData $InactiveData -NoMfaData $NoMfaData
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $outPath   = Join-Path $ScriptPath "VAULT_${timestamp}.html"
+    $outPath   = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "VAULT_${timestamp}.html"
 
     try {
         $html | Out-File -FilePath $outPath -Encoding UTF8 -Force

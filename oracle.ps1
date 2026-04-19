@@ -81,8 +81,8 @@ if ($PSScriptRoot) {
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Folder where the HTML report will be saved.
-# Change this to any valid path, e.g. "C:\Reports" or "\\server\share\Reports"
-$ReportOutputPath = $ScriptPath
+# Override via config.json LogDirectory, or set $ReportOutputPath manually below.
+$ReportOutputPath = Resolve-LogDirectory -FallbackPath $ScriptPath
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA DEFINITION
@@ -818,6 +818,7 @@ $htmlReport = @"
   <h1>O.R.A.C.L.E.</h1>
   <p>Observes, Reports &amp; Audits Computer Logs &amp; Environments</p>
   <div class="meta">
+    $(if (-not [string]::IsNullOrWhiteSpace((Get-TKConfig).OrgName)) { "<span><strong>Organisation:</strong> $(EscHtml (Get-TKConfig).OrgName)</span>" })
     <span><strong>Machine:</strong> $env:COMPUTERNAME</span>
     <span><strong>Run As:</strong> $env:USERDOMAIN\$env:USERNAME</span>
     <span><strong>Generated:</strong> $reportTimestamp</span>

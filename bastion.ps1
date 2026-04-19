@@ -887,7 +887,7 @@ function Export-StaleReport {
 "@
 
     $reportFilename = "BASTION_Stale_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-    $reportPath     = Join-Path $ScriptPath $reportFilename
+    $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename
 
     try {
         [System.IO.File]::WriteAllText($reportPath, $html, [System.Text.Encoding]::UTF8)

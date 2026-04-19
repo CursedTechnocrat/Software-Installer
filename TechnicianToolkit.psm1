@@ -40,6 +40,106 @@ function EscHtml {
 
 #endregion
 
+#region ── Config Helpers ────────────────────────────────────────────────────
+
+function Get-TKConfig {
+    <#
+    .SYNOPSIS
+        Returns the toolkit configuration as a PSCustomObject.
+        Reads config.json from the module directory; missing keys are filled
+        with empty-string defaults so callers never receive null.
+    #>
+    $configPath = Join-Path $PSScriptRoot 'config.json'
+
+    $defaults = [PSCustomObject]@{
+        OrgName      = ''
+        LogDirectory = ''
+        Archive      = [PSCustomObject]@{ DefaultDestination   = '' }
+        Phantom      = [PSCustomObject]@{ DefaultDestination   = '' }
+        Covenant     = [PSCustomObject]@{ DefaultTimezone = ''; DefaultLocalAdminUser = '' }
+    }
+
+    if (-not (Test-Path $configPath)) { return $defaults }
+
+    try {
+        $raw = Get-Content $configPath -Raw -ErrorAction Stop | ConvertFrom-Json
+
+        # Ensure top-level keys exist
+        foreach ($key in ($defaults | Get-Member -MemberType NoteProperty).Name) {
+            if ($null -eq $raw.$key) {
+                $raw | Add-Member -NotePropertyName $key -NotePropertyValue $defaults.$key -Force
+            }
+        }
+        # Ensure nested keys exist
+        foreach ($section in @('Archive','Phantom','Covenant')) {
+            if ($raw.$section -isnot [PSCustomObject]) {
+                $raw | Add-Member -NotePropertyName $section -NotePropertyValue $defaults.$section -Force
+            } else {
+                foreach ($key in ($defaults.$section | Get-Member -MemberType NoteProperty).Name) {
+                    if ($null -eq $raw.$section.$key) {
+                        $raw.$section | Add-Member -NotePropertyName $key -NotePropertyValue '' -Force
+                    }
+                }
+            }
+        }
+        return $raw
+    }
+    catch { return $defaults }
+}
+
+function Set-TKConfig {
+    <#
+    .SYNOPSIS
+        Writes a single value to config.json.
+    .EXAMPLE
+        Set-TKConfig -Key 'OrgName'             -Value 'Contoso'
+        Set-TKConfig -Key 'DefaultDestination'  -Value '\\srv\backups' -Section 'Archive'
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Key,
+        [Parameter(Mandatory)][string]$Value,
+        [string]$Section = ''
+    )
+
+    $configPath = Join-Path $PSScriptRoot 'config.json'
+    $cfg = if (Test-Path $configPath) {
+        Get-Content $configPath -Raw | ConvertFrom-Json
+    } else {
+        [PSCustomObject]@{}
+    }
+
+    if ($Section) {
+        if ($null -eq $cfg.$Section) {
+            $cfg | Add-Member -NotePropertyName $Section -NotePropertyValue ([PSCustomObject]@{}) -Force
+        }
+        $cfg.$Section | Add-Member -NotePropertyName $Key -NotePropertyValue $Value -Force
+    } else {
+        $cfg | Add-Member -NotePropertyName $Key -NotePropertyValue $Value -Force
+    }
+
+    $cfg | ConvertTo-Json -Depth 4 | Set-Content $configPath -Encoding UTF8
+}
+
+function Resolve-LogDirectory {
+    <#
+    .SYNOPSIS
+        Returns the configured LogDirectory, or the supplied fallback path if
+        LogDirectory is not set. Creates the directory if it does not exist.
+    #>
+    param([Parameter(Mandatory)][string]$FallbackPath)
+
+    $cfg = Get-TKConfig
+    if (-not [string]::IsNullOrWhiteSpace($cfg.LogDirectory)) {
+        if (-not (Test-Path $cfg.LogDirectory)) {
+            $null = New-Item -ItemType Directory -Path $cfg.LogDirectory -Force -ErrorAction SilentlyContinue
+        }
+        return $cfg.LogDirectory
+    }
+    return $FallbackPath
+}
+
+#endregion
+
 #region ── Privilege Management ──────────────────────────────────────────────
 
 function Test-IsAdmin {
@@ -65,4 +165,4 @@ function Invoke-AdminElevation {
 
 #endregion
 
-Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation
+Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory

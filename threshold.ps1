@@ -497,7 +497,7 @@ function Build-HtmlReport {
     $timestamp  = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $hostname   = $env:COMPUTERNAME
     $filename   = "THRESHOLD_{0}.html" -f (Get-Date -Format "yyyyMMdd_HHmmss")
-    $outputPath = Join-Path $ScriptPath $filename
+    $outputPath = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $filename
 
     $totalDrives   = $DiskData.Count
     $healthyCount  = ($DiskData | Where-Object { $_.HealthStatus -eq 'Healthy' }).Count

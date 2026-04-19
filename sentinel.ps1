@@ -860,7 +860,7 @@ function Export-HtmlReport {
     $machineName = if ($script:RemoteTarget) { $script:RemoteTarget } else { $env:COMPUTERNAME }
     $timestamp   = Get-Date -Format 'yyyyMMdd_HHmmss'
     $reportName  = "SENTINEL_${timestamp}.html"
-    $reportPath  = Join-Path $ScriptPath $reportName
+    $reportPath  = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportName
 
     Write-Host "  [*] Building HTML report..." -ForegroundColor $C.Progress
 

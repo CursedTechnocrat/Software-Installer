@@ -599,7 +599,7 @@ function Show-InstallationSummary {
     Write-Host ""
 
     # Export log to CSV
-    $LogPath = Join-Path $ScriptPath "RUNEPRESS_InstallLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $LogPath = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "RUNEPRESS_InstallLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
     try {
         $InstallationLog | Export-Csv -Path $LogPath -NoTypeInformation -ErrorAction Stop
         Write-Host "Log saved: $LogPath" -ForegroundColor Gray

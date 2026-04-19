@@ -362,7 +362,16 @@ Write-Host ""
 
 $DestRoot = ""
 
+$_cfg = Get-TKConfig
+
 if ($Unattended) {
+    if ([string]::IsNullOrWhiteSpace($Destination)) {
+        # Fall back to config default, then script directory
+        if (-not [string]::IsNullOrWhiteSpace($_cfg.Archive.DefaultDestination)) {
+            $Destination = $_cfg.Archive.DefaultDestination
+            Write-Host "  [*] No -Destination provided — using config default: $Destination" -ForegroundColor $ColorSchema.Info
+        }
+    }
     if ([string]::IsNullOrWhiteSpace($Destination)) {
         $DestRoot = $ScriptPath
         Write-Host "  [*] No -Destination provided — using script directory." -ForegroundColor $ColorSchema.Info
@@ -382,12 +391,22 @@ if ($Unattended) {
 } else {
     Write-Host "  [1] Script directory  ($ScriptPath)" -ForegroundColor $ColorSchema.Info
     Write-Host "  [2] Enter a custom path  (local or UNC share)" -ForegroundColor $ColorSchema.Info
+    if (-not [string]::IsNullOrWhiteSpace($_cfg.Archive.DefaultDestination)) {
+        Write-Host "  [3] Config default  ($($_cfg.Archive.DefaultDestination))" -ForegroundColor $ColorSchema.Info
+    }
     Write-Host ""
     Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
     $destChoice = (Read-Host).Trim()
 
     if ($destChoice -eq "1") {
         $DestRoot = $ScriptPath
+    }
+    elseif ($destChoice -eq "3" -and -not [string]::IsNullOrWhiteSpace($_cfg.Archive.DefaultDestination)) {
+        $DestRoot = $_cfg.Archive.DefaultDestination.TrimEnd('\')
+        if (-not (Test-Path $DestRoot)) {
+            try { $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop }
+            catch { Write-Host "  [-] Could not create destination: $_" -ForegroundColor $ColorSchema.Error; exit 1 }
+        }
     }
     elseif ($destChoice -eq "2") {
         Write-Host ""
@@ -536,7 +555,7 @@ finally {
 
 # ── LOG ───────────────────────────────────────────────────────────────────────
 
-$logFile = Join-Path $ScriptPath "ARCHIVE_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+$logFile = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) "ARCHIVE_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
 try {
     $ArchiveLog | Export-Csv -Path $logFile -NoTypeInformation -Encoding UTF8

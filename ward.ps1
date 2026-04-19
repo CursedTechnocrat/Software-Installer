@@ -236,7 +236,7 @@ function Build-HtmlReport {
 </head>
 <body>
 <h1>W.A.R.D. — Account Audit Report</h1>
-<div class="subtitle">Machine: <strong>$MachineName</strong> &nbsp;|&nbsp; Generated: $ReportTimestamp</div>
+<div class="subtitle">$(if (-not [string]::IsNullOrWhiteSpace((Get-TKConfig).OrgName)) { "$(EscHtml (Get-TKConfig).OrgName) &nbsp;|&nbsp; " })Machine: <strong>$MachineName</strong> &nbsp;|&nbsp; Generated: $ReportTimestamp</div>
 
 <div class="summary">
   <div class="card"><div class="val">$totalAccounts</div><div class="lbl">Total Accounts</div></div>
@@ -336,7 +336,7 @@ Write-Host ""
 Write-Host "  [*] Generating HTML report..." -ForegroundColor $ColorSchema.Progress
 
 $reportFilename = "WARD_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-$reportPath     = Join-Path $ScriptPath $reportFilename
+$reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename
 
 try {
     $htmlContent = Build-HtmlReport -Accounts $accounts -MachineName $machineName -ReportTimestamp $reportTimestamp
