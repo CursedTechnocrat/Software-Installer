@@ -38,6 +38,8 @@
     T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
     V.A.U.L.T.             — M365 license & mailbox auditing
     S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
+    R.E.L.I.C.             — Certificate health & SSL expiry monitoring
+    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
 
     Color Schema
     ─────────────────────────────────────────
@@ -51,7 +53,7 @@
 
 param(
     [switch]$Unattended,
-    [ValidateSet('StaleReport')]
+    [ValidateSet('StaleReport','PasswordExpiryReport')]
     [string]$Action = 'StaleReport',
     [switch]$Transcript
 )
@@ -915,6 +917,328 @@ function Export-StaleReport {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ACCOUNT LOCKOUT FORENSICS
+# ─────────────────────────────────────────────────────────────────────────────
+
+function Invoke-LockoutForensics {
+    Write-Section "ACCOUNT LOCKOUT INVESTIGATION"
+    Write-Host "  This tool queries the PDC Emulator's Security event log for lockout" -ForegroundColor $C.Info
+    Write-Host "  events (Event ID 4740) to identify the source of an account lockout." -ForegroundColor $C.Info
+    Write-Host ""
+
+    $user = Pick-ADUser -Prompt "Enter the username to investigate."
+    if (-not $user) { return }
+
+    Write-Host "  [*] Locating PDC Emulator..." -ForegroundColor $C.Progress
+    try {
+        $pdc = (Get-ADDomain -ErrorAction Stop).PDCEmulator
+        Write-Host "  [+] PDC Emulator : $pdc" -ForegroundColor $C.Success
+    } catch {
+        Write-Host "  [-] Could not determine PDC Emulator: $_" -ForegroundColor $C.Error
+        Write-Host "  [!!] Ensure this machine is joined to the domain and can contact a DC." -ForegroundColor $C.Warning
+        return
+    }
+
+    Write-Host ""
+    Write-Host "  [*] Querying Security event log on $pdc for Event ID 4740 (last 7 days)..." -ForegroundColor $C.Progress
+    Write-Host "  [*] This may take a moment..." -ForegroundColor $C.Progress
+    Write-Host ""
+
+    try {
+        $allEvents = Get-WinEvent -ComputerName $pdc -FilterHashtable @{
+            LogName   = 'Security'
+            Id        = 4740
+            StartTime = (Get-Date).AddDays(-7)
+        } -ErrorAction Stop
+
+        $events = $allEvents | Where-Object {
+            $_.Properties[0].Value -ieq $user.SamAccountName
+        } | Sort-Object TimeCreated -Descending
+
+        if ($events.Count -eq 0) {
+            Write-Host "  [+] No lockout events found for '$($user.SamAccountName)' in the last 7 days." -ForegroundColor $C.Success
+            Write-Host ""
+            return
+        }
+
+        Write-Host "  [!!] Found $($events.Count) lockout event(s) for '$($user.SamAccountName)':" -ForegroundColor $C.Warning
+        Write-Host ""
+        Write-Host ("  {0,-22} {1,-32} {2}" -f "Timestamp", "Source Machine (Caller)", "Domain Controller") -ForegroundColor $C.Header
+        Write-Host ("  " + ("─" * 82)) -ForegroundColor $C.Header
+
+        foreach ($evt in $events) {
+            $timestamp     = $evt.TimeCreated.ToString("yyyy-MM-dd HH:mm:ss")
+            $callerMachine = $evt.Properties[4].Value
+            $dc            = $evt.MachineName
+            if ([string]::IsNullOrWhiteSpace($callerMachine)) { $callerMachine = "(unknown)" }
+
+            Write-Host ("  {0,-22} {1,-32} {2}" -f $timestamp, $callerMachine, $dc) -ForegroundColor $C.Warning
+        }
+
+        Write-Host ""
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $C.Header
+        Write-Host "  REMEDIATION TIPS" -ForegroundColor $C.Header
+        Write-Host ("  " + ("─" * 62)) -ForegroundColor $C.Header
+        Write-Host ""
+        Write-Host "  The 'Source Machine' column shows where the bad credentials originated." -ForegroundColor $C.Info
+        Write-Host "  Common causes:" -ForegroundColor $C.Info
+        Write-Host "    - Saved credentials in Credential Manager referencing old password" -ForegroundColor $C.Info
+        Write-Host "    - Mapped network drives or printers with cached credentials" -ForegroundColor $C.Info
+        Write-Host "    - Scheduled tasks running under the user account" -ForegroundColor $C.Info
+        Write-Host "    - Mobile device or Outlook profile with old password" -ForegroundColor $C.Info
+        Write-Host "    - Applications with embedded credentials" -ForegroundColor $C.Info
+        Write-Host ""
+
+    } catch {
+        Write-Host "  [-] Could not query event log on $pdc : $_" -ForegroundColor $C.Error
+        Write-Host "  [!!] Ensure you have remote event log access (Event Log Readers group) on the PDC." -ForegroundColor $C.Warning
+    }
+
+    Write-Host ""
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PASSWORD EXPIRY REPORT
+# ─────────────────────────────────────────────────────────────────────────────
+
+function Get-ExpiringPasswords {
+    param([int]$ThresholdDays)
+
+    Write-Host "  [*] Retrieving domain password policy..." -ForegroundColor $C.Progress
+    try {
+        $maxAge = (Get-ADDefaultDomainPasswordPolicy -ErrorAction Stop).MaxPasswordAge.Days
+        if ($maxAge -eq 0) {
+            Write-Host "  [!] Domain default password policy has no maximum age (passwords never expire)." -ForegroundColor $C.Warning
+            Write-Host "      Fine-Grained Password Policies (PSOs) may still apply to specific users." -ForegroundColor $C.Info
+            return @()
+        }
+        Write-Host "  [+] Domain max password age : $maxAge days" -ForegroundColor $C.Info
+    } catch {
+        Write-Host "  [-] Could not retrieve domain password policy: $_" -ForegroundColor $C.Error
+        return @()
+    }
+
+    Write-Host "  [*] Querying users with passwords expiring within $ThresholdDays days..." -ForegroundColor $C.Progress
+
+    try {
+        $cutoff = (Get-Date).AddDays($ThresholdDays)
+        $users  = Get-ADUser -Filter {
+            Enabled -eq $true -and PasswordNeverExpires -eq $false
+        } -Properties DisplayName, EmailAddress, Department, PasswordLastSet, PasswordNeverExpires -ErrorAction Stop |
+            Where-Object {
+                $_.PasswordLastSet -ne $null -and
+                $_.PasswordLastSet.AddDays($maxAge) -le $cutoff
+            } |
+            ForEach-Object {
+                $expiry   = $_.PasswordLastSet.AddDays($maxAge)
+                $daysLeft = [int]($expiry - (Get-Date)).TotalDays
+                [PSCustomObject]@{
+                    SamAccountName = $_.SamAccountName
+                    DisplayName    = $_.DisplayName
+                    Department     = $_.Department
+                    EmailAddress   = $_.EmailAddress
+                    Expiry         = $expiry
+                    DaysLeft       = $daysLeft
+                    Status         = if ($daysLeft -lt 0) { 'Expired' } elseif ($daysLeft -le 7) { 'Critical' } elseif ($daysLeft -le 14) { 'Warning' } else { 'Expiring' }
+                }
+            } |
+            Sort-Object Expiry
+
+        return $users
+    } catch {
+        Write-Host "  [-] Query failed: $_" -ForegroundColor $C.Error
+        return @()
+    }
+}
+
+function Show-PasswordExpiryReport {
+    Write-Section "PASSWORD EXPIRY REPORT"
+
+    Write-Host -NoNewline "  Report users expiring within how many days? (default 30): " -ForegroundColor $C.Header
+    $raw = (Read-Host).Trim()
+    $thresholdDays = 30
+    if (-not [string]::IsNullOrWhiteSpace($raw)) {
+        $parsed = 0
+        if ([int]::TryParse($raw, [ref]$parsed) -and $parsed -gt 0) {
+            $thresholdDays = $parsed
+        } else {
+            Write-Host "  [!] Invalid input — using default of 30 days." -ForegroundColor $C.Warning
+        }
+    }
+
+    Write-Host ""
+    $users = Get-ExpiringPasswords -ThresholdDays $thresholdDays
+    if ($users.Count -eq 0) {
+        Write-Host "  [+] No users have passwords expiring within $thresholdDays days." -ForegroundColor $C.Success
+        Write-Host ""
+        return
+    }
+
+    Write-Host ""
+    Write-Host "  [!!] $($users.Count) user(s) with passwords expiring within $thresholdDays days:" -ForegroundColor $C.Warning
+    Write-Host ""
+    Write-Host ("  {0,-22} {1,-28} {2,-14} {3}" -f "Username", "Display Name", "Expires On", "Days Left") -ForegroundColor $C.Header
+    Write-Host ("  " + ("─" * 78)) -ForegroundColor $C.Header
+
+    foreach ($u in $users) {
+        $color    = switch ($u.Status) {
+            'Expired'  { $C.Error   }
+            'Critical' { $C.Error   }
+            'Warning'  { $C.Warning }
+            default    { $C.Info    }
+        }
+        $daysStr = if ($u.DaysLeft -lt 0) { "EXPIRED ($([Math]::Abs($u.DaysLeft))d ago)" } else { "$($u.DaysLeft) days" }
+        Write-Host ("  {0,-22} {1,-28} {2,-14} {3}" -f `
+            $u.SamAccountName, `
+            (if ($u.DisplayName) { $u.DisplayName } else { "N/A" }), `
+            $u.Expiry.ToString("yyyy-MM-dd"), `
+            $daysStr) -ForegroundColor $color
+    }
+
+    Write-Host ""
+}
+
+function Export-PasswordExpiryReport {
+    Write-Section "EXPORT PASSWORD EXPIRY REPORT"
+
+    $thresholdDays = 30
+    if (-not $Unattended) {
+        Write-Host -NoNewline "  Report users expiring within how many days? (default 30): " -ForegroundColor $C.Header
+        $raw = (Read-Host).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($raw)) {
+            $parsed = 0
+            if ([int]::TryParse($raw, [ref]$parsed) -and $parsed -gt 0) { $thresholdDays = $parsed }
+        }
+    }
+
+    Write-Host ""
+    $users = Get-ExpiringPasswords -ThresholdDays $thresholdDays
+    if ($users.Count -eq 0) {
+        Write-Host "  [+] No users with passwords expiring within $thresholdDays days — nothing to export." -ForegroundColor $C.Success
+        Write-Host ""
+        return
+    }
+
+    Write-Host "  [+] Building report for $($users.Count) user(s)..." -ForegroundColor $C.Success
+
+    $reportTimestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $domain          = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { $env:COMPUTERNAME }
+
+    $expiredCount  = ($users | Where-Object { $_.DaysLeft -lt 0 }).Count
+    $criticalCount = ($users | Where-Object { $_.DaysLeft -ge 0 -and $_.DaysLeft -le 7 }).Count
+    $warningCount  = ($users | Where-Object { $_.DaysLeft -gt 7 -and $_.DaysLeft -le 14 }).Count
+    $expiringCount = ($users | Where-Object { $_.DaysLeft -gt 14 }).Count
+
+    $rows = ""
+    foreach ($u in $users) {
+        $badgeClass = switch ($u.Status) {
+            'Expired'  { 'crit' }
+            'Critical' { 'crit' }
+            'Warning'  { 'warn' }
+            default    { 'stale' }
+        }
+        $daysStr = if ($u.DaysLeft -lt 0) { "EXPIRED" } else { "$($u.DaysLeft)d" }
+        $dept    = if ($u.Department)   { HtmlEncode $u.Department }   else { "N/A" }
+        $disp    = if ($u.DisplayName)  { HtmlEncode $u.DisplayName }  else { "N/A" }
+        $email   = if ($u.EmailAddress) { HtmlEncode $u.EmailAddress } else { "N/A" }
+
+        $rows += @"
+            <tr>
+                <td><strong>$(HtmlEncode $u.SamAccountName)</strong></td>
+                <td>$disp</td>
+                <td>$dept</td>
+                <td>$email</td>
+                <td>$($u.Expiry.ToString("yyyy-MM-dd"))</td>
+                <td><span class="badge badge-$badgeClass">$daysStr</span></td>
+            </tr>
+"@
+    }
+
+    $html = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>B.A.S.T.I.O.N. Password Expiry Report — $domain</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Consolas, monospace; font-size: 14px; padding: 24px; }
+  h1 { color: #00d4ff; font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
+  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 24px; min-width: 120px; text-align: center; }
+  .card .val { font-size: 28px; font-weight: bold; color: #00d4ff; }
+  .card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .card.warn .val { color: #f39c12; }
+  .card.crit .val { color: #e74c3c; }
+  .card.ok   .val { color: #2ecc71; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 9px 12px; border-bottom: 1px solid #1e2d4d; vertical-align: middle; }
+  tr:hover td { background: #1e2d4d; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .badge-ok    { background: #1a4a2e; color: #2ecc71; }
+  .badge-stale { background: #1e3a5a; color: #5dade2; }
+  .badge-warn  { background: #4a3a10; color: #f39c12; }
+  .badge-crit  { background: #4a1a1a; color: #e74c3c; }
+  .section-title { color: #00d4ff; font-size: 15px; margin: 28px 0 10px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; }
+  .footer { margin-top: 32px; color: #555; font-size: 11px; }
+  .note { background: #16213e; border-left: 3px solid #f39c12; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #ccc; border-radius: 0 4px 4px 0; }
+</style>
+</head>
+<body>
+<h1>B.A.S.T.I.O.N. — Password Expiry Report</h1>
+<div class="subtitle">Domain: <strong>$domain</strong> &nbsp;|&nbsp; Threshold: $thresholdDays days &nbsp;|&nbsp; Generated: $reportTimestamp</div>
+<div class="note">
+  Shows all enabled users (without PasswordNeverExpires) whose passwords expire within $thresholdDays days.
+  Contact these users to prompt a password change, or reset passwords as appropriate.
+</div>
+<div class="summary">
+  <div class="card crit"><div class="val">$expiredCount</div><div class="lbl">Expired</div></div>
+  <div class="card crit"><div class="val">$criticalCount</div><div class="lbl">Critical (&lt;7d)</div></div>
+  <div class="card warn"><div class="val">$warningCount</div><div class="lbl">Warning (&lt;14d)</div></div>
+  <div class="card"><div class="val">$expiringCount</div><div class="lbl">Expiring Soon</div></div>
+</div>
+<div class="section-title">Users with Expiring Passwords</div>
+<table>
+  <thead>
+    <tr>
+      <th>Username</th><th>Display Name</th><th>Department</th><th>Email</th><th>Expires On</th><th>Days Left</th>
+    </tr>
+  </thead>
+  <tbody>
+    $rows
+  </tbody>
+</table>
+<div class="footer">
+  Generated by B.A.S.T.I.O.N. — Technician Toolkit &nbsp;|&nbsp; Threshold: $thresholdDays days
+</div>
+</body>
+</html>
+"@
+
+    $reportFilename = "BASTION_PwdExpiry_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename
+
+    try {
+        [System.IO.File]::WriteAllText($reportPath, $html, [System.Text.Encoding]::UTF8)
+        Write-Host "  [+] Password expiry report saved:" -ForegroundColor $C.Success
+        Write-Host "      $reportPath" -ForegroundColor $C.Success
+
+        if (-not $Unattended) {
+            Write-Host ""
+            Write-Host -NoNewline "  Open report in browser? (Y/N): " -ForegroundColor $C.Header
+            $open = (Read-Host).Trim().ToUpper()
+            if ($open -eq "Y") { Start-Process $reportPath }
+        }
+    } catch {
+        Write-Host "  [-] Failed to save report: $_" -ForegroundColor $C.Error
+    }
+
+    Write-Host ""
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN MENU
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -947,6 +1271,9 @@ function Show-Menu {
     Write-Host "  [7] Add / Remove user from group" -ForegroundColor $C.Info
     Write-Host "  [8] Find stale accounts  (90+ days inactive)" -ForegroundColor $C.Info
     Write-Host "  [9] Export stale accounts report  (HTML)" -ForegroundColor $C.Info
+    Write-Host "  [10] Investigate account lockout  (lockout source forensics)" -ForegroundColor $C.Info
+    Write-Host "  [11] Password expiry report" -ForegroundColor $C.Info
+    Write-Host "  [12] Export password expiry report  (HTML)" -ForegroundColor $C.Info
     Write-Host "  [Q] Quit" -ForegroundColor $C.Info
     Write-Host ""
     Write-Host -NoNewline "  Enter selection: " -ForegroundColor $C.Header
@@ -966,6 +1293,10 @@ if ($Unattended) {
         'StaleReport' {
             Write-Host "[*] B.A.S.T.I.O.N. — Running unattended stale accounts report..." -ForegroundColor $C.Progress
             Export-StaleReport
+        }
+        'PasswordExpiryReport' {
+            Write-Host "[*] B.A.S.T.I.O.N. — Running unattended password expiry report..." -ForegroundColor $C.Progress
+            Export-PasswordExpiryReport
         }
     }
 } else {
@@ -998,6 +1329,9 @@ if ($Unattended) {
             "7" { Manage-GroupMembership }
             "8" { Show-StaleAccounts }
             "9" { Export-StaleReport }
+            "10" { Invoke-LockoutForensics }
+            "11" { Show-PasswordExpiryReport }
+            "12" { Export-PasswordExpiryReport }
             "Q" {
                 Write-Host ""
                 Write-Host "  Closing B.A.S.T.I.O.N." -ForegroundColor $C.Header
@@ -1005,7 +1339,7 @@ if ($Unattended) {
             }
             default {
                 Write-Host ""
-                Write-Host "  [!!] Invalid selection. Enter 1-9 or Q." -ForegroundColor $C.Warning
+                Write-Host "  [!!] Invalid selection. Enter 1-12 or Q." -ForegroundColor $C.Warning
                 Start-Sleep -Seconds 1
             }
         }

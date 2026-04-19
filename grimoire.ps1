@@ -36,6 +36,8 @@
     T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
     V.A.U.L.T.             — M365 license & mailbox auditing
     S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
+    R.E.L.I.C.             — Certificate health & SSL expiry monitoring
+    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
 
     Color Schema
     ─────────────────────────────────────────
@@ -129,6 +131,14 @@ $Tools = @(
         Color       = 'Green'
         Category    = 'Deployment & Onboarding'
     },
+    [PSCustomObject]@{
+        Key         = '21'
+        Name        = 'H.E.A.R.T.H.'
+        File        = 'hearth.ps1'
+        Description = 'Toolkit setup wizard — configure org name, log paths, and default values'
+        Color       = 'White'
+        Category    = 'Deployment & Onboarding'
+    },
     # ── Diagnostics & Reporting ──────────────────────────────────────
     [PSCustomObject]@{
         Key         = '6'
@@ -185,6 +195,14 @@ $Tools = @(
         File        = 'bastion.ps1'
         Description = 'Active Directory management — search, unlock, reset passwords, group membership'
         Color       = 'Blue'
+        Category    = 'Security'
+    },
+    [PSCustomObject]@{
+        Key         = '20'
+        Name        = 'R.E.L.I.C.'
+        File        = 'relic.ps1'
+        Description = 'Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report'
+        Color       = 'Yellow'
         Category    = 'Security'
     },
     # ── Network & Remote ─────────────────────────────────────────────
@@ -398,7 +416,7 @@ do {
     }
     else {
         Write-Host ""
-        Write-Host "  [!!] Invalid selection. Enter 1-19 or Q to quit." -ForegroundColor $ColorSchema.Warning
+        Write-Host "  [!!] Invalid selection. Enter a tool number or Q to quit." -ForegroundColor $ColorSchema.Warning
         Start-Sleep -Seconds 1
     }
 

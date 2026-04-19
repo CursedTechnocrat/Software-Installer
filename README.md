@@ -61,6 +61,8 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | **threshold.ps1** | **T.H.R.E.S.H.O.L.D.** — Tests Hardware Reliability, Evaluates Storage Health, & Optimizes/Logs Disk data | Disk & storage health — physical disk status, volume space, cleanup, old profiles, HTML report |
 | **vault.ps1** | **V.A.U.L.T.** — Validates Assets & User License Tracking | Microsoft 365 license & mailbox audit — license assignments, MFA status, shared mailboxes, HTML report |
 | **sentinel.ps1** | **S.E.N.T.I.N.E.L.** — Scans & Evaluates services, Networks, Tasks, Infrastructure, Node Events & Logs | Service, task & event log monitor — health check local or remote machine, HTML report |
+| **relic.ps1** | **R.E.L.I.C.** — *Reviews & Enumerates Latent Identity Certificates* | Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report |
+| **hearth.ps1** | **H.E.A.R.T.H.** — *Hub for Environment, Admin Runtime & Toolkit Hardening* | Toolkit setup wizard — org name, log paths, default values, environment checks |
 
 ---
 

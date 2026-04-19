@@ -39,6 +39,8 @@
     T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
     V.A.U.L.T.             — M365 license & mailbox auditing
     S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
+    R.E.L.I.C.             — Certificate health & SSL expiry monitoring
+    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
 
     Color Schema
     ─────────────────────────────────────────
