@@ -12,6 +12,7 @@
     PS C:\> .\archive.ps1                                                           # Must be run as Administrator
     PS C:\> .\archive.ps1 -Unattended -Username "John"                              # Archive all items for user John
     PS C:\> .\archive.ps1 -Unattended -Username "John" -Items "1,2,3" -Destination "\\server\backup"
+    PS C:\> .\archive.ps1 -WhatIf                                                   # Preview actions without staging or compressing
 
 .NOTES
     Version : 1.0
@@ -41,6 +42,7 @@
 
 param(
     [switch]$Unattended,
+    [switch]$WhatIf,
     [string]$Username    = "",
     [string]$Items       = "A",
     [string]$Destination = ""
@@ -190,6 +192,12 @@ function Stage-Item {
 
     Write-Host "    [*] Staging $Label..." -ForegroundColor $ColorSchema.Progress
 
+    if ($WhatIf) {
+        Write-Host "    [~] Would stage $Label from $SourcePath" -ForegroundColor Cyan
+        Add-ArchiveRecord -Item $Label -Status "WhatIf" -Detail "Would stage from: $SourcePath"
+        return
+    }
+
     try {
         $null = New-Item -ItemType Directory -Path $StageDest -Force -ErrorAction Stop
 
@@ -221,6 +229,12 @@ function Stage-Item {
 # ─────────────────────────────────────────────────────────────────────────────
 
 if (-not $Unattended) { Show-ArchiveBanner }
+
+if ($WhatIf) {
+    Write-Host ""
+    Write-Host "  *** DRY RUN MODE — No files will be staged or compressed ***" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 Write-Host "  [!!] Run this tool BEFORE reimaging or wiping the machine." -ForegroundColor $ColorSchema.Warning
 Write-Host "       Ensure the destination has sufficient free space." -ForegroundColor $ColorSchema.Warning
@@ -490,6 +504,12 @@ Write-Host "  [*] Creating ZIP: $zipPath" -ForegroundColor $ColorSchema.Progress
 Write-Host "  [*] This may take several minutes for large profiles..." -ForegroundColor $ColorSchema.Info
 Write-Host ""
 
+if ($WhatIf) {
+    Write-Host "  [~] Would compress staged files into: $zipPath" -ForegroundColor Cyan
+    Write-Host ""
+    Add-ArchiveRecord -Item "ZIP Archive" -Status "WhatIf" -Detail "Would create: $zipPath"
+} else {
+
 try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
     [System.IO.Compression.ZipFile]::CreateFromDirectory($stagingDir, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
@@ -512,6 +532,7 @@ finally {
         Write-Host "  [!!] Could not remove staging folder: $stagingDir" -ForegroundColor $ColorSchema.Warning
     }
 }
+}  # end else (not WhatIf)
 
 # ── LOG ───────────────────────────────────────────────────────────────────────
 
@@ -541,6 +562,7 @@ foreach ($record in $ArchiveLog) {
         "Created"  { $ColorSchema.Success }
         "Partial"  { $ColorSchema.Warning }
         "Skipped"  { $ColorSchema.Info    }
+        "WhatIf"   { 'Cyan'               }
         default    { $ColorSchema.Error   }
     }
     $detail = if ($record.Detail) { " — $($record.Detail)" } else { "" }

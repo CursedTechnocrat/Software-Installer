@@ -10,6 +10,7 @@
     configuration. Ends with an action summary and optional reboot countdown.
 
 .USAGE
+    PS C:\> .\covenant.ps1 -WhatIf                # Preview all onboarding steps without making changes
     PS C:\> .\covenant.ps1                                                     # Must be run as Administrator
     PS C:\> .\covenant.ps1 -Unattended -NewComputerName "DESKTOP-01"           # Rename only
     PS C:\> .\covenant.ps1 -Unattended -Timezone "Eastern Standard Time"       # Set timezone only
@@ -39,6 +40,7 @@
 
 param(
     [switch]$Unattended,
+    [switch]$WhatIf,
     [string]$NewComputerName = "",
     [string]$Timezone        = "",
     [string]$LocalAdminUser  = "",
@@ -106,6 +108,13 @@ function Add-ActionRecord {
 # ─────────────────────────────────────────────────────────────────────────────
 
 Show-CovenantBanner
+
+if ($WhatIf) {
+    Write-Host "  ─────────────────────────────────────────────────────────────" -ForegroundColor Cyan
+    Write-Host "  [~] DRY RUN MODE — No changes will be made to this system." -ForegroundColor Cyan
+    Write-Host "  ─────────────────────────────────────────────────────────────" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 $executionTime = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $rebootRequired = $false
@@ -185,6 +194,11 @@ if (-not [string]::IsNullOrWhiteSpace($newName)) {
 
     # Validate: 1–15 chars, letters/digits/hyphens, no leading or trailing hyphen
     if ($newName -match '^[a-zA-Z0-9][a-zA-Z0-9\-]{0,13}[a-zA-Z0-9]$' -or $newName -match '^[a-zA-Z0-9]$') {
+        if ($WhatIf) {
+            Write-Host "    [~] Would rename computer from '$env:COMPUTERNAME' to '$newName'" -ForegroundColor Cyan
+            Add-ActionRecord -Step "Computer Rename" -Status "WhatIf" -Detail "Would rename to: $newName"
+            $rebootRequired = $true
+        } else {
         try {
             Rename-Computer -NewName $newName -Force -ErrorAction Stop
             Write-Host "    [+] Computer will be renamed to '$newName' after reboot." -ForegroundColor $ColorSchema.Success
@@ -194,6 +208,7 @@ if (-not [string]::IsNullOrWhiteSpace($newName)) {
         catch {
             Write-Host "    [-] Rename failed: $_" -ForegroundColor $ColorSchema.Error
             Add-ActionRecord -Step "Computer Rename" -Status "Failed" -Detail $_
+        }
         }
     }
     else {
@@ -226,6 +241,15 @@ if ($Unattended) {
     $joinChoice = Read-Host "  Proceed with Entra ID join? (Y/N)"
 
     if ($joinChoice -eq 'Y' -or $joinChoice -eq 'y') {
+
+        if ($WhatIf) {
+            Write-Host ""
+            Write-Host "  [~] Would collect Entra ID credentials (UPN + password)" -ForegroundColor Cyan
+            Write-Host "  [~] Would run: dsregcmd /join to join this device to your Entra ID tenant" -ForegroundColor Cyan
+            Write-Host ""
+            Add-ActionRecord -Step "Entra ID Join" -Status "WhatIf" -Detail "Would join device to Entra ID"
+            $rebootRequired = $true
+        } else {
 
         Write-Host ""
         Write-Host "  ─────────────────────────────────────────" -ForegroundColor $ColorSchema.Header
@@ -319,6 +343,7 @@ if ($Unattended) {
             $plainPassword = $null
             [System.GC]::Collect()
         }
+        }  # end else (not WhatIf)
     }
     else {
         Write-Host "    Skipped." -ForegroundColor $ColorSchema.Info
@@ -393,6 +418,14 @@ if ($Unattended) {
             Write-Host ""
             Write-Host "    Mapping $driveLetter`: to $uncPath ..." -ForegroundColor $ColorSchema.Progress
 
+            if ($WhatIf) {
+                $persistLabel = if ($persist) { "persistent" } else { "non-persistent" }
+                Write-Host ""
+                Write-Host "  [~] Would map $driveLetter`: to $uncPath ($persistLabel)" -ForegroundColor Cyan
+                Write-Host ""
+                Add-ActionRecord -Step "Drive Mapping" -Status "WhatIf" -Detail "$driveLetter`: → $uncPath (Persistent: $persist)"
+            } else {
+
             try {
                 # Remove existing mapping on that letter if present
                 if (Test-Path "$driveLetter`:") {
@@ -436,6 +469,7 @@ if ($Unattended) {
                 Write-Host "    [-] Error mapping drive: $_" -ForegroundColor $ColorSchema.Error
                 Add-ActionRecord -Step "Drive Mapping" -Status "Failed" -Detail $_
             }
+            }  # end else (not WhatIf)
 
             Write-Host ""
             $anotherChoice = Read-Host "  Map another drive? (Y/N)"
@@ -513,6 +547,14 @@ if ($Unattended) {
         Write-Host ""
         Write-Host "    Creating account '$localUser' ..." -ForegroundColor $ColorSchema.Progress
 
+        if ($WhatIf) {
+            Write-Host ""
+            Write-Host "  [~] Would create local admin account '$localUser'" -ForegroundColor Cyan
+            Write-Host "  [~] Would add '$localUser' to the Administrators group" -ForegroundColor Cyan
+            Write-Host ""
+            Add-ActionRecord -Step "Local Admin" -Status "WhatIf" -Detail "Would create: $localUser"
+        } else {
+
         try {
             $existing = Get-LocalUser -Name $localUser -ErrorAction SilentlyContinue
             if ($existing) {
@@ -542,6 +584,7 @@ if ($Unattended) {
             Write-Host "    [-] Error creating account: $_" -ForegroundColor $ColorSchema.Error
             Add-ActionRecord -Step "Local Admin" -Status "Failed" -Detail $_
         }
+        }  # end else (not WhatIf)
     }
     else {
         Write-Host "    Skipped." -ForegroundColor $ColorSchema.Info
@@ -645,6 +688,7 @@ foreach ($record in $ActionLog) {
         'Joined|Created|Mapped|Set|Updated' { $ColorSchema.Success }
         'Skipped'                           { $ColorSchema.Info    }
         'Pending Reboot'                    { $ColorSchema.Warning }
+        'WhatIf'                            { 'Cyan'               }
         default                             { $ColorSchema.Error   }
     }
     $detail = if ($record.Detail) { " — $($record.Detail)" } else { "" }
@@ -668,6 +712,11 @@ if ($rebootRequired) {
         $rebootPrompt = Read-Host "  Is it safe to reboot this computer now? (Y/N)"
 
         if ($rebootPrompt -eq 'Y' -or $rebootPrompt -eq 'y') {
+            if ($WhatIf) {
+                Write-Host ""
+                Write-Host "  [~] Would restart this computer now" -ForegroundColor Cyan
+                Write-Host ""
+            } else {
             Write-Host ""
             Write-Host "  Rebooting in 30 seconds. Press Escape to cancel..." -ForegroundColor $ColorSchema.Warning
             Write-Host ""
@@ -700,6 +749,7 @@ if ($rebootRequired) {
             else {
                 Restart-Computer -Force
             }
+            }  # end else (not WhatIf)
         }
         else {
             Write-Host ""
