@@ -46,7 +46,8 @@
 
 param(
     [switch]$Unattended,
-    [string]$Categories = "A"
+    [string]$Categories = "A",
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +68,8 @@ if ($PSScriptRoot) {
 } else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -626,26 +629,27 @@ if ($Unattended) {
         Write-Host ("  [{0,2}] {1}" -f $key, $categories[$key].Label) -ForegroundColor $ColorSchema.Info
     }
 
-    Write-Host ""
-    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
-    $rawInput = (Read-Host).Trim().ToUpper()
+    $selectedKeys = @()
+    do {
+        Write-Host ""
+        Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Header
+        $rawInput = (Read-Host).Trim().ToUpper()
+
+        if ($rawInput -eq "A") {
+            $selectedKeys = $categories.Keys
+        } else {
+            $selectedKeys = $rawInput -split ',' |
+                ForEach-Object { $_.Trim() } |
+                Where-Object   { $categories.ContainsKey($_) }
+        }
+
+        if ($selectedKeys.Count -eq 0) {
+            Write-Host "  [!] No valid categories in '$rawInput' — enter numbers 1–12, a comma-separated list, or A for all." -ForegroundColor $ColorSchema.Warning
+        }
+    } while ($selectedKeys.Count -eq 0)
 }
 
-$selectedKeys = @()
-
-if ($rawInput -eq "A") {
-    $selectedKeys = $categories.Keys
-} else {
-    $selectedKeys = $rawInput -split ',' |
-        ForEach-Object { $_.Trim() } |
-        Where-Object   { $categories.ContainsKey($_) }
-}
-
-if ($selectedKeys.Count -eq 0) {
-    Write-Host ""
-    Write-Host "  [-] No valid categories selected." -ForegroundColor $ColorSchema.Error
-    exit 1
-}
+if (-not $selectedKeys) { $selectedKeys = @() }
 
 Write-Host ""
 Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
@@ -711,4 +715,5 @@ Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
 if (-not $Unattended) { Read-Host "  Press Enter to exit" }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

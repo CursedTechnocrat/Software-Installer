@@ -52,10 +52,13 @@
 param(
     [string]$SubscriptionId = '',
     [string]$OutputPath     = "$env:TEMP\azure-assessment-$(Get-Date -Format 'yyyyMMdd-HHmmss').html",
-    [switch]$NoOpen
+    [switch]$NoOpen,
+    [switch]$Transcript
 )
 
 Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -1105,4 +1108,5 @@ if (-not $NoOpen) {
 }
 
 Write-Host ""
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

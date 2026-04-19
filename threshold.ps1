@@ -53,7 +53,8 @@
 #>
 
 param(
-    [switch]$Unattended
+    [switch]$Unattended,
+    [switch]$Transcript
 )
 
 #region ── Bootstrap ────────────────────────────────────────────────────────────
@@ -63,6 +64,8 @@ Assert-AdminPrivilege
 
 # Script path resolution
 $ScriptPath = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # Color hashtable
 $C = @{
@@ -944,6 +947,7 @@ do {
 } while ($choice.ToUpper() -ne 'Q')
 
 # Self-removal
+if ($Transcript) { Stop-TKTranscript }
 Remove-Item $PSCommandPath -Force -ErrorAction SilentlyContinue
 
 #endregion

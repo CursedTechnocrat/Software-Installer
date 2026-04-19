@@ -44,7 +44,8 @@ param(
     [string]$NewComputerName = "",
     [string]$Timezone        = "",
     [string]$LocalAdminUser  = "",
-    [securestring]$LocalAdminPassword = $null
+    [securestring]$LocalAdminPassword = $null,
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -53,6 +54,8 @@ param(
 
 Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
 Assert-AdminPrivilege
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BANNER DISPLAY
@@ -772,4 +775,5 @@ Write-Host "══════════════════════�
 Write-Host "  SCRIPT EXECUTION COMPLETED" -ForegroundColor $ColorSchema.Header
 Write-Host "════════════════════════════════════════════════" -ForegroundColor $ColorSchema.Header
 Write-Host ""
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

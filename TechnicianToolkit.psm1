@@ -120,6 +120,31 @@ function Set-TKConfig {
     $cfg | ConvertTo-Json -Depth 4 | Set-Content $configPath -Encoding UTF8
 }
 
+function Start-TKTranscript {
+    <#
+    .SYNOPSIS
+        Starts a timestamped PowerShell transcript in the configured log directory.
+        Call once near the top of a script when -Transcript is active.
+    #>
+    param([Parameter(Mandatory)][string]$LogRoot)
+    $path = Join-Path $LogRoot "TK_Transcript_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
+    try {
+        Start-Transcript -Path $path -Append -ErrorAction Stop | Out-Null
+        Write-Host "  [*] Transcript: $path" -ForegroundColor Gray
+    }
+    catch {
+        Write-Warn "Could not start transcript: $_"
+    }
+}
+
+function Stop-TKTranscript {
+    <#
+    .SYNOPSIS
+        Stops an active PowerShell transcript started by Start-TKTranscript.
+    #>
+    try { Stop-Transcript -ErrorAction Stop | Out-Null } catch {}
+}
+
 function Resolve-LogDirectory {
     <#
     .SYNOPSIS
@@ -165,4 +190,4 @@ function Invoke-AdminElevation {
 
 #endregion
 
-Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory
+Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory, Start-TKTranscript, Stop-TKTranscript

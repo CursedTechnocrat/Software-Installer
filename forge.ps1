@@ -48,7 +48,8 @@
 param(
     [switch]$Unattended,
     [ValidateSet('Audit','WindowsUpdate','LocalInstall','Report')]
-    [string]$Action = 'Audit'
+    [string]$Action = 'Audit',
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +60,8 @@ Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
 Assert-AdminPrivilege
 
 $ScriptPath = (Get-Location).Path
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -399,4 +402,5 @@ if ($Unattended) {
 
     } while ($choice -ne 'Q')
 }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

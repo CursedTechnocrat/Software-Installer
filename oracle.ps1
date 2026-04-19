@@ -35,7 +35,10 @@
     Gray     Information and details
 #>
 
-param([switch]$Unattended)
+param(
+    [switch]$Unattended,
+    [switch]$Transcript
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN CHECK
@@ -75,6 +78,8 @@ if ($PSScriptRoot) {
 } else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -1029,4 +1034,5 @@ Write-Host "══════════════════════�
 Write-Host "  SCRIPT EXECUTION COMPLETED" -ForegroundColor $ColorSchema.Header
 Write-Host "════════════════════════════════════════════════" -ForegroundColor $ColorSchema.Header
 Write-Host ""
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

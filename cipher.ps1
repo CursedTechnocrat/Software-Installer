@@ -48,7 +48,8 @@ param(
     [switch]$WhatIf,
     [ValidateSet('Status','Enable','Disable','Suspend','Resume','BackupAD','BackupEntraID')]
     [string]$Action = "Status",
-    [string]$Drive  = "C"
+    [string]$Drive  = "C",
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -57,6 +58,8 @@ param(
 
 Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
 Assert-AdminPrivilege
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -599,4 +602,5 @@ if ($Unattended) {
 
     } while ($choice -ne "Q")
 }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

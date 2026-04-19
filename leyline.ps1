@@ -50,7 +50,8 @@ param(
     [switch]$Unattended,
     [ValidateSet('Status','FlushDNS','Renew','ResetStack','PortTest','Trace','ARPScan')]
     [string]$Action = 'Status',
-    [string]$Target = ''
+    [string]$Target = '',
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +60,8 @@ param(
 
 Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
 Assert-AdminPrivilege
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -487,4 +490,5 @@ if ($Unattended) {
 
     } while ($choice -ne 'Q')
 }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

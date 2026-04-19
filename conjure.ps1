@@ -36,7 +36,8 @@
 #>
 
 param(
-    [switch]$Unattended
+    [switch]$Unattended,
+    [switch]$Transcript
 )
 
 # ===========================
@@ -52,6 +53,8 @@ $ExecutionTime = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
 # Set console to UTF-8 so Unicode block characters render correctly
 Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 $RequiredSoftware = @(
     "Microsoft.Teams",
@@ -537,4 +540,5 @@ Show-InstallationSummary
 Write-Host "[OK] C.O.N.J.U.R.E. Script completed!" -ForegroundColor $Colors.Success
 Write-Host ""
 if (-not $Unattended) { Read-Host "Press Enter to exit" }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

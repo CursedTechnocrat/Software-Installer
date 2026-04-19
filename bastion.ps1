@@ -52,7 +52,8 @@
 param(
     [switch]$Unattended,
     [ValidateSet('StaleReport')]
-    [string]$Action = 'StaleReport'
+    [string]$Action = 'StaleReport',
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +74,8 @@ if ($PSScriptRoot) {
 } else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -1016,4 +1019,5 @@ if ($Unattended) {
     } while ($choice -ne "Q")
 }
 
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

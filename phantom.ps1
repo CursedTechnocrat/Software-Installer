@@ -43,7 +43,8 @@ param(
     [switch]$Unattended,
     [string]$SourcePath = "",
     [string]$DestPath   = "",
-    [string]$Items      = "A"
+    [string]$Items      = "A",
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +65,8 @@ if ($PSScriptRoot) {
 } else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -405,6 +408,16 @@ if ($Unattended) {
         exit 1
     }
     $DestRoot = $DestPath.TrimEnd('\')
+    if (-not (Test-Path $DestRoot)) {
+        try {
+            $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop
+            Write-Host "  [+] Destination created: $DestRoot" -ForegroundColor $ColorSchema.Success
+        }
+        catch {
+            Write-Host "  [-] Destination not accessible and could not be created: $_" -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+    }
     Write-Host "  [+] Destination: $DestRoot" -ForegroundColor $ColorSchema.Success
 } else {
     Write-Host "  [1] Current user's profile  ($env:USERPROFILE)" -ForegroundColor $ColorSchema.Info
@@ -425,6 +438,18 @@ if ($Unattended) {
             Write-Host ""
             Write-Host "  [-] No path entered." -ForegroundColor $ColorSchema.Error
             exit 1
+        }
+        if (-not (Test-Path $DestRoot)) {
+            Write-Host ""
+            Write-Host "  [*] Destination not found — attempting to create it..." -ForegroundColor $ColorSchema.Progress
+            try {
+                $null = New-Item -ItemType Directory -Path $DestRoot -Force -ErrorAction Stop
+                Write-Host "  [+] Destination created." -ForegroundColor $ColorSchema.Success
+            }
+            catch {
+                Write-Host "  [-] Could not create destination: $_" -ForegroundColor $ColorSchema.Error
+                exit 1
+            }
         }
     }
     else {
@@ -608,4 +633,5 @@ Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
 if (-not $Unattended) { Read-Host "  Press Enter to exit" }
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

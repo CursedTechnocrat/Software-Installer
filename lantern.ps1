@@ -53,7 +53,8 @@
 param(
     [switch]$Unattended,
     [ValidateSet('Sweep')]
-    [string]$Action = 'Sweep'
+    [string]$Action = 'Sweep',
+    [switch]$Transcript
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +75,8 @@ if ($PSScriptRoot) {
 } else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COLOR SCHEMA
@@ -692,4 +695,5 @@ if ($Unattended) {
     } while ($choice -ne 'Q')
 }
 
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }

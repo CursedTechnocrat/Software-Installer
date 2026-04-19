@@ -35,7 +35,10 @@
     Gray     Information and details
 #>
 
-param([switch]$Unattended)
+param(
+    [switch]$Unattended,
+    [switch]$Transcript
+)
 
 # ===========================
 # ADMIN PRIVILEGE CHECK
@@ -57,6 +60,8 @@ elseif ($MyInvocation.MyCommand.Path) {
 else {
     $ScriptPath = (Get-Location).Path
 }
+
+if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $ScriptPath) }
 
 # Initialize global variables
 $ExtractRoot     = Join-Path $ScriptPath "ExtractedDrivers"
@@ -686,4 +691,5 @@ if (-not $Unattended) { Add-NetworkPrinter }
 Show-InstallationSummary
 
 Invoke-CleanupPrompt
+if ($Transcript) { Stop-TKTranscript }
 if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }
