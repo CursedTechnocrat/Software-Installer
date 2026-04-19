@@ -147,22 +147,47 @@ function Copy-ProfileFolder {
         return
     }
 
-    Write-Host "    [*] Copying $Label..." -ForegroundColor $ColorSchema.Progress
+    # Pre-flight scan so the progress bar has a denominator
+    Write-Host "    [*] Scanning $Label..." -ForegroundColor $ColorSchema.Progress
+    $sourceFiles = Get-ChildItem -Recurse -File -Path $SourcePath -ErrorAction SilentlyContinue
+    $totalFiles  = $sourceFiles.Count
+    $totalSizeMB = [math]::Round(($sourceFiles | Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+
+    Write-Host "    [*] Copying $Label  ($totalFiles files, $totalSizeMB MB)..." -ForegroundColor $ColorSchema.Progress
 
     try {
         $null = New-Item -ItemType Directory -Path $DestPath -Force -ErrorAction Stop
-        $robocopyArgs = @($SourcePath, $DestPath, '/E', '/R:2', '/W:3', '/NP', '/NFL', '/NDL', '/NJH', '/NJS')
-        & robocopy @robocopyArgs | Out-Null
+
+        # /NFL removed so robocopy emits per-file lines for progress tracking
+        $robocopyArgs = @($SourcePath, $DestPath, '/E', '/R:2', '/W:3', '/NP', '/NDL', '/NJH', '/NJS')
+        $copied    = 0
+        $startTime = Get-Date
+
+        & robocopy @robocopyArgs | ForEach-Object {
+            # Match lines where robocopy reports a file it is copying
+            if ($_ -match '^\s+(New File|Newer|Older|Changed)\s') {
+                $copied++
+                $pct = if ($totalFiles -gt 0) { [math]::Min(99, [math]::Floor($copied / $totalFiles * 100)) } else { 0 }
+                Write-Progress -Activity "Copying $Label" `
+                               -Status   "$copied / $totalFiles files" `
+                               -PercentComplete $pct
+            }
+        }
+
+        Write-Progress -Activity "Copying $Label" -Completed
+        $elapsed = [math]::Round(((Get-Date) - $startTime).TotalSeconds, 1)
 
         if ($LASTEXITCODE -le 7) {
-            Write-Host "    [+] $Label — copied successfully." -ForegroundColor $ColorSchema.Success
-            Add-MigrationRecord -Item $Label -Status "Copied"
+            Write-Host "    [+] $Label — done  ($copied files copied, $totalSizeMB MB, ${elapsed}s)." -ForegroundColor $ColorSchema.Success
+            Add-MigrationRecord -Item $Label -Status "Copied" -Detail "$totalFiles files, $totalSizeMB MB"
         } else {
+            Write-Progress -Activity "Copying $Label" -Completed
             Write-Host "    [!!] $Label — completed with warnings (exit $LASTEXITCODE)." -ForegroundColor $ColorSchema.Warning
-            Add-MigrationRecord -Item $Label -Status "Partial" -Detail "Robocopy exit code $LASTEXITCODE"
+            Add-MigrationRecord -Item $Label -Status "Partial" -Detail "Robocopy exit $LASTEXITCODE, $totalFiles files, $totalSizeMB MB"
         }
     }
     catch {
+        Write-Progress -Activity "Copying $Label" -Completed
         Write-Host "    [-] $Label — failed: $_" -ForegroundColor $ColorSchema.Error
         Add-MigrationRecord -Item $Label -Status "Failed" -Detail $_
     }
