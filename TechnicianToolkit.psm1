@@ -30,6 +30,71 @@ function Write-Info { param([string]$Msg) Write-Host ("      {0}" -f $Msg) -Fore
 
 #endregion
 
+#region ── Error Telemetry ───────────────────────────────────────────────────
+
+function Write-TKError {
+    <#
+    .SYNOPSIS
+        Logs a structured error to the central toolkit error log and optionally
+        posts to a Teams incoming webhook configured as TeamsWebhook in config.json.
+    .EXAMPLE
+        Write-TKError -ScriptName 'sigil' -Message $_.Exception.Message -Category 'Registry'
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ScriptName,
+        [Parameter(Mandatory)][string]$Message,
+        [string]$Category = 'General'
+    )
+
+    $entry = [PSCustomObject]@{
+        Timestamp  = (Get-Date -Format 'o')
+        Script     = $ScriptName
+        Category   = $Category
+        Message    = $Message
+        Host       = $env:COMPUTERNAME
+        User       = $env:USERNAME
+    }
+
+    # Append to monthly JSONL error log in the configured log directory
+    try {
+        $cfg     = Get-TKConfig
+        $logRoot = if (-not [string]::IsNullOrWhiteSpace($cfg.LogDirectory) -and (Test-Path $cfg.LogDirectory)) {
+            $cfg.LogDirectory
+        } else {
+            $PSScriptRoot
+        }
+        $logFile = Join-Path $logRoot "TK_Errors_$(Get-Date -Format 'yyyyMM').jsonl"
+        $line    = $entry | ConvertTo-Json -Compress
+        Add-Content -Path $logFile -Value $line -Encoding UTF8 -ErrorAction Stop
+    }
+    catch { <# never throw from a logging helper #> }
+
+    # Optional Teams webhook notification
+    try {
+        $cfg = Get-TKConfig
+        $webhook = $cfg.TeamsWebhook
+        if (-not [string]::IsNullOrWhiteSpace($webhook)) {
+            $card = @{
+                '@type'      = 'MessageCard'
+                '@context'   = 'http://schema.org/extensions'
+                themeColor   = 'FF0000'
+                summary      = "TechnicianToolkit error in $ScriptName"
+                sections     = @(@{
+                    activityTitle    = "TechnicianToolkit — $ScriptName [$Category]"
+                    activitySubtitle = "$($entry.Host) / $($entry.User)  •  $($entry.Timestamp)"
+                    activityText     = $Message
+                })
+            } | ConvertTo-Json -Depth 5
+
+            Invoke-RestMethod -Uri $webhook -Method Post -Body $card `
+                -ContentType 'application/json' -ErrorAction Stop | Out-Null
+        }
+    }
+    catch { <# webhook failures are silent — never interrupt the caller #> }
+}
+
+#endregion
+
 #region ── HTML Utilities ────────────────────────────────────────────────────
 
 function EscHtml {
@@ -52,11 +117,12 @@ function Get-TKConfig {
     $configPath = Join-Path $PSScriptRoot 'config.json'
 
     $defaults = [PSCustomObject]@{
-        OrgName      = ''
-        LogDirectory = ''
-        Archive      = [PSCustomObject]@{ DefaultDestination   = '' }
-        Phantom      = [PSCustomObject]@{ DefaultDestination   = '' }
-        Covenant     = [PSCustomObject]@{ DefaultTimezone = ''; DefaultLocalAdminUser = '' }
+        OrgName       = ''
+        LogDirectory  = ''
+        TeamsWebhook  = ''
+        Archive       = [PSCustomObject]@{ DefaultDestination   = '' }
+        Phantom       = [PSCustomObject]@{ DefaultDestination   = '' }
+        Covenant      = [PSCustomObject]@{ DefaultTimezone = ''; DefaultLocalAdminUser = '' }
     }
 
     if (-not (Test-Path $configPath)) { return $defaults }
@@ -190,4 +256,4 @@ function Invoke-AdminElevation {
 
 #endregion
 
-Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory, Start-TKTranscript, Stop-TKTranscript
+Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory, Start-TKTranscript, Stop-TKTranscript, Write-TKError

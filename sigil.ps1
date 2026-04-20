@@ -12,9 +12,11 @@
     post-onboarding hardening step. Changes are logged to a timestamped CSV.
 
 .USAGE
-    PS C:\> .\sigil.ps1                              # Must be run as Administrator
-    PS C:\> .\sigil.ps1 -Unattended                  # Apply all categories silently (default)
-    PS C:\> .\sigil.ps1 -Unattended -Categories "1,3,5"  # Apply specific categories silently
+    PS C:\> .\sigil.ps1                                    # Must be run as Administrator
+    PS C:\> .\sigil.ps1 -WhatIf                            # Preview all changes without applying them
+    PS C:\> .\sigil.ps1 -Unattended                        # Apply all categories silently (default)
+    PS C:\> .\sigil.ps1 -Unattended -Categories "1,3,5"   # Apply specific categories silently
+    PS C:\> .\sigil.ps1 -Unattended -WhatIf               # Preview unattended run without applying
 
 .NOTES
     Version : 1.0
@@ -49,6 +51,7 @@
 param(
     [switch]$Unattended,
     [string]$Categories = "A",
+    [switch]$WhatIf,
     [switch]$Transcript
 )
 
@@ -129,6 +132,12 @@ function Show-SigilBanner {
     Write-Host "    S.I.G.I.L. — Secures Infrastructure: Governs via Integrated Lockdown" -ForegroundColor Cyan
     Write-Host "    Security Baseline & Policy Enforcement Tool" -ForegroundColor Cyan
     Write-Host ""
+    if ($WhatIf) {
+        Write-Host "  ─────────────────────────────────────────────────────────────" -ForegroundColor Cyan
+        Write-Host "  [~] DRY RUN MODE — No changes will be made to this system." -ForegroundColor Cyan
+        Write-Host "  ─────────────────────────────────────────────────────────────" -ForegroundColor Cyan
+        Write-Host ""
+    }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -147,10 +156,17 @@ function Set-BaselineReg {
 
     try {
         $current = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+        $prev    = if ($null -ne $current) { $current } else { "(not set)" }
 
         if ($null -ne $current -and $current -eq $Value) {
             Write-Host "    [OK] $Label — already set ($Value)." -ForegroundColor $ColorSchema.Info
             Add-ActionRecord -Category $Category -Setting $Label -Status "Already Set" -Detail "Value: $Value"
+            return
+        }
+
+        if ($WhatIf) {
+            Write-Host "    [~] $Label — would set: $prev → $Value" -ForegroundColor Cyan
+            Add-ActionRecord -Category $Category -Setting $Label -Status "WhatIf" -Detail "$prev → $Value"
             return
         }
 
@@ -159,7 +175,6 @@ function Set-BaselineReg {
         }
 
         Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -ErrorAction Stop
-        $prev = if ($null -ne $current) { $current } else { "(not set)" }
         Write-Host "    [+] $Label — applied.  ($prev → $Value)" -ForegroundColor $ColorSchema.Success
         Add-ActionRecord -Category $Category -Setting $Label -Status "Applied" -Detail "$prev → $Value"
     }
@@ -313,25 +328,32 @@ function Apply-Autorun {
 function Apply-Firewall {
     Write-Host "  [*] Applying Windows Firewall settings..." -ForegroundColor $ColorSchema.Progress
 
-    try {
-        Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True -ErrorAction Stop
-        Write-Host "    [+] Windows Firewall enabled on all profiles." -ForegroundColor $ColorSchema.Success
-        Add-ActionRecord -Category "Firewall" -Setting "Enable all firewall profiles" -Status "Applied"
-    }
-    catch {
-        Write-Host "    [-] Failed to configure firewall: $_" -ForegroundColor $ColorSchema.Error
-        Add-ActionRecord -Category "Firewall" -Setting "Enable all firewall profiles" -Status "Failed" -Detail $_
-    }
+    if ($WhatIf) {
+        Write-Host "    [~] Would enable Windows Firewall on all profiles (Domain, Public, Private)." -ForegroundColor Cyan
+        Write-Host "    [~] Would set Public profile default inbound action to Block." -ForegroundColor Cyan
+        Add-ActionRecord -Category "Firewall" -Setting "Enable all firewall profiles" -Status "WhatIf"
+        Add-ActionRecord -Category "Firewall" -Setting "Block inbound on Public profile" -Status "WhatIf"
+    } else {
+        try {
+            Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True -ErrorAction Stop
+            Write-Host "    [+] Windows Firewall enabled on all profiles." -ForegroundColor $ColorSchema.Success
+            Add-ActionRecord -Category "Firewall" -Setting "Enable all firewall profiles" -Status "Applied"
+        }
+        catch {
+            Write-Host "    [-] Failed to configure firewall: $_" -ForegroundColor $ColorSchema.Error
+            Add-ActionRecord -Category "Firewall" -Setting "Enable all firewall profiles" -Status "Failed" -Detail $_
+        }
 
-    # Block inbound by default on Public profile
-    try {
-        Set-NetFirewallProfile -Profile Public -DefaultInboundAction Block -ErrorAction Stop
-        Write-Host "    [+] Public profile — inbound connections blocked by default." -ForegroundColor $ColorSchema.Success
-        Add-ActionRecord -Category "Firewall" -Setting "Block inbound on Public profile" -Status "Applied"
-    }
-    catch {
-        Write-Host "    [-] Failed to set Public profile inbound policy: $_" -ForegroundColor $ColorSchema.Error
-        Add-ActionRecord -Category "Firewall" -Setting "Block inbound on Public profile" -Status "Failed" -Detail $_
+        # Block inbound by default on Public profile
+        try {
+            Set-NetFirewallProfile -Profile Public -DefaultInboundAction Block -ErrorAction Stop
+            Write-Host "    [+] Public profile — inbound connections blocked by default." -ForegroundColor $ColorSchema.Success
+            Add-ActionRecord -Category "Firewall" -Setting "Block inbound on Public profile" -Status "Applied"
+        }
+        catch {
+            Write-Host "    [-] Failed to set Public profile inbound policy: $_" -ForegroundColor $ColorSchema.Error
+            Add-ActionRecord -Category "Firewall" -Setting "Block inbound on Public profile" -Status "Failed" -Detail $_
+        }
     }
 
     Write-Host ""
@@ -344,9 +366,14 @@ function Apply-GuestAccount {
         $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
         if ($guest) {
             if ($guest.Enabled) {
-                Disable-LocalUser -Name "Guest" -ErrorAction Stop
-                Write-Host "    [+] Guest account disabled." -ForegroundColor $ColorSchema.Success
-                Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Applied"
+                if ($WhatIf) {
+                    Write-Host "    [~] Would disable Guest account." -ForegroundColor Cyan
+                    Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "WhatIf"
+                } else {
+                    Disable-LocalUser -Name "Guest" -ErrorAction Stop
+                    Write-Host "    [+] Guest account disabled." -ForegroundColor $ColorSchema.Success
+                    Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Applied"
+                }
             } else {
                 Write-Host "    [OK] Guest account already disabled." -ForegroundColor $ColorSchema.Info
                 Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Already Set"
@@ -378,14 +405,19 @@ function Apply-PasswordPolicy {
     )
 
     foreach ($policy in $policies) {
-        try {
-            & net accounts $policy.Args.Split(' ') 2>&1 | Out-Null
-            Write-Host "    [+] $($policy.Label) — applied." -ForegroundColor $ColorSchema.Success
-            Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Applied"
-        }
-        catch {
-            Write-Host "    [-] $($policy.Label) — failed: $_" -ForegroundColor $ColorSchema.Error
-            Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Failed" -Detail $_
+        if ($WhatIf) {
+            Write-Host "    [~] $($policy.Label) — would apply: net accounts $($policy.Args)" -ForegroundColor Cyan
+            Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "WhatIf" -Detail "net accounts $($policy.Args)"
+        } else {
+            try {
+                & net accounts $policy.Args.Split(' ') 2>&1 | Out-Null
+                Write-Host "    [+] $($policy.Label) — applied." -ForegroundColor $ColorSchema.Success
+                Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Applied"
+            }
+            catch {
+                Write-Host "    [-] $($policy.Label) — failed: $_" -ForegroundColor $ColorSchema.Error
+                Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Failed" -Detail $_
+            }
         }
     }
 
@@ -424,20 +456,30 @@ function Apply-RemoteDesktop {
             -Category "Remote Desktop" `
             -Label    "Require Network Level Authentication (NLA)"
 
-        try {
-            Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction Stop
-            Write-Host "    [+] Remote Desktop firewall rules enabled." -ForegroundColor $ColorSchema.Success
-            Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Applied"
-        }
-        catch {
-            Write-Host "    [!!] Could not update RDP firewall rules: $_" -ForegroundColor $ColorSchema.Warning
+        if ($WhatIf) {
+            Write-Host "    [~] Would enable Remote Desktop firewall rules." -ForegroundColor Cyan
+            Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "WhatIf"
+        } else {
+            try {
+                Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction Stop
+                Write-Host "    [+] Remote Desktop firewall rules enabled." -ForegroundColor $ColorSchema.Success
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Applied"
+            }
+            catch {
+                Write-Host "    [!!] Could not update RDP firewall rules: $_" -ForegroundColor $ColorSchema.Warning
+            }
         }
     } else {
-        try {
-            Disable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
-            Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Applied"
+        if ($WhatIf) {
+            Write-Host "    [~] Would disable Remote Desktop firewall rules." -ForegroundColor Cyan
+            Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "WhatIf"
+        } else {
+            try {
+                Disable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Applied"
+            }
+            catch { }
         }
-        catch { }
     }
 
     Write-Host ""
@@ -455,19 +497,24 @@ function Apply-AuditPolicy {
     )
 
     foreach ($audit in $auditSettings) {
-        try {
-            $result = & auditpol $audit.Args.Split(' ') 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    [+] $($audit.Label) — enabled." -ForegroundColor $ColorSchema.Success
-                Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Applied"
-            } else {
-                Write-Host "    [!!] $($audit.Label) — may require domain policy override." -ForegroundColor $ColorSchema.Warning
-                Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Skipped" -Detail "May be overridden by domain policy"
+        if ($WhatIf) {
+            Write-Host "    [~] $($audit.Label) — would apply: auditpol $($audit.Args)" -ForegroundColor Cyan
+            Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "WhatIf" -Detail "auditpol $($audit.Args)"
+        } else {
+            try {
+                $result = & auditpol $audit.Args.Split(' ') 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "    [+] $($audit.Label) — enabled." -ForegroundColor $ColorSchema.Success
+                    Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Applied"
+                } else {
+                    Write-Host "    [!!] $($audit.Label) — may require domain policy override." -ForegroundColor $ColorSchema.Warning
+                    Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Skipped" -Detail "May be overridden by domain policy"
+                }
             }
-        }
-        catch {
-            Write-Host "    [-] $($audit.Label) — failed: $_" -ForegroundColor $ColorSchema.Error
-            Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Failed" -Detail $_
+            catch {
+                Write-Host "    [-] $($audit.Label) — failed: $_" -ForegroundColor $ColorSchema.Error
+                Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Failed" -Detail $_
+            }
         }
     }
 
@@ -506,6 +553,9 @@ function Apply-LegacyProtocols {
         if (-not $smb1Enabled) {
             Write-Host "    [OK] SMBv1 — already disabled." -ForegroundColor $ColorSchema.Info
             Add-ActionRecord -Category "Legacy Protocols" -Setting "Disable SMBv1" -Status "Already Set" -Detail "EnableSMB1Protocol = False"
+        } elseif ($WhatIf) {
+            Write-Host "    [~] SMBv1 — would disable (True → False)." -ForegroundColor Cyan
+            Add-ActionRecord -Category "Legacy Protocols" -Setting "Disable SMBv1" -Status "WhatIf" -Detail "True → False"
         } else {
             Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force -ErrorAction Stop
             Write-Host "    [+] SMBv1 — disabled." -ForegroundColor $ColorSchema.Success
@@ -537,6 +587,9 @@ function Apply-LegacyProtocols {
         if ($toDisable.Count -eq 0) {
             Write-Host "    [OK] NetBIOS over TCP/IP — already disabled on all adapters." -ForegroundColor $ColorSchema.Info
             Add-ActionRecord -Category "Legacy Protocols" -Setting "Disable NetBIOS over TCP/IP" -Status "Already Set"
+        } elseif ($WhatIf) {
+            Write-Host "    [~] NetBIOS over TCP/IP — would disable on $($toDisable.Count) adapter(s)." -ForegroundColor Cyan
+            Add-ActionRecord -Category "Legacy Protocols" -Setting "Disable NetBIOS over TCP/IP" -Status "WhatIf" -Detail "$($toDisable.Count) adapter(s) would be updated"
         } else {
             $changed = 0
             foreach ($adapter in $toDisable) {
@@ -621,8 +674,16 @@ Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 
 if ($Unattended) {
-    Write-Host "  [*] Unattended mode: applying categories — $Categories" -ForegroundColor $ColorSchema.Info
+    $modeLabel = if ($WhatIf) { "previewing (WhatIf)" } else { "applying" }
+    Write-Host "  [*] Unattended mode: $modeLabel categories — $Categories" -ForegroundColor $ColorSchema.Info
     $rawInput = $Categories.ToUpper()
+    if ($rawInput -eq 'A') {
+        $selectedKeys = $categories.Keys
+    } else {
+        $selectedKeys = $rawInput -split ',' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object   { $categories.ContainsKey($_) }
+    }
 } else {
     Write-Host "  Enter numbers separated by commas, or A for all." -ForegroundColor $ColorSchema.Info
     Write-Host ""
@@ -697,6 +758,7 @@ foreach ($group in $byCategory) {
             "Already Set" { $ColorSchema.Info    }
             "Not Present" { $ColorSchema.Info    }
             "Skipped"     { $ColorSchema.Warning }
+            "WhatIf"      { 'Cyan'               }
             default       { $ColorSchema.Error   }
         }
         $detail = if ($record.Detail) { "  ($($record.Detail))" } else { "" }
@@ -708,11 +770,17 @@ foreach ($group in $byCategory) {
 $applied    = ($ActionLog | Where-Object { $_.Status -eq "Applied"     } | Measure-Object).Count
 $alreadySet = ($ActionLog | Where-Object { $_.Status -eq "Already Set" } | Measure-Object).Count
 $failed     = ($ActionLog | Where-Object { $_.Status -eq "Failed"      } | Measure-Object).Count
+$whatIfed   = ($ActionLog | Where-Object { $_.Status -eq "WhatIf"      } | Measure-Object).Count
 
-Write-Host "  Applied: $applied  |  Already Set: $alreadySet  |  Failed: $failed" -ForegroundColor $ColorSchema.Header
+if ($WhatIf) {
+    Write-Host "  Previewed (WhatIf): $whatIfed  |  Already Set: $alreadySet  |  Skipped: $failed" -ForegroundColor Cyan
+} else {
+    Write-Host "  Applied: $applied  |  Already Set: $alreadySet  |  Failed: $failed" -ForegroundColor $ColorSchema.Header
+}
 Write-Host ""
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
-Write-Host "  S.I.G.I.L. BASELINE COMPLETE" -ForegroundColor $ColorSchema.Header
+$completeLabel = if ($WhatIf) { "S.I.G.I.L. DRY RUN COMPLETE — No changes were made." } else { "S.I.G.I.L. BASELINE COMPLETE" }
+Write-Host "  $completeLabel" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 

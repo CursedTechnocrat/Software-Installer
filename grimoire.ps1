@@ -95,6 +95,7 @@ $Tools = @(
         Key         = '1'
         Name        = 'C.O.V.E.N.A.N.T.'
         File        = 'covenant.ps1'
+        Version     = '1.0'
         Description = 'Machine onboarding, Entra ID domain join, and new device setup'
         Color       = 'Blue'
         Category    = 'Deployment & Onboarding'
@@ -103,6 +104,7 @@ $Tools = @(
         Key         = '2'
         Name        = 'C.O.N.J.U.R.E.'
         File        = 'conjure.ps1'
+        Version     = '1.0'
         Description = 'Software deployment via Windows Package Manager or Chocolatey'
         Color       = 'Magenta'
         Category    = 'Deployment & Onboarding'
@@ -111,6 +113,7 @@ $Tools = @(
         Key         = '3'
         Name        = 'R.U.N.E.P.R.E.S.S.'
         File        = 'runepress.ps1'
+        Version     = '1.0'
         Description = 'Printer driver installation and network printer configuration'
         Color       = 'Cyan'
         Category    = 'Deployment & Onboarding'
@@ -119,6 +122,7 @@ $Tools = @(
         Key         = '4'
         Name        = 'F.O.R.G.E.'
         File        = 'forge.ps1'
+        Version     = '1.0'
         Description = 'Driver detection & installation — problem devices, Windows Update, local packages'
         Color       = 'Yellow'
         Category    = 'Deployment & Onboarding'
@@ -127,6 +131,7 @@ $Tools = @(
         Key         = '5'
         Name        = 'R.E.S.T.O.R.A.T.I.O.N.'
         File        = 'restoration.ps1'
+        Version     = '1.0'
         Description = 'Automated Windows Update management and maintenance'
         Color       = 'Green'
         Category    = 'Deployment & Onboarding'
@@ -135,6 +140,7 @@ $Tools = @(
         Key         = '6'
         Name        = 'H.E.A.R.T.H.'
         File        = 'hearth.ps1'
+        Version     = '1.0'
         Description = 'Toolkit setup wizard — configure org name, log paths, and default values'
         Color       = 'White'
         Category    = 'Deployment & Onboarding'
@@ -144,6 +150,7 @@ $Tools = @(
         Key         = '7'
         Name        = 'O.R.A.C.L.E.'
         File        = 'oracle.ps1'
+        Version     = '1.0'
         Description = 'System diagnostics, health assessment, and HTML report generation'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -152,6 +159,7 @@ $Tools = @(
         Key         = '8'
         Name        = 'W.A.R.D.'
         File        = 'ward.ps1'
+        Version     = '1.0'
         Description = 'User account audit — roles, last logon, flags, HTML report'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -160,6 +168,7 @@ $Tools = @(
         Key         = '9'
         Name        = 'T.H.R.E.S.H.O.L.D.'
         File        = 'threshold.ps1'
+        Version     = '1.0'
         Description = 'Disk & storage health — physical disk status, volume space, cleanup, old profiles'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -168,6 +177,7 @@ $Tools = @(
         Key         = '10'
         Name        = 'S.E.N.T.I.N.E.L.'
         File        = 'sentinel.ps1'
+        Version     = '1.0'
         Description = 'Service & task monitor — critical services, scheduled tasks, event log errors'
         Color       = 'Red'
         Category    = 'Diagnostics & Reporting'
@@ -177,6 +187,7 @@ $Tools = @(
         Key         = '11'
         Name        = 'C.I.P.H.E.R.'
         File        = 'cipher.ps1'
+        Version     = '1.0'
         Description = 'BitLocker drive encryption — enable, disable, backup keys'
         Color       = 'Green'
         Category    = 'Security'
@@ -185,6 +196,7 @@ $Tools = @(
         Key         = '12'
         Name        = 'S.I.G.I.L.'
         File        = 'sigil.ps1'
+        Version     = '1.0'
         Description = 'Security baseline enforcement — telemetry, UAC, firewall, audit policy'
         Color       = 'Red'
         Category    = 'Security'
@@ -193,6 +205,7 @@ $Tools = @(
         Key         = '13'
         Name        = 'B.A.S.T.I.O.N.'
         File        = 'bastion.ps1'
+        Version     = '1.0'
         Description = 'Active Directory management — search, unlock, reset passwords, group membership'
         Color       = 'Blue'
         Category    = 'Security'
@@ -201,6 +214,7 @@ $Tools = @(
         Key         = '14'
         Name        = 'R.E.L.I.C.'
         File        = 'relic.ps1'
+        Version     = '1.0'
         Description = 'Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report'
         Color       = 'Yellow'
         Category    = 'Security'
@@ -210,6 +224,7 @@ $Tools = @(
         Key         = '15'
         Name        = 'L.E.Y.L.I.N.E.'
         File        = 'leyline.ps1'
+        Version     = '1.0'
         Description = 'Network diagnostics & remediation — adapters, ping, DNS, port tests'
         Color       = 'Cyan'
         Category    = 'Network & Remote'
@@ -218,6 +233,7 @@ $Tools = @(
         Key         = '16'
         Name        = 'S.P.E.C.T.E.R.'
         File        = 'specter.ps1'
+        Version     = '1.0'
         Description = 'Remote execution via WinRM — run toolkit tools on a remote machine'
         Color       = 'White'
         Category    = 'Network & Remote'
@@ -226,6 +242,7 @@ $Tools = @(
         Key         = '17'
         Name        = 'L.A.N.T.E.R.N.'
         File        = 'lantern.ps1'
+        Version     = '1.0'
         Description = 'Network discovery & asset inventory — subnet sweep, DNS, MAC, port scan'
         Color       = 'Cyan'
         Category    = 'Network & Remote'
@@ -235,6 +252,7 @@ $Tools = @(
         Key         = '18'
         Name        = 'A.E.G.I.S.'
         File        = 'aegis.ps1'
+        Version     = '1.0'
         Description = 'Azure environment assessment — security posture, RBAC, backup coverage, HTML report'
         Color       = 'Cyan'
         Category    = 'Cloud & Identity'
@@ -243,6 +261,7 @@ $Tools = @(
         Key         = '19'
         Name        = 'V.A.U.L.T.'
         File        = 'vault.ps1'
+        Version     = '1.0'
         Description = 'M365 license & mailbox audit — SKU inventory, unlicensed users, MFA status'
         Color       = 'Green'
         Category    = 'Cloud & Identity'
@@ -252,6 +271,7 @@ $Tools = @(
         Key         = '20'
         Name        = 'P.H.A.N.T.O.M.'
         File        = 'phantom.ps1'
+        Version     = '1.0'
         Description = 'Profile migration and data transfer to a new machine'
         Color       = 'Cyan'
         Category    = 'Data & Migration'
@@ -260,6 +280,7 @@ $Tools = @(
         Key         = '21'
         Name        = 'A.R.C.H.I.V.E.'
         File        = 'archive.ps1'
+        Version     = '1.0'
         Description = 'Pre-reimaging profile backup — ZIP to local or network share'
         Color       = 'Magenta'
         Category    = 'Data & Migration'
@@ -284,7 +305,8 @@ function Show-Banner {
     Write-Host "  Orchestration of IT Resources & Executables" -ForegroundColor $ColorSchema.Info
     Write-Host ""
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
-    Write-Host "  Technician Toolkit  |  Hub v1.0  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
+    $toolCount = $Tools.Count
+    Write-Host "  Technician Toolkit  |  Hub v1.0  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
     if ($WhatIf) {
         Write-Host ""
@@ -311,7 +333,8 @@ function Show-Menu {
         Write-Host ""
 
         foreach ($tool in $categoryTools) {
-            Write-Host "  [$($tool.Key)]  $($tool.Name)" -ForegroundColor $tool.Color
+            Write-Host "  [$($tool.Key)]  $($tool.Name)  " -NoNewline -ForegroundColor $tool.Color
+            Write-Host "v$($tool.Version)" -ForegroundColor $ColorSchema.Info
             Write-Host "       $($tool.Description)" -ForegroundColor $ColorSchema.Info
             Write-Host ""
         }
@@ -342,8 +365,22 @@ function Invoke-Tool {
         try {
             Invoke-RestMethod -Uri $DownloadUrl -OutFile $ToolPath -ErrorAction Stop
             [IO.File]::WriteAllText($ToolPath, [IO.File]::ReadAllText($ToolPath, [Text.Encoding]::UTF8), [Text.UTF8Encoding]::new($true))
+
+            # Validate the downloaded file parses as valid PowerShell before executing it
+            $parseErrors = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($ToolPath, [ref]$null, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) {
+                Remove-Item -Path $ToolPath -Force -ErrorAction SilentlyContinue
+                Write-Host ""
+                Write-Host "  [!!] $($Tool.File) failed syntax validation after download — file removed." -ForegroundColor $ColorSchema.Error
+                Write-Host "       $($parseErrors[0].Message)" -ForegroundColor $ColorSchema.Error
+                Write-Host ""
+                Pause-ForKey
+                return
+            }
+
             $DownloadedFiles.Add($ToolPath)
-            Write-Host "  Downloaded successfully." -ForegroundColor $ColorSchema.Success
+            Write-Host "  Downloaded and verified successfully." -ForegroundColor $ColorSchema.Success
         }
         catch {
             Write-Host ""
