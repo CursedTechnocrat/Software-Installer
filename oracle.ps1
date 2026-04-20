@@ -132,7 +132,7 @@ $reportData = [ordered]@{}
 # STEP 1: HARDWARE
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[1/9] Collecting Hardware Info..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[1/10] Collecting Hardware Info..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $cs        = Get-CimInstance -ClassName Win32_ComputerSystem
@@ -192,7 +192,7 @@ Write-Host ""
 # STEP 2: OPERATING SYSTEM
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[2/9] Collecting OS Info..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[2/10] Collecting OS Info..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $os          = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -241,7 +241,7 @@ Write-Host ""
 # STEP 3: NETWORK CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[3/9] Collecting Network Configuration..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[3/10] Collecting Network Configuration..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $adapters = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -Filter "IPEnabled=True"
@@ -281,7 +281,7 @@ Write-Host ""
 # STEP 4: SYSTEM HEALTH & UPTIME
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[4/9] Collecting System Health..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[4/10] Collecting System Health..." -ForegroundColor $ColorSchema.Progress
 
 try {
     $os        = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -328,7 +328,7 @@ Write-Host ""
 # STEP 5: STORAGE & RAID HEALTH
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[5/9] Collecting Storage & RAID Health..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[5/10] Collecting Storage & RAID Health..." -ForegroundColor $ColorSchema.Progress
 
 $physicalDiskSummary = @()
 $virtualDiskSummary  = @()
@@ -455,7 +455,7 @@ Write-Host ""
 # STEP 6: PENDING WINDOWS UPDATES
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[6/9] Scanning for Pending Updates..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[6/10] Scanning for Pending Updates..." -ForegroundColor $ColorSchema.Progress
 Write-Host "    This may take a moment..." -ForegroundColor $ColorSchema.Info
 
 $pendingUpdates = @()
@@ -493,7 +493,7 @@ Write-Host ""
 # STEP 6: INSTALLED SOFTWARE
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[7/9] Collecting Installed Software..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[7/10] Collecting Installed Software..." -ForegroundColor $ColorSchema.Progress
 
 $installedApps = @()
 try {
@@ -532,7 +532,7 @@ Write-Host ""
 # STEP 7: RECENT EVENT LOG ERRORS
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[8/9] Scanning Event Logs (last 24 hours)..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[8/10] Scanning Event Logs (last 24 hours)..." -ForegroundColor $ColorSchema.Progress
 
 $eventSummary = @()
 try {
@@ -578,10 +578,57 @@ catch {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 9: SECURITY / AV STATUS
+# STEP 9: SCHEDULED TASKS (NON-MICROSOFT)
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[9/9] Collecting Security & AV Status..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[9/10] Collecting Scheduled Tasks..." -ForegroundColor $ColorSchema.Progress
+
+$scheduledTaskSummary = @()
+try {
+    $tasks = Get-ScheduledTask -ErrorAction Stop |
+        Where-Object { $_.TaskPath -notmatch '^\\Microsoft\\' }
+
+    foreach ($task in $tasks) {
+        $info = Get-ScheduledTaskInfo -TaskName $task.TaskName -TaskPath $task.TaskPath -ErrorAction SilentlyContinue
+        $actions = ($task.Actions | ForEach-Object {
+            if ($_.Execute) { "$($_.Execute) $($_.Arguments)".Trim() }
+        }) -join '; '
+
+        $lastRun = if ($info -and $info.LastRunTime -and $info.LastRunTime -gt [DateTime]::MinValue) {
+            $info.LastRunTime.ToString('yyyy-MM-dd HH:mm')
+        } else { 'Never' }
+
+        $nextRun = if ($info -and $info.NextRunTime -and $info.NextRunTime -gt [DateTime]::MinValue) {
+            $info.NextRunTime.ToString('yyyy-MM-dd HH:mm')
+        } else { 'N/A' }
+
+        $scheduledTaskSummary += [PSCustomObject]@{
+            Name       = $task.TaskName
+            Path       = $task.TaskPath
+            State      = $task.State
+            LastRun    = $lastRun
+            NextRun    = $nextRun
+            LastResult = if ($info) { "0x{0:X8}" -f $info.LastTaskResult } else { 'N/A' }
+            Actions    = $actions
+        }
+    }
+
+    Write-Host "    Found $($scheduledTaskSummary.Count) non-Microsoft scheduled task(s)" -ForegroundColor $ColorSchema.Info
+    $reportData['ScheduledTasks'] = $scheduledTaskSummary
+    Write-Host "[+] Scheduled tasks collected" -ForegroundColor $ColorSchema.Success
+}
+catch {
+    Write-Host "[-] Error collecting scheduled tasks: $_" -ForegroundColor $ColorSchema.Error
+    $reportData['ScheduledTasks'] = @()
+}
+
+Write-Host ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 10: SECURITY / AV STATUS
+# ─────────────────────────────────────────────────────────────────────────────
+
+Write-Host "[10/10] Collecting Security & AV Status..." -ForegroundColor $ColorSchema.Progress
 
 $avProducts = @()
 try {
@@ -761,8 +808,16 @@ $eventBadge = if ($eventCount -eq 0) {
     "<span class='badge badge-warn'>$eventCount events</span>"
 }
 
-$softwareTable = ConvertTo-HtmlTable -Objects $reportData['Software'] -EmptyMessage "No software found."
-$eventsTable   = ConvertTo-HtmlTable -Objects $reportData['Events']   -EmptyMessage "No critical/error events in the last 24 hours."
+$softwareTable = ConvertTo-HtmlTable -Objects $reportData['Software']        -EmptyMessage "No software found."
+$eventsTable   = ConvertTo-HtmlTable -Objects $reportData['Events']          -EmptyMessage "No critical/error events in the last 24 hours."
+$tasksTable    = ConvertTo-HtmlTable -Objects $reportData['ScheduledTasks']  -EmptyMessage "No non-Microsoft scheduled tasks found."
+
+$taskCount = $reportData['ScheduledTasks'].Count
+$taskBadge = if ($taskCount -eq 0) {
+    "<span class='badge badge-ok'>None</span>"
+} else {
+    "<span class='badge badge-info'>$taskCount task(s)</span>"
+}
 
 # AV / Security badge
 $avUnprotected = ($reportData['Security'] | Where-Object { $_.RealTimeProtection -eq 'Off' }).Count
@@ -815,6 +870,7 @@ $htmlReport = @"
   .badge-ok   { background: #1a4a2e; color: #2ecc71; border: 1px solid #2ecc71; }
   .badge-warn { background: #4a3000; color: #f39c12; border: 1px solid #f39c12; }
   .badge-err  { background: #4a0000; color: #e74c3c; border: 1px solid #e74c3c; }
+  .badge-info { background: #0d2840; color: #00d4ff; border: 1px solid #00d4ff; }
   footer { text-align: center; padding: 20px; color: #444; font-size: 0.8em; border-top: 1px solid #0f3460; }
 </style>
 </head>
@@ -829,6 +885,7 @@ $htmlReport = @"
     <span><strong>Storage:</strong> $storageBadge</span>
     <span><strong>Updates:</strong> $updateBadge</span>
     <span><strong>Events (24h):</strong> $eventBadge</span>
+    <span><strong>Ext. Tasks:</strong> $taskBadge</span>
   </div>
 </header>
 <main>
@@ -935,6 +992,12 @@ $htmlReport = @"
     <div class="content">$eventsTable</div>
   </section>
 
+  <!-- SCHEDULED TASKS -->
+  <section>
+    <h2>Non-Microsoft Scheduled Tasks $taskBadge</h2>
+    <div class="content">$tasksTable</div>
+  </section>
+
   <!-- SECURITY / AV STATUS -->
   <section>
     <h2>Security &amp; Antivirus Status $avBadge</h2>
@@ -1002,6 +1065,8 @@ if ($eventCount -gt 0) {
 else {
     Write-Host "  Events     : Clean" -ForegroundColor $ColorSchema.Success
 }
+
+Write-Host "  Ext. Tasks : $taskCount non-Microsoft scheduled task(s)" -ForegroundColor $ColorSchema.Info
 
 if ($avUnprotected -gt 0) {
     Write-Host "  Security   : $avUnprotected AV product(s) with protection OFF" -ForegroundColor $ColorSchema.Error

@@ -168,6 +168,20 @@ $Tools = @(
         File        = 'forge.ps1'
         Description = 'Driver detection & installation — problem devices, Windows Update, local packages'
         Color       = 'Yellow'
+    },
+    [PSCustomObject]@{
+        Key         = '14'
+        Name        = 'P.U.R.G.E.'
+        File        = 'purge.ps1'
+        Description = 'Disk cleanup — temp files, update cache, Recycle Bin, browser caches'
+        Color       = 'Magenta'
+    },
+    [PSCustomObject]@{
+        Key         = '15'
+        Name        = 'S.E.N.T.I.N.E.L.'
+        File        = 'sentinel.ps1'
+        Description = 'Disk health assessment — SMART status, physical drive health, volume report'
+        Color       = 'Red'
     }
 )
 
@@ -210,6 +224,9 @@ function Show-Menu {
         Write-Host ""
     }
 
+    Write-Host "  [U]  Update Toolkit" -ForegroundColor $ColorSchema.Info
+    Write-Host "       Re-download all tools from GitHub on next use" -ForegroundColor $ColorSchema.Info
+    Write-Host ""
     Write-Host "  [Q]  Exit GRIMOIRE" -ForegroundColor $ColorSchema.Warning
     Write-Host ""
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
@@ -274,6 +291,39 @@ function Pause-ForKey {
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
+function Invoke-UpdateToolkit {
+    Write-Host ""
+    Write-Host "  This will delete all cached toolkit scripts so they" -ForegroundColor $ColorSchema.Warning
+    Write-Host "  are freshly downloaded from GitHub on next use." -ForegroundColor $ColorSchema.Warning
+    Write-Host ""
+    Write-Host -NoNewline "  Confirm update? (Y/N): " -ForegroundColor $ColorSchema.Menu
+    $confirm = (Read-Host).Trim().ToUpper()
+    if ($confirm -ne 'Y') {
+        Write-Host "  Update cancelled." -ForegroundColor $ColorSchema.Info
+        Pause-ForKey
+        return
+    }
+
+    Write-Host ""
+    $deleted = 0
+    foreach ($tool in $Tools) {
+        $path = Join-Path $ScriptPath $tool.File
+        if (Test-Path $path) {
+            Remove-Item -Path $path -Force -ErrorAction SilentlyContinue
+            Write-Host "  [+] Cleared: $($tool.File)" -ForegroundColor $ColorSchema.Success
+            $deleted++
+        }
+    }
+
+    Write-Host ""
+    if ($deleted -gt 0) {
+        Write-Host "  $deleted script(s) cleared. Tools will re-download on next use." -ForegroundColor $ColorSchema.Success
+    } else {
+        Write-Host "  No cached scripts found — already clean." -ForegroundColor $ColorSchema.Info
+    }
+    Pause-ForKey
+}
+
 # ===========================
 # MAIN LOOP
 # ===========================
@@ -290,6 +340,9 @@ do {
     if ($MatchedTool) {
         Invoke-Tool -Tool $MatchedTool
     }
+    elseif ($Selection -eq 'U') {
+        Invoke-UpdateToolkit
+    }
     elseif ($Selection -eq 'Q') {
         Clear-Host
         Write-Host ""
@@ -299,7 +352,7 @@ do {
     }
     else {
         Write-Host ""
-        Write-Host "  [!!] Invalid selection. Enter 1-13 or Q to quit." -ForegroundColor $ColorSchema.Warning
+        Write-Host "  [!!] Invalid selection. Enter 1-15, U, or Q to quit." -ForegroundColor $ColorSchema.Warning
         Start-Sleep -Seconds 1
     }
 
