@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     L.E.Y.L.I.N.E. — Locates, Examines & Yields Latency, Infrastructure, Network & Endpoints
     Network Diagnostics & Remediation Tool for PowerShell 5.1+

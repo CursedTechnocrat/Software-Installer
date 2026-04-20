@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     F.O.R.G.E. — Finds Outdated Resources & Generates Equipment-updates
     Driver Detection & Installation Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     C.I.P.H.E.R. — Configures & Implements Policy-based Hardware Encryption & Recovery
     BitLocker Drive Encryption Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.P.E.C.T.E.R. — Sends PowerShell Execution Commands To External Remotes
     Remote Machine Execution Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     W.A.R.D. — Watches Accounts, Reviews Roles & Detects anomalies
     User Account & Security Audit Tool for PowerShell 5.1+

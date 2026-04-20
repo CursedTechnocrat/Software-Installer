@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     P.H.A.N.T.O.M. — Portable Home Archive: Navigates & Transfers Objects to new Machine
     Profile Migration Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     P.U.R.G.E. — Purges Unwanted Remnants, Garbage & Ephemeral data
     Disk Cleanup Tool for PowerShell 5.1+

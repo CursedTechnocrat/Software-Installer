@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.E.N.T.I.N.E.L. — Scans & Evaluates NVMe/Traditional Infrastructure, Noting Error Likelihood
     Disk Health Assessment Tool for PowerShell 5.1+

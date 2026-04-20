@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.I.G.I.L. — Secures Infrastructure: Governs via Integrated Lockdown
     Security Baseline Enforcement Tool for PowerShell 5.1+

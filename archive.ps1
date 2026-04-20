@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     A.R.C.H.I.V.E. — Automated Repository Compressing & Housing Important Volume Exports
     Pre-Reimaging Profile Backup Tool for PowerShell 5.1+
