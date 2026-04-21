@@ -253,3 +253,36 @@ Describe 'GRIMOIRE registry integrity' {
         $FullPath | Should -Exist
     }
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Legacy-name regression — the v3.0 rename retired eight tool acronyms.
+# New source or documentation must never reintroduce them. Deprecation stubs
+# and CHANGELOG (which documents the rename) are exempt.
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'Legacy tool names must not reappear' {
+    $legacyAcronyms = @(
+        'O.R.A.C.L.E.', 'S.E.N.T.I.N.E.L.', 'B.A.S.T.I.O.N.',
+        'V.A.U.L.T.',   'P.H.A.N.T.O.M.',   'S.P.E.C.T.E.R.',
+        'A.E.G.I.S.',   'R.E.L.I.C.'
+    )
+    $legacyStubs = @(
+        'oracle.ps1','sentinel.ps1','bastion.ps1','vault.ps1',
+        'phantom.ps1','specter.ps1','aegis.ps1','relic.ps1'
+    )
+    # Files that are *about* the rename legitimately mention the retired names.
+    $allowlist = @('CHANGELOG.md', 'TechnicianToolkit.Tests.ps1')
+
+    $root  = Resolve-Path (Join-Path $PSScriptRoot '..')
+    $files = Get-ChildItem -Path $root -Recurse -File -Include '*.ps1','*.md' |
+        Where-Object {
+            $_.FullName -notmatch [regex]::Escape([IO.Path]::DirectorySeparatorChar + '.git' + [IO.Path]::DirectorySeparatorChar) -and
+            $_.Name -notin $legacyStubs -and
+            $_.Name -notin $allowlist
+        } |
+        ForEach-Object { @{ Name = $_.Name; FullName = $_.FullName } }
+
+    It '<Name> contains no retired dotted acronyms' -ForEach $files {
+        $hits = Select-String -Path $FullName -SimpleMatch -Pattern $legacyAcronyms -ErrorAction SilentlyContinue
+        $hits | Should -BeNullOrEmpty -Because "retired acronym found in $Name"
+    }
+}

@@ -20,27 +20,8 @@
     PS C:\> .\covenant.ps1 -Unattended -DomainJoinType "AD" -ADDomain "corp.contoso.com" -ADOUPath "OU=Workstations,DC=corp,DC=contoso,DC=com"
 
 .NOTES
-    Version : 1.1
+    Version : 3.0
 
-    Tools Available
-    ─────────────────────────────────────────────────────────────────
-    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
-    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
-    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
-    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
-    A.U.S.P.E.X.           — System diagnostics & HTML report generation
-    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
-    A.R.T.I.F.A.C.T.       — Certificate health & SSL expiry monitoring
-    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
-
-    Color Schema
-    ─────────────────────────────────────────
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success messages
-    Yellow   Warnings and cautions
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param(

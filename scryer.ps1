@@ -15,26 +15,8 @@
     PS C:\> .\scryer.ps1 -OutputPath "D:\Reports" # Write report to a specific directory
 
 .NOTES
-    Version : 1.0
+    Version : 3.0
 
-    Tools Available
-    -----------------------------------------------------------------
-    G.R.I.M.O.I.R.E.       -- Technician Toolkit hub and central launcher
-    A.U.S.P.E.X.           -- System diagnostics and HTML report generation
-    W.A.R.D.               -- User account and local security audit
-    T.H.R.E.S.H.O.L.D.     -- Disk space monitor and volume usage
-    A.U.G.U.R.             -- Disk wear and health assessment, SMART status
-    G.A.R.G.O.Y.L.E.       -- Service and scheduled task monitoring
-    S.C.R.Y.E.R.           -- Unified diagnostic report (all of the above)
-
-    Color Schema
-    -----------------------------------------
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success messages
-    Yellow   Warnings and cautions
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param(
@@ -560,7 +542,7 @@ $taskCardBody
 # Footer
 # ------------------------------------------------------------------
 
-$html += Get-TKHtmlFoot -ScriptName "S.C.R.Y.E.R. v1.0"
+$html += Get-TKHtmlFoot -ScriptName "S.C.R.Y.E.R. v3.0"
 
 # ------------------------------------------------------------------
 # Write report and open

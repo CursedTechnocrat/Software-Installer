@@ -18,37 +18,9 @@
     PS C:\> .\talisman.ps1 -OutputPath "C:\Reports\azure.html" -NoOpen
 
 .NOTES
-    Version  : 2.2
+    Version  : 3.0
     All required Az modules are installed automatically on first run.
 
-    Tools Available
-    -----------------------------------------------------------------
-    G.R.I.M.O.I.R.E.        -  Technician Toolkit hub and central launcher
-    R.U.N.E.P.R.E.S.S.      -  Printer driver installation & configuration
-    R.E.S.T.O.R.A.T.I.O.N.  -  Windows Update management
-    C.O.N.J.U.R.E.          -  Software deployment via winget / Chocolatey
-    A.U.S.P.E.X.            -  System diagnostics & HTML report generation
-    C.O.V.E.N.A.N.T.        -  Machine onboarding & Entra ID domain join
-    R.E.V.E.N.A.N.T.        -  Profile migration & data transfer
-    C.I.P.H.E.R.            -  BitLocker drive encryption management
-    W.A.R.D.                -  User account & local security audit
-    A.R.C.H.I.V.E.          -  Pre-reimaging profile backup
-    S.I.G.I.L.              -  Security baseline & policy enforcement
-    S.H.A.D.E.              -  Remote machine execution via WinRM
-    L.E.Y.L.I.N.E.          -  Network diagnostics & remediation
-    F.O.R.G.E.              -  Driver update detection & installation
-    T.A.L.I.S.M.A.N.        -  Azure environment & governance inspection
-    A.R.T.I.F.A.C.T.        -  Certificate health & SSL expiry monitoring
-    H.E.A.R.T.H.            -  Toolkit setup & configuration wizard
-
-    Color Schema
-    -----------------------------------------
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success / complete
-    Yellow   Warnings / degraded
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param(
@@ -120,7 +92,7 @@ Write-Host @"
 
 "@ -ForegroundColor Cyan
 Write-Host "  T.A.L.I.S.M.A.N.  -  Tenant Assessment, Logging, Infrastructure, Security, Monitoring & Access Navigator" -ForegroundColor Cyan
-Write-Host "  Azure Subscription Assessment & Report Generator  v2.2" -ForegroundColor Cyan
+Write-Host "  Azure Subscription Assessment & Report Generator  v3.0" -ForegroundColor Cyan
 Write-Host ""
 
 # -----------------------------------------------------------------------------
@@ -1060,7 +1032,7 @@ $htmlHead = Get-TKHtmlHead `
         'Recommendations'
     )
 
-$htmlFoot = Get-TKHtmlFoot -ScriptName 'T.A.L.I.S.M.A.N. v2.2'
+$htmlFoot = Get-TKHtmlFoot -ScriptName 'T.A.L.I.S.M.A.N. v3.0'
 
 $html = $htmlHead + @"
 

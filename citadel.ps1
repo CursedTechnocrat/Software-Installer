@@ -14,41 +14,8 @@
     PS C:\> .\citadel.ps1 -Unattended -Action StaleReport   # Export stale accounts HTML report silently
 
 .NOTES
-    Version : 1.0
+    Version : 3.0
 
-    Tools Available
-    ─────────────────────────────────────────────────────────────────
-    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
-    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
-    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
-    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
-    A.U.S.P.E.X.           — System diagnostics & HTML report generation
-    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
-    R.E.V.E.N.A.N.T.       — Profile migration & data transfer
-    C.I.P.H.E.R.           — BitLocker drive encryption management
-    W.A.R.D.               — User account & local security audit
-    A.R.C.H.I.V.E.         — Pre-reimaging profile backup
-    S.I.G.I.L.             — Security baseline & policy enforcement
-    S.H.A.D.E.             — Remote machine execution via WinRM
-    L.E.Y.L.I.N.E.         — Network diagnostics & remediation
-    F.O.R.G.E.             — Driver update detection & installation
-    T.A.L.I.S.M.A.N.       — Azure environment assessment & reporting
-    C.I.T.A.D.E.L.         — Active Directory & identity management
-    L.A.N.T.E.R.N.         — Network discovery & asset inventory
-    T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
-    R.E.L.I.Q.U.A.R.Y.     — M365 license & mailbox auditing
-    G.A.R.G.O.Y.L.E.       — Service & scheduled task monitoring
-    A.R.T.I.F.A.C.T.       — Certificate health & SSL expiry monitoring
-    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
-
-    Color Schema
-    ─────────────────────────────────────────
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success messages
-    Yellow   Warnings and cautions
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param(
@@ -896,7 +863,7 @@ function Export-StaleReport {
   </table>
 </div>
 
-"@ + (Get-TKHtmlFoot -ScriptName 'C.I.T.A.D.E.L. v1.0')
+"@ + (Get-TKHtmlFoot -ScriptName 'C.I.T.A.D.E.L. v3.0')
 
     $reportFilename = "CITADEL_Stale_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename
@@ -1205,7 +1172,7 @@ function Export-PasswordExpiryReport {
   </table>
 </div>
 
-"@ + (Get-TKHtmlFoot -ScriptName 'C.I.T.A.D.E.L. v1.0')
+"@ + (Get-TKHtmlFoot -ScriptName 'C.I.T.A.D.E.L. v3.0')
 
     $reportFilename = "CITADEL_PwdExpiry_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename

@@ -311,6 +311,20 @@ function Get-TKConfig {
     try {
         $raw = Get-Content $configPath -Raw -ErrorAction Stop | ConvertFrom-Json
 
+        # Legacy migration: v2.x used a 'Phantom' section; v3.0 renamed it to 'Revenant'.
+        # Copy any populated 'Phantom' value forward so upgrading users don't lose their default destination.
+        if ($raw.PSObject.Properties['Phantom'] -and
+            $raw.Phantom -is [PSCustomObject] -and
+            -not [string]::IsNullOrWhiteSpace($raw.Phantom.DefaultDestination)) {
+            if ($raw.PSObject.Properties['Revenant'] -isnot [PSCustomObject] -or
+                [string]::IsNullOrWhiteSpace($raw.Revenant.DefaultDestination)) {
+                if (-not $raw.PSObject.Properties['Revenant']) {
+                    $raw | Add-Member -NotePropertyName 'Revenant' -NotePropertyValue ([PSCustomObject]@{ DefaultDestination = '' }) -Force
+                }
+                $raw.Revenant.DefaultDestination = $raw.Phantom.DefaultDestination
+            }
+        }
+
         # Ensure top-level keys exist
         foreach ($key in ($defaults | Get-Member -MemberType NoteProperty).Name) {
             if ($null -eq $raw.$key) {

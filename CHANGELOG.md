@@ -7,6 +7,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.0.0] - 2026-04-21
+
+### Added
+- **`Phantom` -> `Revenant` config migration shim** in `Get-TKConfig` (`TechnicianToolkit.psm1`). Existing `config.json` files that still carry a populated `Phantom.DefaultDestination` from v2.x are transparently copied into the new `Revenant.DefaultDestination` on first read, so upgrading deployments do not lose the configured migration target.
+- **Legacy-name regression Pester test** (`tests/TechnicianToolkit.Tests.ps1`). Scans every `.ps1` and `.md` file in the repo (excluding the eight deprecation stubs, the test file itself, and CHANGELOG) and fails if any of the retired dotted acronyms (`O.R.A.C.L.E.`, `S.E.N.T.I.N.E.L.`, `B.A.S.T.I.O.N.`, `V.A.U.L.T.`, `P.H.A.N.T.O.M.`, `S.P.E.C.T.E.R.`, `A.E.G.I.S.`, `R.E.L.I.C.`) reappears in new code.
+- **Deprecation stubs for eight retired filenames** — `oracle.ps1`, `sentinel.ps1`, `bastion.ps1`, `vault.ps1`, `phantom.ps1`, `specter.ps1`, `aegis.ps1`, `relic.ps1`. Each forwards every argument to the renamed script (downloading the new script from GitHub if missing), prints a one-line `Write-Warning` so pinned runbooks and old quick-launch snippets surface the rename, and will be removed in a future release.
+
+### Changed
+- **Toolkit-wide version bump to 3.0.** Every tool's `.NOTES Version`, banner v-tag, `Get-TKHtmlFoot -ScriptName` footer, and GRIMOIRE registry `Version` field now reads `3.0`. The GRIMOIRE hub banner now reads `Hub v3.0`.
+- **Header comment blocks trimmed.** The `Tools Available` cross-reference list and `Color Schema` legend have been removed from every script's `<# ... #>` header block. They duplicated information already available in `grimoire.ps1`'s registry and README, and drifted out of sync every time a tool was added or renamed. Scripts that carried a tool-specific list (e.g. `shade.ps1`'s `Remote-Compatible Tools`) keep it.
+
+---
+
+## [2.0.0] - 2026-04-21
+
 ### Changed
 - **Thematic rename of eight tools** to avoid name collisions with commercial products and strengthen the arcane theme. Filenames, banners, log/report prefixes, config section, and all cross-references updated toolkit-wide.
   - `oracle.ps1` -> `auspex.ps1` — O.R.A.C.L.E. -> A.U.S.P.E.X. (Audits, Uncovers, Surveys Performance, Events & eXceptions)

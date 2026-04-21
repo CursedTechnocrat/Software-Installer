@@ -14,24 +14,8 @@
     PS C:\> .\augur.ps1 -Unattended        # Silent mode — no prompts, no banner
 
 .NOTES
-    Version : 1.1
+    Version : 3.0
 
-    Tools Available
-    ─────────────────────────────────────────────────────────────────
-    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
-    A.U.S.P.E.X.           — System diagnostics & HTML report generation
-    A.R.C.H.I.V.E.         — Pre-reimaging profile backup
-    C.L.E.A.N.S.E.         — Disk cleanup — temp, update cache, browser caches
-    A.U.G.U.R.             — Disk health assessment, SMART & reliability analysis
-
-    Color Schema
-    ─────────────────────────────────────────
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success messages
-    Yellow   Warnings and cautions
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param([switch]$Unattended)
@@ -343,7 +327,7 @@ $htmlHead = Get-TKHtmlHead `
     }) `
     -NavItems   @('Physical Disks', 'Volumes')
 
-$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.U.G.U.R. v1.1'
+$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.U.G.U.R. v3.0'
 
 $htmlReport = $htmlHead + @"
 

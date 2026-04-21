@@ -154,10 +154,11 @@ $ColorSchema = @{
 
 ### Script Header Block
 
-Every script carries a `.SYNOPSIS / .DESCRIPTION / .USAGE / .NOTES` comment block with:
-- `Version : X.Y` — bump minor version when changing script behaviour
-- `Tools Available` section — full toolkit list for quick reference
-- `Color Schema` section — documents the color conventions above
+Every script carries a `.SYNOPSIS / .DESCRIPTION / .USAGE / .NOTES` comment block. The
+`.NOTES` section holds only the `Version : X.Y` line (bump when changing script behaviour).
+Earlier versions embedded a cross-reference `Tools Available` list and a `Color Schema`
+legend in every header; those were removed in v3.0 because they drifted out of sync on
+every rename. The canonical tool list lives in `grimoire.ps1`'s `$Tools` registry.
 
 ### config.json Shape
 

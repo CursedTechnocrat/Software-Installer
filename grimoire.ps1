@@ -13,43 +13,8 @@
     PS C:\> .\grimoire.ps1 -WhatIf   # Launch tools in dry-run mode (passed through to each tool that supports it)
 
 .NOTES
-    Version : 1.3
+    Version : 3.0
 
-    Tools Available
-    ─────────────────────────────────────────────────────────────────
-    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
-    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
-    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
-    A.U.S.P.E.X.           — System diagnostics & HTML report generation
-    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
-    R.E.V.E.N.A.N.T.       — Profile migration & data transfer
-    C.I.P.H.E.R.           — BitLocker drive encryption management
-    W.A.R.D.               — User account & local security audit
-    A.R.C.H.I.V.E.         — Pre-reimaging profile backup
-    S.I.G.I.L.             — Security baseline & policy enforcement
-    S.H.A.D.E.             — Remote machine execution via WinRM
-    L.E.Y.L.I.N.E.         — Network diagnostics & remediation
-    F.O.R.G.E.             — Driver update detection & installation
-    T.A.L.I.S.M.A.N.       — Azure environment assessment & reporting
-    C.I.T.A.D.E.L.         — Active Directory & identity management
-    L.A.N.T.E.R.N.         — Network discovery & asset inventory
-    T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
-    R.E.L.I.Q.U.A.R.Y.     — M365 license & mailbox auditing
-    G.A.R.G.O.Y.L.E.       — Service & scheduled task monitoring
-    A.U.G.U.R.             — Disk wear & health — SMART status, physical disk reliability, HTML report
-    C.L.E.A.N.S.E.         — Disk cleanup — temp files, Windows Update cache, browser caches, Recycle Bin
-    S.C.R.Y.E.R.           — Unified diagnostic report — system, users, disks, SMART, services in one HTML
-    A.R.T.I.F.A.C.T.       — Certificate health & SSL expiry monitoring
-    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
-
-    Color Schema
-    ─────────────────────────────────────────
-    Cyan     Headers and section dividers
-    Magenta  Progress indicators
-    Green    Success messages
-    Yellow   Warnings and cautions
-    Red      Critical errors
-    Gray     Information and details
 #>
 
 param(
@@ -134,7 +99,7 @@ $Tools = @(
         Key         = '1'
         Name        = 'C.O.V.E.N.A.N.T.'
         File        = 'covenant.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Machine onboarding, Entra ID domain join, and new device setup'
         Color       = 'Blue'
         Category    = 'Deployment & Onboarding'
@@ -143,7 +108,7 @@ $Tools = @(
         Key         = '2'
         Name        = 'C.O.N.J.U.R.E.'
         File        = 'conjure.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Software deployment via Windows Package Manager or Chocolatey'
         Color       = 'Magenta'
         Category    = 'Deployment & Onboarding'
@@ -152,7 +117,7 @@ $Tools = @(
         Key         = '3'
         Name        = 'R.U.N.E.P.R.E.S.S.'
         File        = 'runepress.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Printer driver installation and network printer configuration'
         Color       = 'Cyan'
         Category    = 'Deployment & Onboarding'
@@ -161,7 +126,7 @@ $Tools = @(
         Key         = '4'
         Name        = 'F.O.R.G.E.'
         File        = 'forge.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Driver detection & installation  -  problem devices, Windows Update, local packages'
         Color       = 'Yellow'
         Category    = 'Deployment & Onboarding'
@@ -170,7 +135,7 @@ $Tools = @(
         Key         = '5'
         Name        = 'R.E.S.T.O.R.A.T.I.O.N.'
         File        = 'restoration.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Automated Windows Update management and maintenance'
         Color       = 'Green'
         Category    = 'Deployment & Onboarding'
@@ -179,7 +144,7 @@ $Tools = @(
         Key         = '6'
         Name        = 'H.E.A.R.T.H.'
         File        = 'hearth.ps1'
-        Version     = '1.1'
+        Version     = '3.0'
         Description = 'Toolkit setup wizard  -  org name, log path, Teams webhook, and tool defaults'
         Color       = 'White'
         Category    = 'Deployment & Onboarding'
@@ -189,7 +154,7 @@ $Tools = @(
         Key         = '10'
         Name        = 'A.U.S.P.E.X.'
         File        = 'auspex.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'System diagnostics, health assessment, and HTML report generation'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -198,7 +163,7 @@ $Tools = @(
         Key         = '11'
         Name        = 'W.A.R.D.'
         File        = 'ward.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'User account audit  -  roles, last logon, flags, HTML report'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -207,7 +172,7 @@ $Tools = @(
         Key         = '12'
         Name        = 'T.H.R.E.S.H.O.L.D.'
         File        = 'threshold.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Disk space monitor  -  volume usage, low-space alerts, temp cleanup, old profile detection'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -216,7 +181,7 @@ $Tools = @(
         Key         = '13'
         Name        = 'G.A.R.G.O.Y.L.E.'
         File        = 'gargoyle.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Service & task monitor  -  critical services, scheduled tasks, event log errors'
         Color       = 'Red'
         Category    = 'Diagnostics & Reporting'
@@ -225,7 +190,7 @@ $Tools = @(
         Key         = '14'
         Name        = 'A.U.G.U.R.'
         File        = 'augur.ps1'
-        Version     = '1.1'
+        Version     = '3.0'
         Description = 'Disk wear & health  -  SMART status, physical disk reliability, HTML report'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
@@ -234,7 +199,7 @@ $Tools = @(
         Key         = '15'
         Name        = 'C.L.E.A.N.S.E.'
         File        = 'cleanse.ps1'
-        Version     = '1.2'
+        Version     = '3.0'
         Description = 'Disk cleanup  -  temp files, Windows Update cache, browser caches, Recycle Bin'
         Color       = 'Magenta'
         Category    = 'Diagnostics & Reporting'
@@ -243,7 +208,7 @@ $Tools = @(
         Key         = '16'
         Name        = 'S.C.R.Y.E.R.'
         File        = 'scryer.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Unified diagnostic report  -  system info, users, disks, SMART, services in one HTML'
         Color       = 'Cyan'
         Category    = 'Diagnostics & Reporting'
@@ -253,7 +218,7 @@ $Tools = @(
         Key         = '20'
         Name        = 'C.I.P.H.E.R.'
         File        = 'cipher.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'BitLocker drive encryption  -  enable, disable, backup keys'
         Color       = 'Green'
         Category    = 'Security'
@@ -262,7 +227,7 @@ $Tools = @(
         Key         = '21'
         Name        = 'S.I.G.I.L.'
         File        = 'sigil.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Security baseline enforcement  -  telemetry, UAC, firewall, audit policy'
         Color       = 'Red'
         Category    = 'Security'
@@ -271,7 +236,7 @@ $Tools = @(
         Key         = '22'
         Name        = 'C.I.T.A.D.E.L.'
         File        = 'citadel.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Active Directory management  -  search, unlock, reset passwords, group membership'
         Color       = 'Blue'
         Category    = 'Security'
@@ -280,7 +245,7 @@ $Tools = @(
         Key         = '23'
         Name        = 'A.R.T.I.F.A.C.T.'
         File        = 'artifact.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Certificate health monitor  -  local cert stores, SSL/TLS expiry, HTML report'
         Color       = 'Yellow'
         Category    = 'Security'
@@ -290,7 +255,7 @@ $Tools = @(
         Key         = '30'
         Name        = 'L.E.Y.L.I.N.E.'
         File        = 'leyline.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Network diagnostics & remediation  -  adapters, ping, DNS, port tests'
         Color       = 'Cyan'
         Category    = 'Network & Remote'
@@ -299,7 +264,7 @@ $Tools = @(
         Key         = '31'
         Name        = 'S.H.A.D.E.'
         File        = 'shade.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Remote execution via WinRM  -  run toolkit tools on a remote machine'
         Color       = 'White'
         Category    = 'Network & Remote'
@@ -308,7 +273,7 @@ $Tools = @(
         Key         = '32'
         Name        = 'L.A.N.T.E.R.N.'
         File        = 'lantern.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Network discovery & asset inventory  -  subnet sweep, DNS, MAC, port scan'
         Color       = 'Cyan'
         Category    = 'Network & Remote'
@@ -318,7 +283,7 @@ $Tools = @(
         Key         = '40'
         Name        = 'T.A.L.I.S.M.A.N.'
         File        = 'talisman.ps1'
-        Version     = '2.2'
+        Version     = '3.0'
         Description = 'Azure environment assessment  -  security posture, RBAC, backup coverage, HTML report'
         Color       = 'Cyan'
         Category    = 'Cloud & Identity'
@@ -327,7 +292,7 @@ $Tools = @(
         Key         = '41'
         Name        = 'R.E.L.I.Q.U.A.R.Y.'
         File        = 'reliquary.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'M365 license & mailbox audit  -  SKU inventory, unlicensed users, MFA status'
         Color       = 'Green'
         Category    = 'Cloud & Identity'
@@ -337,7 +302,7 @@ $Tools = @(
         Key         = '50'
         Name        = 'R.E.V.E.N.A.N.T.'
         File        = 'revenant.ps1'
-        Version     = '1.2'
+        Version     = '3.0'
         Description = 'Profile migration and data transfer to a new machine'
         Color       = 'Cyan'
         Category    = 'Data & Migration'
@@ -346,7 +311,7 @@ $Tools = @(
         Key         = '51'
         Name        = 'A.R.C.H.I.V.E.'
         File        = 'archive.ps1'
-        Version     = '1.0'
+        Version     = '3.0'
         Description = 'Pre-reimaging profile backup  -  ZIP to local or network share'
         Color       = 'Magenta'
         Category    = 'Data & Migration'
@@ -372,7 +337,7 @@ function Show-Banner {
     Write-Host ""
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
     $toolCount = $Tools.Count
-    Write-Host "  Technician Toolkit  |  Hub v1.3  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
+    Write-Host "  Technician Toolkit  |  Hub v3.0  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
     if ($WhatIf) {
         Write-Host ""
