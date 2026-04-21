@@ -18,7 +18,7 @@
     PS C:\> .\aegis.ps1 -OutputPath "C:\Reports\azure.html" -NoOpen
 
 .NOTES
-    Version  : 2.0
+    Version  : 2.1
     All required Az modules are installed automatically on first run.
 
     Tools Available
@@ -52,8 +52,10 @@
 #>
 
 param(
-    [string]$SubscriptionId = '',
-    [string]$OutputPath     = "$env:TEMP\azure-assessment-$(Get-Date -Format 'yyyyMMdd-HHmmss').html",
+    [switch]$Unattended,
+    [string]$TenantId        = '',
+    [string]$SubscriptionId  = '',
+    [string]$OutputPath      = "$env:TEMP\azure-assessment-$(Get-Date -Format 'yyyyMMdd-HHmmss').html",
     [switch]$NoOpen,
     [switch]$Transcript
 )
@@ -146,16 +148,65 @@ Write-Ok "All modules ready"
 Write-Section "AUTHENTICATION"
 
 $ctx = Get-AzContext -ErrorAction SilentlyContinue
-if (-not $ctx) {
-    Write-Step "No active Azure session  -  launching browser login..."
-    try {
-        Connect-AzAccount -ErrorAction Stop | Out-Null
-        $ctx = Get-AzContext -ErrorAction Stop
-    } catch {
-        Write-Fail "Authentication failed: $_"
-        exit 1
+
+if ($Unattended) {
+    if (-not [string]::IsNullOrWhiteSpace($TenantId)) {
+        Write-Step "Connecting to tenant: $TenantId"
+        try {
+            Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null
+            Connect-AzAccount -TenantId $TenantId -ErrorAction Stop | Out-Null
+            $ctx = Get-AzContext -ErrorAction Stop
+        } catch {
+            Write-Fail "Authentication failed: $_"
+            exit 1
+        }
+    } elseif ($ctx) {
+        Write-Step "Unattended  -  using existing session (pass -TenantId to force a specific tenant)"
+    } else {
+        Write-Step "No active session  -  launching sign-in..."
+        try {
+            Connect-AzAccount -ErrorAction Stop | Out-Null
+            $ctx = Get-AzContext -ErrorAction Stop
+        } catch {
+            Write-Fail "Authentication failed: $_"
+            exit 1
+        }
+    }
+} else {
+    # Interactive: always show who is currently signed in and ask before proceeding
+    if ($ctx) {
+        Write-Host ""
+        Write-Host "  Currently signed in:" -ForegroundColor $C.Header
+        Write-Host "  Account : $($ctx.Account.Id)" -ForegroundColor $C.Info
+        Write-Host "  Tenant  : $($ctx.Tenant.Id)" -ForegroundColor $C.Info
+        Write-Host ""
+        Write-Host -NoNewline "  Continue with this account? [Y] or sign in to a different tenant [N]: " -ForegroundColor $C.Header
+        $useExisting = (Read-Host).Trim().ToUpper()
+        if ($useExisting -ne 'Y') {
+            $ctx = $null
+        }
+    }
+
+    if (-not $ctx) {
+        Write-Host ""
+        Write-Host -NoNewline "  Enter tenant domain or ID (e.g. contoso.com) or leave blank for default: " -ForegroundColor $C.Header
+        $tenantInput = (Read-Host).Trim()
+        Write-Step "Launching browser sign-in..."
+        try {
+            Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null
+            if ([string]::IsNullOrWhiteSpace($tenantInput)) {
+                Connect-AzAccount -ErrorAction Stop | Out-Null
+            } else {
+                Connect-AzAccount -TenantId $tenantInput -ErrorAction Stop | Out-Null
+            }
+            $ctx = Get-AzContext -ErrorAction Stop
+        } catch {
+            Write-Fail "Authentication failed: $_"
+            exit 1
+        }
     }
 }
+
 Write-Ok "Signed in as: $($ctx.Account.Id)"
 
 if ($SubscriptionId) {
