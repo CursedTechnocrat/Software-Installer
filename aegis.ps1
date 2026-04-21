@@ -574,28 +574,27 @@ if ($nonCompliantPolicies.Count -gt 0) {
 }
 
 $governanceSection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#e1ecf7">🛡️</div>
-    <h2>Access &amp; Governance</h2>
-    <span class="section-num">Section 4</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">Access &amp; Governance</span>
+    <span class="tk-section-num">Section 4</span>
   </div>
-  <div class="card-body">
+  <div class="tk-card">
 
-    <p style="font-size:13px;font-weight:700;color:#0f3460;margin-bottom:12px">Subscription-Level Privileged Role Assignments</p>
-    <table class="status-table" style="margin-bottom:28px">
+    <p class="tk-card-label">Subscription-Level Privileged Role Assignments</p>
+    <table class="tk-table" style="margin-bottom:28px">
       <thead><tr><th>Principal</th><th>Type</th><th>Role</th><th>Scope</th></tr></thead>
       <tbody>$($rbacRows.ToString())</tbody>
     </table>
 
-    <p style="font-size:13px;font-weight:700;color:#0f3460;margin-bottom:12px">Critical Resources Without Delete Locks</p>
-    <table class="status-table" style="margin-bottom:28px">
+    <p class="tk-card-label">Critical Resources Without Delete Locks</p>
+    <table class="tk-table" style="margin-bottom:28px">
       <thead><tr><th>Resource Name</th><th>Type</th><th>Resource Group</th><th>Lock Status</th></tr></thead>
       <tbody>$($lockRows.ToString())</tbody>
     </table>
 
-    <p style="font-size:13px;font-weight:700;color:#0f3460;margin-bottom:12px">Azure Policy Non-Compliance  <span style="font-weight:400;color:$policyColor">($policyNote)</span></p>
-    <table class="status-table">
+    <p class="tk-card-label">Azure Policy Non-Compliance &nbsp;<span class="$policyBadge">$policyNote</span></p>
+    <table class="tk-table">
       <thead><tr><th>Policy Definition</th><th>Assignment</th><th>Non-Compliant Resource</th></tr></thead>
       <tbody>$($policyRows.ToString())</tbody>
     </table>
@@ -609,20 +608,19 @@ $governanceSection = @"
 $vmRows = [System.Text.StringBuilder]::new()
 foreach ($vm in $vms) {
     $power   = if ($vm.PowerState) { EscHtml ($vm.PowerState -replace 'VM ','') } else { 'Unknown' }
-    $monPill = if ($vmsWithoutMon -contains $vm.Name) { "<span class='pill orphan'>None</span>" } else { "<span class='pill full'>Deployed</span>" }
+    $monPill = if ($vmsWithoutMon -contains $vm.Name) { "<span class='tk-badge-err'>None</span>" } else { "<span class='tk-badge-ok'>Deployed</span>" }
     [void]$vmRows.Append("<tr><td><strong>$(EscHtml $vm.Name)</strong></td><td>$(EscHtml $vm.ResourceGroupName)</td><td>$(EscHtml $vm.Location)</td><td>$(EscHtml $vm.HardwareProfile.VmSize)</td><td>$power</td><td>$monPill</td></tr>`n")
 }
 $vmSection = ''
 if ($vms.Count -gt 0) {
     $vmSection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#e1ecf7">🖥️</div>
-    <h2>Virtual Machine Inventory</h2>
-    <span class="section-num">Section 5</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">Virtual Machine Inventory</span>
+    <span class="tk-section-num">Section 5</span>
   </div>
-  <div class="card-body">
-    <table class="status-table">
+  <div class="tk-card">
+    <table class="tk-table">
       <thead><tr><th>VM Name</th><th>Resource Group</th><th>Location</th><th>Size</th><th>Power State</th><th>Extensions</th></tr></thead>
       <tbody>$($vmRows.ToString())</tbody>
     </table>
@@ -638,7 +636,7 @@ foreach ($srv in $sqlServers) {
     $dbs = $sqlDatabases[$srv.ServerName]
     if (-not $dbs) { continue }
     foreach ($db in ($dbs | Sort-Object DatabaseName)) {
-        $pill = if ($db.DatabaseName -imatch $adHocPattern) { "<span class='pill partial'>Ad-hoc / Backup</span>" } else { "<span class='pill full'>Active</span>" }
+        $pill = if ($db.DatabaseName -imatch $adHocPattern) { "<span class='tk-badge-warn'>Ad-hoc / Backup</span>" } else { "<span class='tk-badge-ok'>Active</span>" }
         [void]$dbRows.Append("<tr><td>$(EscHtml $db.DatabaseName)</td><td>$(EscHtml $srv.ServerName)</td><td>$(EscHtml $db.SkuName)</td><td>$pill</td></tr>`n")
     }
 }
