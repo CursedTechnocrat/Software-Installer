@@ -7,14 +7,16 @@
     Migrates user profile data from a source profile or machine to a destination.
     Handles common user folders, Outlook data, browser bookmarks, and email signatures.
     Uses Robocopy for reliable folder transfers and generates a timestamped CSV log.
+    Can restore directly from an ARCHIVE ZIP in both interactive and unattended modes.
 
 .USAGE
     PS C:\> .\phantom.ps1                                         # Must be run as Administrator
     PS C:\> .\phantom.ps1 -Unattended -SourcePath "C:\Users\John" -DestPath "D:\Migration"
     PS C:\> .\phantom.ps1 -Unattended -SourcePath "\\OldPC\C$\Users\John" -DestPath "C:\Users\John" -Items "1,2,3"
+    PS C:\> .\phantom.ps1 -Unattended -ArchiveZip "D:\Backup\John_20260101.zip" -DestPath "C:\Users\John"
 
 .NOTES
-    Version : 1.1
+    Version : 1.2
 
     Tools Available
     ─────────────────────────────────────────────────────────────────
@@ -46,6 +48,7 @@ param(
     [string]$SourcePath = "",
     [string]$DestPath   = "",
     [string]$Items      = "A",
+    [string]$ArchiveZip = "",
     [switch]$Transcript,
     [switch]$WhatIf
 )
@@ -286,14 +289,40 @@ $IsArchiveZip    = $false
 $TempExtractDir  = ""
 
 if ($Unattended) {
-    if ([string]::IsNullOrWhiteSpace($SourcePath)) {
-        Write-Host "  [-] -SourcePath is required in unattended mode." -ForegroundColor $ColorSchema.Error
-        exit 1
-    }
-    $SourceRoot   = $SourcePath.TrimEnd('\')
-    $IsArchiveZip = $false
-    if (-not (Test-Path $SourceRoot)) {
-        Write-Host "  [-] Source path not accessible: $SourceRoot" -ForegroundColor $ColorSchema.Error
+    if (-not [string]::IsNullOrWhiteSpace($ArchiveZip)) {
+        if (-not [string]::IsNullOrWhiteSpace($SourcePath)) {
+            Write-Host "  [!!] Both -ArchiveZip and -SourcePath were provided — -ArchiveZip takes precedence." -ForegroundColor $ColorSchema.Warning
+        }
+        if (-not (Test-Path $ArchiveZip)) {
+            Write-Host "  [-] Archive file not found: $ArchiveZip" -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+        if ([System.IO.Path]::GetExtension($ArchiveZip) -ine ".zip") {
+            Write-Host "  [-] File does not appear to be a ZIP archive." -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+        $TempExtractDir = Join-Path $env:TEMP "PHANTOM_Extract_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        try {
+            Write-Host "  [*] Extracting archive — this may take a moment..." -ForegroundColor $ColorSchema.Progress
+            Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($ArchiveZip, $TempExtractDir)
+            $SourceRoot   = $TempExtractDir
+            $IsArchiveZip = $true
+            Write-Host "  [+] Archive extracted." -ForegroundColor $ColorSchema.Success
+        }
+        catch {
+            Write-Host "  [-] Failed to extract archive: $_" -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+    } elseif (-not [string]::IsNullOrWhiteSpace($SourcePath)) {
+        $SourceRoot   = $SourcePath.TrimEnd('\')
+        $IsArchiveZip = $false
+        if (-not (Test-Path $SourceRoot)) {
+            Write-Host "  [-] Source path not accessible: $SourceRoot" -ForegroundColor $ColorSchema.Error
+            exit 1
+        }
+    } else {
+        Write-Host "  [-] Either -SourcePath or -ArchiveZip is required in unattended mode." -ForegroundColor $ColorSchema.Error
         exit 1
     }
     Write-Host "  [+] Source: $SourceRoot" -ForegroundColor $ColorSchema.Success

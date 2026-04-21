@@ -1,13 +1,14 @@
 ﻿<#
 .SYNOPSIS
-    C.O.V.E.N.A.N.T. — Configures Onboarding Via Entra — Network, Accounts, Naming & Timezone
-    Machine Setup & Entra ID Enrollment Tool for PowerShell 5.1+
+    C.O.V.E.N.A.N.T. — Configures Onboarding Via Enrollment — Network, Accounts, Naming & Timezone
+    Machine Setup & Domain Enrollment Tool for PowerShell 5.1+
 
 .DESCRIPTION
     Guides a technician through the full setup of a new Windows machine:
-    computer rename, Entra ID (Azure AD) domain join with interactive credential
-    entry, network drive mapping, local admin account creation, and timezone
-    configuration. Ends with an action summary and optional reboot countdown.
+    computer rename, Entra ID or on-premises Active Directory domain join with
+    interactive credential entry, network drive mapping, local admin account
+    creation, timezone configuration, and Group Policy synchronisation. Ends
+    with an action summary and optional reboot countdown.
 
 .USAGE
     PS C:\> .\covenant.ps1 -WhatIf                # Preview all onboarding steps without making changes
@@ -15,9 +16,11 @@
     PS C:\> .\covenant.ps1 -Unattended -NewComputerName "DESKTOP-01"           # Rename only
     PS C:\> .\covenant.ps1 -Unattended -Timezone "Eastern Standard Time"       # Set timezone only
     PS C:\> .\covenant.ps1 -Unattended -LocalAdminUser "admin" -LocalAdminPassword (ConvertTo-SecureString "Pass" -AsPlainText -Force)
+    PS C:\> .\covenant.ps1 -Unattended -DomainJoinType "AD" -ADDomain "corp.contoso.com"
+    PS C:\> .\covenant.ps1 -Unattended -DomainJoinType "AD" -ADDomain "corp.contoso.com" -ADOUPath "OU=Workstations,DC=corp,DC=contoso,DC=com"
 
 .NOTES
-    Version : 1.0
+    Version : 1.1
 
     Tools Available
     ─────────────────────────────────────────────────────────────────
@@ -47,7 +50,11 @@ param(
     [string]$Timezone        = "",
     [string]$LocalAdminUser  = "",
     [securestring]$LocalAdminPassword = $null,
-    [switch]$Transcript
+    [switch]$Transcript,
+    [string]$DomainJoinType  = "",      # "Entra", "AD", or "" (prompt interactively)
+    [string]$ADDomain        = "",      # e.g. "corp.contoso.com"
+    [string]$ADOUPath        = "",      # optional, e.g. "OU=Workstations,DC=corp,DC=contoso,DC=com"
+    [switch]$SkipGPUpdate               # skip the new gpupdate step
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -74,8 +81,8 @@ function Show-CovenantBanner {
   ╚═════╝  ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝
 
 "@ -ForegroundColor Cyan
-    Write-Host "    C.O.V.E.N.A.N.T. — Configures Onboarding Via Entra — Network, Accounts, Naming & Timezone" -ForegroundColor Cyan
-    Write-Host "    Machine Setup & Entra ID Enrollment Tool" -ForegroundColor Cyan
+    Write-Host "    C.O.V.E.N.A.N.T. — Configures Onboarding Via Enrollment — Network, Accounts, Naming & Timezone" -ForegroundColor Cyan
+    Write-Host "    Machine Setup & Domain Enrollment Tool" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -143,7 +150,7 @@ Write-Host ""
 # STEP 1: PRE-FLIGHT CHECKS
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[1/6] Running Pre-Flight Checks..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[1/7] Running Pre-Flight Checks..." -ForegroundColor $ColorSchema.Progress
 
 # OS Version
 try {
@@ -189,7 +196,7 @@ Write-Host ""
 # STEP 2: COMPUTER RENAME
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[2/6] Computer Rename..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[2/7] Computer Rename..." -ForegroundColor $ColorSchema.Progress
 Write-Host "    Current name: $env:COMPUTERNAME" -ForegroundColor $ColorSchema.Info
 Write-Host ""
 
@@ -235,22 +242,69 @@ else {
 Write-Host ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3: ENTRA ID DOMAIN JOIN
+# STEP 3: DOMAIN JOIN (ENTRA ID OR LOCAL ACTIVE DIRECTORY)
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[3/6] Entra ID Domain Join..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[3/7] Domain Join..." -ForegroundColor $ColorSchema.Progress
 Write-Host ""
-Write-Host "  This step will join this machine to your organization's Entra ID (Azure AD) tenant." -ForegroundColor $ColorSchema.Info
-Write-Host "  You will need an account that has permission to join devices." -ForegroundColor $ColorSchema.Info
+Write-Host "  This step can join this machine to Entra ID (Azure AD) or a local Active Directory domain." -ForegroundColor $ColorSchema.Info
 Write-Host ""
 
 if ($Unattended) {
-    Write-Host "    [*] Unattended mode: Entra ID join requires interactive credentials — skipped." -ForegroundColor $ColorSchema.Warning
-    Add-ActionRecord -Step "Entra ID Join" -Status "Skipped" -Detail "Not supported in unattended mode"
+    if ($DomainJoinType -eq "Entra") {
+        Write-Host "    [*] Unattended mode: Entra ID join requires interactive credentials — skipped." -ForegroundColor $ColorSchema.Warning
+        Add-ActionRecord -Step "Entra ID Join" -Status "Skipped" -Detail "Not supported in unattended mode"
+    }
+    elseif ($DomainJoinType -eq "AD") {
+        if ([string]::IsNullOrWhiteSpace($ADDomain)) {
+            Write-Host "    [*] Unattended AD join: -ADDomain not provided — skipped." -ForegroundColor $ColorSchema.Warning
+            Add-ActionRecord -Step "AD Join" -Status "Skipped" -Detail "-ADDomain parameter not provided"
+        }
+        else {
+            if ($WhatIf) {
+                Write-Host "    [~] Would join domain '$ADDomain'" -ForegroundColor Cyan
+                Add-ActionRecord -Step "AD Join" -Status "WhatIf" -Detail "Would join domain: $ADDomain"
+                $rebootRequired = $true
+            }
+            else {
+                Write-Host "    [*] Joining Active Directory domain '$ADDomain'..." -ForegroundColor $ColorSchema.Progress
+                try {
+                    if (-not [string]::IsNullOrWhiteSpace($ADOUPath)) {
+                        Add-Computer -DomainName $ADDomain -OUPath $ADOUPath -ErrorAction Stop
+                    }
+                    else {
+                        Add-Computer -DomainName $ADDomain -ErrorAction Stop
+                    }
+                    Write-Host "    [+] Successfully joined to domain '$ADDomain'." -ForegroundColor $ColorSchema.Success
+                    Add-ActionRecord -Step "AD Join" -Status "Joined" -Detail "Domain: $ADDomain"
+                    $rebootRequired = $true
+                }
+                catch {
+                    Write-Host "    [-] AD join failed: $_" -ForegroundColor $ColorSchema.Error
+                    Add-ActionRecord -Step "AD Join" -Status "Failed" -Detail $_
+                }
+            }
+        }
+    }
+    else {
+        Write-Host "    [*] No -DomainJoinType specified — domain join skipped." -ForegroundColor $ColorSchema.Info
+        Add-ActionRecord -Step "Domain Join" -Status "Skipped" -Detail "DomainJoinType not specified"
+    }
 } else {
-    $joinChoice = Read-Host "  Proceed with Entra ID join? (Y/N)"
+    Write-Host "  Select join type:" -ForegroundColor $ColorSchema.Info
+    Write-Host "    [1] Entra ID join (Azure AD)" -ForegroundColor $ColorSchema.Info
+    Write-Host "    [2] Local Active Directory domain join" -ForegroundColor $ColorSchema.Info
+    Write-Host "    [3] Skip" -ForegroundColor $ColorSchema.Info
+    Write-Host ""
+    $joinTypeChoice = Read-Host "  Enter choice (1/2/3)"
 
-    if ($joinChoice -eq 'Y' -or $joinChoice -eq 'y') {
+    # ── Entra ID branch ──────────────────────────────────────────────────────
+    if ($joinTypeChoice -eq '1') {
+
+        Write-Host ""
+        Write-Host "  This will join this machine to your organization's Entra ID (Azure AD) tenant." -ForegroundColor $ColorSchema.Info
+        Write-Host "  You will need an account that has permission to join devices." -ForegroundColor $ColorSchema.Info
+        Write-Host ""
 
         if ($WhatIf) {
             Write-Host ""
@@ -355,9 +409,64 @@ if ($Unattended) {
         }
         }  # end else (not WhatIf)
     }
+
+    # ── Local Active Directory branch ────────────────────────────────────────
+    elseif ($joinTypeChoice -eq '2') {
+
+        Write-Host ""
+        Write-Host "  ─────────────────────────────────────────" -ForegroundColor $ColorSchema.Header
+        Write-Host "   ACTIVE DIRECTORY DOMAIN JOIN" -ForegroundColor $ColorSchema.Header
+        Write-Host "  ─────────────────────────────────────────" -ForegroundColor $ColorSchema.Header
+        Write-Host ""
+
+        # Domain name
+        $adDomainInput = ""
+        do {
+            $adDomainInput = (Read-Host "  Enter domain name (e.g. corp.contoso.com)").Trim()
+            if ([string]::IsNullOrWhiteSpace($adDomainInput)) {
+                Write-Host "    [!!] Domain name cannot be blank." -ForegroundColor $ColorSchema.Warning
+            }
+        } while ([string]::IsNullOrWhiteSpace($adDomainInput))
+
+        # Optional OU path
+        $adOUInput = (Read-Host "  Enter OU path (leave blank for default OU, e.g. OU=Workstations,DC=corp,DC=contoso,DC=com)").Trim()
+
+        # Credentials
+        $adCred = Get-Credential -Message "Enter credentials to join '$adDomainInput' (e.g. CORP\JoinAccount)"
+
+        Write-Host ""
+        Write-Host "    Joining Active Directory domain '$adDomainInput'..." -ForegroundColor $ColorSchema.Progress
+
+        if ($WhatIf) {
+            Write-Host ""
+            Write-Host "    [~] Would join domain '$adDomainInput'" -ForegroundColor Cyan
+            Write-Host ""
+            Add-ActionRecord -Step "AD Join" -Status "WhatIf" -Detail "Would join domain: $adDomainInput"
+            $rebootRequired = $true
+        }
+        else {
+            try {
+                if (-not [string]::IsNullOrWhiteSpace($adOUInput)) {
+                    Add-Computer -DomainName $adDomainInput -Credential $adCred -OUPath $adOUInput -ErrorAction Stop
+                }
+                else {
+                    Add-Computer -DomainName $adDomainInput -Credential $adCred -ErrorAction Stop
+                }
+                Write-Host "    [+] Successfully joined to domain '$adDomainInput'." -ForegroundColor $ColorSchema.Success
+                Add-ActionRecord -Step "AD Join" -Status "Joined" -Detail "Domain: $adDomainInput"
+                $rebootRequired = $true
+            }
+            catch {
+                Write-Host "    [-] AD join failed: $_" -ForegroundColor $ColorSchema.Error
+                Add-ActionRecord -Step "AD Join" -Status "Failed" -Detail $_
+            }
+        }
+    }
+
+    # ── Skip ─────────────────────────────────────────────────────────────────
     else {
         Write-Host "    Skipped." -ForegroundColor $ColorSchema.Info
-        Add-ActionRecord -Step "Entra ID Join" -Status "Skipped" -Detail "User chose to skip"
+        Add-ActionRecord -Step "Domain Join" -Status "Skipped" -Detail "User chose to skip"
     }
 }
 
@@ -367,7 +476,7 @@ Write-Host ""
 # STEP 4: NETWORK DRIVE MAPPING
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[4/6] Network Drive Mapping..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[4/7] Network Drive Mapping..." -ForegroundColor $ColorSchema.Progress
 Write-Host ""
 
 if ($Unattended) {
@@ -498,7 +607,7 @@ Write-Host ""
 # STEP 5: LOCAL ADMIN ACCOUNT
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[5/6] Local Administrator Account..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[5/7] Local Administrator Account..." -ForegroundColor $ColorSchema.Progress
 Write-Host ""
 
 if ($Unattended) {
@@ -607,8 +716,10 @@ Write-Host ""
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 6: TIMEZONE CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
+#   (was Step 6/6, now Step 6/7)
+# ─────────────────────────────────────────────────────────────────────────────
 
-Write-Host "[6/6] Timezone Configuration..." -ForegroundColor $ColorSchema.Progress
+Write-Host "[6/7] Timezone Configuration..." -ForegroundColor $ColorSchema.Progress
 Write-Host "    Current timezone: $((Get-TimeZone).DisplayName)" -ForegroundColor $ColorSchema.Info
 Write-Host ""
 
@@ -679,6 +790,56 @@ if ($Unattended) {
     else {
         Write-Host "    Skipped." -ForegroundColor $ColorSchema.Info
         Add-ActionRecord -Step "Timezone" -Status "Skipped" -Detail "User chose to skip"
+    }
+}
+
+Write-Host ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 7: GROUP POLICY SYNCHRONISATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+Write-Host "[7/7] Group Policy Synchronisation..." -ForegroundColor $ColorSchema.Progress
+Write-Host ""
+
+if ($SkipGPUpdate) {
+    Write-Host "    [*] -SkipGPUpdate specified — skipped." -ForegroundColor $ColorSchema.Info
+    Add-ActionRecord -Step "GP Sync" -Status "Skipped" -Detail "-SkipGPUpdate switch set"
+}
+elseif ($WhatIf) {
+    Write-Host "    [~] Would run: gpupdate /force" -ForegroundColor Cyan
+    Add-ActionRecord -Step "GP Sync" -Status "WhatIf" -Detail "Would run gpupdate /force"
+}
+elseif ($Unattended) {
+    Write-Host "    [*] Running gpupdate /force..." -ForegroundColor $ColorSchema.Progress
+    try {
+        $gpOutput = & gpupdate /force 2>&1
+        Write-Host "    [+] Group Policy update completed." -ForegroundColor $ColorSchema.Success
+        Add-ActionRecord -Step "GP Sync" -Status "Completed" -Detail "gpupdate /force ran successfully"
+    }
+    catch {
+        Write-Host "    [-] gpupdate failed: $_" -ForegroundColor $ColorSchema.Error
+        Add-ActionRecord -Step "GP Sync" -Status "Failed" -Detail $_
+    }
+}
+else {
+    $gpChoice = Read-Host "  Run gpupdate /force now? (Y/N)"
+
+    if ($gpChoice -eq 'Y' -or $gpChoice -eq 'y') {
+        Write-Host "    [*] Running gpupdate /force..." -ForegroundColor $ColorSchema.Progress
+        try {
+            $gpOutput = & gpupdate /force 2>&1
+            Write-Host "    [+] Group Policy update completed." -ForegroundColor $ColorSchema.Success
+            Add-ActionRecord -Step "GP Sync" -Status "Completed" -Detail "gpupdate /force ran successfully"
+        }
+        catch {
+            Write-Host "    [-] gpupdate failed: $_" -ForegroundColor $ColorSchema.Error
+            Add-ActionRecord -Step "GP Sync" -Status "Failed" -Detail $_
+        }
+    }
+    else {
+        Write-Host "    Skipped." -ForegroundColor $ColorSchema.Info
+        Add-ActionRecord -Step "GP Sync" -Status "Skipped" -Detail "User chose to skip"
     }
 }
 

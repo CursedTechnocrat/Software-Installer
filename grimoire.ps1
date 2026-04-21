@@ -202,6 +202,15 @@ $Tools = @(
         Color       = 'Magenta'
         Category    = 'Diagnostics & Reporting'
     },
+    [PSCustomObject]@{
+        Key         = '16'
+        Name        = 'S.C.R.Y.E.R.'
+        File        = 'scryer.ps1'
+        Version     = '1.0'
+        Description = 'Unified diagnostic report  -  system info, users, disks, SMART, services in one HTML'
+        Color       = 'Cyan'
+        Category    = 'Diagnostics & Reporting'
+    },
     # ── Security (20–29) ─────────────────────────────────────────────
     [PSCustomObject]@{
         Key         = '20'
