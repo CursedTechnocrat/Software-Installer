@@ -913,144 +913,82 @@ $defenderStatBox = if ($defenderPct -ne $null) {
     "<div class='tk-summary-card info'><div class='tk-summary-num'>N/A</div><div class='tk-summary-lbl'>Defender Secure Score</div></div>"
 }
 
-$html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Azure Environment Assessment  -  $orgName</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; }
-    header { background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); color: #fff; padding: 48px 64px 40px; }
-    header .label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #6db8f7; margin-bottom: 10px; }
-    header h1 { font-size: 32px; font-weight: 700; margin-bottom: 6px; }
-    header .subtitle { font-size: 15px; color: #a8c4e0; }
-    .meta { margin-top: 24px; display: flex; gap: 32px; font-size: 13px; color: #a8c4e0; flex-wrap: wrap; }
-    .meta span strong { color: #fff; }
-    main { max-width: 1100px; margin: 0 auto; padding: 48px 32px; display: flex; flex-direction: column; gap: 40px; }
-    .card { background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
-    .card-header { display: flex; align-items: center; gap: 14px; padding: 20px 28px; border-bottom: 1px solid #e8edf3; }
-    .card-header .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-    .card-header h2 { font-size: 17px; font-weight: 700; color: #0f3460; }
-    .card-header .section-num { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9aa8bb; }
-    .card-body { padding: 24px 28px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
-    .stat-box { background: #f5f7fa; border-radius: 8px; padding: 18px 20px; border-left: 4px solid #0078d4; }
-    .stat-box.green  { border-color: #107c10; }
-    .stat-box.yellow { border-color: #c7a000; }
-    .stat-box.red    { border-color: #d13438; }
-    .stat-box.blue   { border-color: #0078d4; }
-    .stat-box .num   { font-size: 30px; font-weight: 800; color: #0f3460; }
-    .stat-box .lbl   { font-size: 12px; color: #5c6b7a; margin-top: 2px; }
-    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-    .service-item { background: #f5f7fa; border-radius: 8px; padding: 14px 18px; border-left: 4px solid #0078d4; }
-    .service-item .svc-name { font-weight: 700; font-size: 14px; color: #0f3460; }
-    .service-item .svc-type { font-size: 11px; color: #6b7c93; margin-top: 2px; font-family: monospace; }
-    .service-item .svc-note { font-size: 13px; color: #3a4a5c; margin-top: 6px; word-break: break-word; }
-    .status-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    .status-table th { background: #0f3460; color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: .5px; }
-    .status-table td { padding: 10px 14px; border-bottom: 1px solid #e8edf3; vertical-align: top; }
-    .status-table tr:last-child td { border-bottom: none; }
-    .status-table tr:nth-child(even) td { background: #f9fbfd; }
-    .pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
-    .pill.full    { background: #dff6dd; color: #107c10; }
-    .pill.partial { background: #fff4ce; color: #7a5800; }
-    .pill.orphan  { background: #fde7e9; color: #a4262c; }
-    .pill.unknown { background: #e8edf3; color: #5c6b7a; }
-    .issue-list { display: flex; flex-direction: column; gap: 12px; }
-    .issue { display: flex; gap: 14px; padding: 14px 16px; border-radius: 8px; background: #f5f7fa; }
-    .issue .sev { width: 52px; flex-shrink: 0; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0; text-align: center; border-radius: 6px; align-self: flex-start; }
-    .issue .sev.high { background: #fde7e9; color: #a4262c; }
-    .issue .sev.med  { background: #fff4ce; color: #7a5800; }
-    .issue .sev.low  { background: #dff6dd; color: #107c10; }
-    .issue .body strong { font-size: 14px; color: #0f3460; display: block; margin-bottom: 3px; }
-    .issue .body p { font-size: 13px; color: #3a4a5c; }
-    .rec-list { display: flex; flex-direction: column; gap: 10px; }
-    .rec { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 8px; background: #f5f7fa; }
-    .rec .priority { width: 80px; flex-shrink: 0; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0; text-align: center; border-radius: 6px; }
-    .rec .priority.immediate { background: #fde7e9; color: #a4262c; }
-    .rec .priority.short     { background: #fff4ce; color: #7a5800; }
-    .rec .priority.medium    { background: #cce4f7; color: #004e8c; }
-    .rec .priority.long      { background: #e8edf3; color: #3a4a5c; }
-    .rec .body strong { font-size: 14px; color: #0f3460; display: block; margin-bottom: 3px; }
-    .rec .body p { font-size: 13px; color: #3a4a5c; }
-    footer { background: #0f3460; color: #6b8cae; text-align: center; padding: 24px; font-size: 12px; }
-  </style>
-</head>
-<body>
+$htmlHead = Get-TKHtmlHead `
+    -Title      "Azure Environment Assessment -- $orgName" `
+    -ScriptName 'A.E.G.I.S.' `
+    -Subtitle   "$orgName -- Cloud Infrastructure Review" `
+    -MetaItems  ([ordered]@{
+        'Report Date'     = $reportDate
+        'Subscription'    = $orgName
+        'Subscription ID' = $subIdEsc
+        'Total Resources' = "$($allResources.Count)"
+        'Region(s)'       = $regionDisp
+    }) `
+    -NavItems   @(
+        'Executive Summary',
+        'Services in Use',
+        'Issues',
+        'Security Posture',
+        'Access & Governance',
+        'Virtual Machines',
+        'SQL Databases',
+        'Backup Coverage',
+        'Advisor',
+        'Recommendations'
+    )
 
-<header>
-  <div class="label">Confidential  -  Internal Use Only</div>
-  <h1>Azure Environment Assessment</h1>
-  <div class="subtitle">$orgName  -  Cloud Infrastructure Review</div>
-  <div class="meta">
-    <span><strong>Report Date:</strong> $reportDate</span>
-    <span><strong>Subscription:</strong> $orgName</span>
-    <span><strong>Subscription ID:</strong> $subIdEsc</span>
-    <span><strong>Total Resources:</strong> $($allResources.Count)</span>
-    <span><strong>Region(s):</strong> $regionDisp</span>
-  </div>
-</header>
+$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.E.G.I.S. v2.0'
 
-<main>
+$html = $htmlHead + @"
 
   <!-- Executive Summary -->
-  <div class="card">
-    <div class="card-header">
-      <div class="icon" style="background:#e1ecf7">📊</div>
-      <h2>Executive Summary</h2>
-      <span class="section-num">Overview</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Executive Summary</span>
+      <span class="tk-section-num">Overview</span>
     </div>
-    <div class="card-body">
-      <div class="summary-grid">
-        <div class="stat-box blue"><div class="num">$($vms.Count)</div><div class="lbl">Virtual Machines</div></div>
-        <div class="stat-box blue"><div class="num">$($webApps.Count)</div><div class="lbl">Web Apps &amp; Functions</div></div>
-        <div class="stat-box blue"><div class="num">$($sqlServers.Count)</div><div class="lbl">SQL Servers</div></div>
-        <div class="stat-box yellow"><div class="num">$totalDbCount</div><div class="lbl">SQL Databases (incl. copies)</div></div>
-        <div class="stat-box $(if($exposedNsgRules.Count -gt 0){'red'}else{'green'})"><div class="num">$($exposedNsgRules.Count)</div><div class="lbl">Internet-Exposed NSG Rules</div></div>
-        <div class="stat-box $(if($unbackedVms.Count -gt 0){'red'}else{'green'})"><div class="num">$($unbackedVms.Count)</div><div class="lbl">Unprotected VMs (Backup)</div></div>
-        <div class="stat-box red"><div class="num">$highAdvisor</div><div class="lbl">High-Impact Advisor Alerts</div></div>
-        <div class="stat-box $(if($untaggedPct -gt 50){'red'}elseif($untaggedPct -gt 20){'yellow'}else{'green'})"><div class="num">~$untaggedPct%</div><div class="lbl">Resources Without Tags</div></div>
-        <div class="stat-box $(if($unlockedCritical.Count -gt 0){'red'}else{'green'})"><div class="num">$($unlockedCritical.Count)</div><div class="lbl">Critical Resources Unlocked</div></div>
-        <div class="stat-box $(if($orphanedDisks.Count -gt 0){'yellow'}else{'green'})"><div class="num">$($orphanedDisks.Count)</div><div class="lbl">Unattached Disks</div></div>
-        <div class="stat-box blue"><div class="num">$($subOwners.Count)</div><div class="lbl">Subscription Owners</div></div>
+    <div class="tk-card">
+      <div class="tk-summary-row">
+        <div class="tk-summary-card info"><div class="tk-summary-num">$($vms.Count)</div><div class="tk-summary-lbl">Virtual Machines</div></div>
+        <div class="tk-summary-card info"><div class="tk-summary-num">$($webApps.Count)</div><div class="tk-summary-lbl">Web Apps &amp; Functions</div></div>
+        <div class="tk-summary-card info"><div class="tk-summary-num">$($sqlServers.Count)</div><div class="tk-summary-lbl">SQL Servers</div></div>
+        <div class="tk-summary-card warn"><div class="tk-summary-num">$totalDbCount</div><div class="tk-summary-lbl">SQL Databases (incl. copies)</div></div>
+        <div class="tk-summary-card $(if($exposedNsgRules.Count -gt 0){'err'}else{'ok'})"><div class="tk-summary-num">$($exposedNsgRules.Count)</div><div class="tk-summary-lbl">Internet-Exposed NSG Rules</div></div>
+        <div class="tk-summary-card $(if($unbackedVms.Count -gt 0){'err'}else{'ok'})"><div class="tk-summary-num">$($unbackedVms.Count)</div><div class="tk-summary-lbl">Unprotected VMs (Backup)</div></div>
+        <div class="tk-summary-card err"><div class="tk-summary-num">$highAdvisor</div><div class="tk-summary-lbl">High-Impact Advisor Alerts</div></div>
+        <div class="tk-summary-card $(if($untaggedPct -gt 50){'err'}elseif($untaggedPct -gt 20){'warn'}else{'ok'})"><div class="tk-summary-num">~$untaggedPct%</div><div class="tk-summary-lbl">Resources Without Tags</div></div>
+        <div class="tk-summary-card $(if($unlockedCritical.Count -gt 0){'err'}else{'ok'})"><div class="tk-summary-num">$($unlockedCritical.Count)</div><div class="tk-summary-lbl">Critical Resources Unlocked</div></div>
+        <div class="tk-summary-card $(if($orphanedDisks.Count -gt 0){'warn'}else{'ok'})"><div class="tk-summary-num">$($orphanedDisks.Count)</div><div class="tk-summary-lbl">Unattached Disks</div></div>
+        <div class="tk-summary-card info"><div class="tk-summary-num">$($subOwners.Count)</div><div class="tk-summary-lbl">Subscription Owners</div></div>
         $defenderStatBox
       </div>
-      <p style="margin-top:20px; font-size:14px; color:#3a4a5c;">
-        This assessment covers <strong>$orgName</strong>  -  $($allResources.Count) resources across
+      <div class="tk-info-box" style="margin-top:20px">
+        This assessment covers <strong>$orgName</strong> -- $($allResources.Count) resources across
         $($resourceGroups.Count) resource groups and $($regions.Count) region(s).
-        $(if($exposedNsgRules.Count -gt 0){"<strong style='color:#a4262c'>$($exposedNsgRules.Count) NSG rule(s) expose sensitive ports to the internet</strong> and require immediate attention. "})$(if($unlockedCritical.Count -gt 0){"$($unlockedCritical.Count) critical resources have no delete lock. "})The environment has $highAdvisor high-impact Advisor alerts, $($adHocDbs.Count) ad-hoc database copies, and approximately $untaggedPct% of resources without tags.
-      </p>
+        $(if($exposedNsgRules.Count -gt 0){"<span class='tk-badge-err'>$($exposedNsgRules.Count) NSG rule(s) expose sensitive ports to the internet</span> and require immediate attention. "})$(if($unlockedCritical.Count -gt 0){"$($unlockedCritical.Count) critical resources have no delete lock. "})The environment has $highAdvisor high-impact Advisor alerts, $($adHocDbs.Count) ad-hoc database copies, and approximately $untaggedPct% of resources without tags.
+      </div>
     </div>
   </div>
 
   <!-- Section 1: Services in Use -->
-  <div class="card">
-    <div class="card-header">
-      <div class="icon" style="background:#e1ecf7">☁️</div>
-      <h2>Azure Services Currently in Use</h2>
-      <span class="section-num">Section 1</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Azure Services Currently in Use</span>
+      <span class="tk-section-num">Section 1</span>
     </div>
-    <div class="card-body">
-      <div class="service-grid">
-        $($serviceItems.ToString())
-      </div>
+    <div class="tk-card">
+      $($serviceItems.ToString())
     </div>
   </div>
 
   <!-- Section 2: Issues -->
-  <div class="card">
-    <div class="card-header">
-      <div class="icon" style="background:#fde7e9">🔴</div>
-      <h2>Operational Limitations &amp; Issues</h2>
-      <span class="section-num">Section 2</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Operational Limitations &amp; Issues</span>
+      <span class="tk-section-num">Section 2</span>
     </div>
-    <div class="card-body">
-      <div class="issue-list">
-        $($issueHtml.ToString())
-      </div>
+    <div class="tk-card">
+      $($issueHtml.ToString())
     </div>
   </div>
 
@@ -1067,28 +1005,17 @@ $html = @"
   $advisorSection
 
   <!-- Recommendations -->
-  <div class="card">
-    <div class="card-header">
-      <div class="icon" style="background:#dff6dd">✅</div>
-      <h2>Recommended Improvements</h2>
-      <span class="section-num">Recommendations</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Recommended Improvements</span>
+      <span class="tk-section-num">Recommendations</span>
     </div>
-    <div class="card-body">
-      <div class="rec-list">
-        $($recHtml.ToString())
-      </div>
+    <div class="tk-card">
+      $($recHtml.ToString())
     </div>
   </div>
 
-</main>
-
-<footer>
-  Azure Environment Assessment &mdash; $orgName &mdash; $reportDate &mdash; Confidential &mdash; Generated by A.E.G.I.S. v2.0
-</footer>
-
-</body>
-</html>
-"@
+"@ + $htmlFoot
 
 # -----------------------------------------------------------------------------
 # OUTPUT
