@@ -257,10 +257,10 @@ $smartFailCount = ($diskReport | Where-Object { $_.SMARTPrediction -eq 'FAILING'
 # Physical disk rows
 $diskRows = ""
 foreach ($d in $diskReport) {
-    $hColor = switch ($d.HealthStatus) {
-        'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' }
+    $hBadge = switch ($d.HealthStatus) {
+        'Healthy' { 'tk-badge-ok' } 'Warning' { 'tk-badge-warn' } default { 'tk-badge-err' }
     }
-    $sColor = if ($d.SMARTPrediction -eq 'FAILING') { '#e74c3c' } elseif ($d.SMARTPrediction -eq 'OK') { '#2ecc71' } else { '#888' }
+    $sBadge = if ($d.SMARTPrediction -eq 'FAILING') { 'tk-badge-err' } elseif ($d.SMARTPrediction -eq 'OK') { 'tk-badge-ok' } else { 'tk-badge-info' }
     $diskRows += @"
     <tr>
       <td>$(HtmlEncode $d.ID)</td>
@@ -269,10 +269,10 @@ foreach ($d in $diskReport) {
       <td>$(HtmlEncode $d.MediaType)</td>
       <td>$(HtmlEncode $d.BusType)</td>
       <td>$($d.SizeGB) GB</td>
-      <td style="color:$hColor;font-weight:600;">$(HtmlEncode $d.HealthStatus)</td>
+      <td><span class="$hBadge">$(HtmlEncode $d.HealthStatus)</span></td>
       <td>$(HtmlEncode $d.OperationalStatus)</td>
-      <td style="color:$sColor;font-weight:600;">$(HtmlEncode $d.SMARTPrediction)</td>
-      <td>$(HtmlEncode $d.SMARTReason)</td>
+      <td><span class="$sBadge">$(HtmlEncode $d.SMARTPrediction)</span></td>
+      <td><code>$(HtmlEncode $d.SMARTReason)</code></td>
       <td>$(HtmlEncode $d.Firmware)</td>
     </tr>
 "@
@@ -281,128 +281,79 @@ foreach ($d in $diskReport) {
 # Volume rows
 $volumeRows = ""
 foreach ($v in $volumeReport) {
-    $barColor = if ($v.PctUsed -ge 90) { "#e74c3c" } elseif ($v.PctUsed -ge 75) { "#f39c12" } else { "#2ecc71" }
-    $vhColor  = switch ($v.Health) { 'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' } }
+    $barBadge  = if ($v.PctUsed -ge 90) { 'tk-badge-err' } elseif ($v.PctUsed -ge 75) { 'tk-badge-warn' } else { 'tk-badge-ok' }
+    $vhBadge   = switch ($v.Health) { 'Healthy' { 'tk-badge-ok' } 'Warning' { 'tk-badge-warn' } default { 'tk-badge-err' } }
     $volumeRows += @"
     <tr>
-      <td>$(HtmlEncode $v.Drive)</td>
+      <td><code>$(HtmlEncode $v.Drive)</code></td>
       <td>$(HtmlEncode $v.Label)</td>
       <td>$(HtmlEncode $v.FileSystem)</td>
       <td>$($v.TotalGB) GB</td>
       <td>$($v.FreeGB) GB</td>
-      <td>
-        <div style="background:#333;border-radius:4px;height:12px;width:120px;display:inline-block;">
-          <div style="background:$barColor;width:$($v.PctUsed)%;height:12px;border-radius:4px;"></div>
-        </div>
-        $($v.PctUsed)%
-      </td>
-      <td style="color:$vhColor;font-weight:600;">$(HtmlEncode $v.Health)</td>
+      <td><span class="$barBadge">$($v.PctUsed)%</span></td>
+      <td><span class="$vhBadge">$(HtmlEncode $v.Health)</span></td>
     </tr>
 "@
 }
 
 $overallBadge = if ($criticalCount -gt 0 -or $smartFailCount -gt 0) {
-    "<span class='badge badge-err'>$($criticalCount + $smartFailCount) critical issue(s)</span>"
+    "<span class='tk-badge-err'>$($criticalCount + $smartFailCount) critical issue(s)</span>"
 } elseif ($warningCount -gt 0) {
-    "<span class='badge badge-warn'>$warningCount warning(s)</span>"
+    "<span class='tk-badge-warn'>$warningCount warning(s)</span>"
 } else {
-    "<span class='badge badge-ok'>All Healthy</span>"
+    "<span class='tk-badge-ok'>All Healthy</span>"
 }
 
-$htmlReport = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<title>A.U.G.U.R. — $env:COMPUTERNAME — $reportTimestamp</title>
-<style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; font-size: 14px; }
-  header { background: linear-gradient(135deg, #0f3460, #16213e); padding: 28px 40px; border-bottom: 3px solid #00d4ff; }
-  header h1 { color: #00d4ff; font-size: 2em; letter-spacing: 4px; font-weight: 700; }
-  header p  { color: #aaa; margin-top: 6px; font-size: 0.9em; }
-  header .meta { display: flex; gap: 30px; margin-top: 14px; flex-wrap: wrap; }
-  header .meta span { color: #ccc; font-size: 0.85em; }
-  header .meta strong { color: #00d4ff; }
-  main { padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
-  .summary-cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 24px; min-width: 120px; text-align: center; }
-  .card .val { font-size: 32px; font-weight: bold; color: #00d4ff; }
-  .card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-  .card.ok   .val { color: #2ecc71; }
-  .card.warn .val { color: #f39c12; }
-  .card.crit .val { color: #e74c3c; }
-  section { background: #16213e; border-radius: 8px; margin-bottom: 24px; overflow: hidden; border: 1px solid #0f3460; }
-  section h2 { background: #0f3460; color: #00d4ff; padding: 14px 20px; font-size: 1em;
-               letter-spacing: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-  section .content { padding: 20px; overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left;
-       font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 0.78em; white-space: nowrap; }
-  td { padding: 8px 12px; border-bottom: 1px solid #1e3a5f; color: #ccc; }
-  tr:hover td { background: #1e3a5f; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78em;
-           font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-  .badge-ok   { background: #1a4a2e; color: #2ecc71; border: 1px solid #2ecc71; }
-  .badge-warn { background: #4a3000; color: #f39c12; border: 1px solid #f39c12; }
-  .badge-err  { background: #4a0000; color: #e74c3c; border: 1px solid #e74c3c; }
-  footer { text-align: center; padding: 20px; color: #444; font-size: 0.8em; border-top: 1px solid #0f3460; }
-</style>
-</head>
-<body>
-<header>
-  <h1>A.U.G.U.R.</h1>
-  <p>Analyzes, Uncovers &amp; Gauges Unit Reliability</p>
-  <div class="meta">
-    <span><strong>Machine:</strong> $env:COMPUTERNAME</span>
-    <span><strong>Run As:</strong> $env:USERDOMAIN\$env:USERNAME</span>
-    <span><strong>Generated:</strong> $reportTimestamp</span>
-    <span><strong>Overall:</strong> $overallBadge</span>
-  </div>
-</header>
-<main>
+$htmlHead = Get-TKHtmlHead `
+    -Title     'Disk Health Assessment' `
+    -ScriptName 'A.U.G.U.R.' `
+    -Subtitle   $env:COMPUTERNAME `
+    -MetaItems  ([ordered]@{
+        'Machine'   = $env:COMPUTERNAME
+        'Run As'    = "$env:USERDOMAIN\$env:USERNAME"
+        'Generated' = $reportTimestamp
+        'Overall'   = $overallBadge
+    }) `
+    -NavItems   @('Physical Disks', 'Volumes')
 
-  <div class="summary-cards">
-    <div class="card ok"><div class="val">$healthyCount</div><div class="lbl">Healthy</div></div>
-    <div class="card warn"><div class="val">$warningCount</div><div class="lbl">Warning</div></div>
-    <div class="card crit"><div class="val">$criticalCount</div><div class="lbl">Critical</div></div>
-    <div class="card crit"><div class="val">$smartFailCount</div><div class="lbl">SMART Fail</div></div>
+$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.U.G.U.R. v1.1'
+
+$htmlReport = $htmlHead + @"
+
+  <div class="tk-summary-row">
+    <div class="tk-summary-card ok"><div class="tk-summary-num">$healthyCount</div><div class="tk-summary-lbl">Healthy</div></div>
+    <div class="tk-summary-card warn"><div class="tk-summary-num">$warningCount</div><div class="tk-summary-lbl">Warning</div></div>
+    <div class="tk-summary-card err"><div class="tk-summary-num">$criticalCount</div><div class="tk-summary-lbl">Critical</div></div>
+    <div class="tk-summary-card err"><div class="tk-summary-num">$smartFailCount</div><div class="tk-summary-lbl">SMART Fail</div></div>
   </div>
 
   <!-- PHYSICAL DISKS -->
-  <section>
-    <h2>Physical Disks ($($diskReport.Count))</h2>
-    <div class="content">
-      $(if ($diskRows) {
-        "<table><thead><tr><th>ID</th><th>Name</th><th>Serial</th><th>Type</th><th>Bus</th><th>Size</th><th>Health</th><th>Status</th><th>SMART</th><th>SMART Reason</th><th>Firmware</th></tr></thead><tbody>$diskRows</tbody></table>"
-      } else {
-        "<p style='color:#666;font-style:italic;'>No physical disk data available.</p>"
-      })
+  <div class="tk-card">
+    <div class="tk-card-header">
+      <span class="tk-card-label">Physical Disks ($($diskReport.Count))</span>
     </div>
-  </section>
+    $(if ($diskRows) {
+      "<table class='tk-table'><thead><tr><th>ID</th><th>Name</th><th>Serial</th><th>Type</th><th>Bus</th><th>Size</th><th>Health</th><th>Status</th><th>SMART</th><th>SMART Reason</th><th>Firmware</th></tr></thead><tbody>$diskRows</tbody></table>"
+    } else {
+      "<p class='tk-info-box'>No physical disk data available.</p>"
+    })
+  </div>
+
+  <div class="tk-divider"></div>
 
   <!-- VOLUMES -->
-  <section>
-    <h2>Volumes ($($volumeReport.Count))</h2>
-    <div class="content">
-      $(if ($volumeRows) {
-        "<table><thead><tr><th>Drive</th><th>Label</th><th>File System</th><th>Total</th><th>Free</th><th>Usage</th><th>Health</th></tr></thead><tbody>$volumeRows</tbody></table>"
-      } else {
-        "<p style='color:#666;font-style:italic;'>No volume data available.</p>"
-      })
+  <div class="tk-card">
+    <div class="tk-card-header">
+      <span class="tk-card-label">Volumes ($($volumeReport.Count))</span>
     </div>
-  </section>
+    $(if ($volumeRows) {
+      "<table class='tk-table'><thead><tr><th>Drive</th><th>Label</th><th>File System</th><th>Total</th><th>Free</th><th>Usage</th><th>Health</th></tr></thead><tbody>$volumeRows</tbody></table>"
+    } else {
+      "<p class='tk-info-box'>No volume data available.</p>"
+    })
+  </div>
 
-</main>
-<footer>
-  Generated by A.U.G.U.R. — Part of the Technician Toolkit &nbsp;|&nbsp; $reportTimestamp
-</footer>
-</body>
-</html>
-"@
+"@ + $htmlFoot
 
 try {
     [System.IO.File]::WriteAllText($reportPath, $htmlReport, [System.Text.Encoding]::UTF8)

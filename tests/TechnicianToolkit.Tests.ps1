@@ -133,7 +133,7 @@ Describe 'Write-TKError' {
 Describe 'Module exports' {
     $expectedFunctions = @(
         'Write-Section', 'Write-Step', 'Write-Ok', 'Write-Warn', 'Write-Fail', 'Write-Info',
-        'EscHtml',
+        'EscHtml', 'Get-TKHtmlCss', 'Get-TKHtmlHead', 'Get-TKHtmlFoot',
         'Test-IsAdmin', 'Assert-AdminPrivilege', 'Invoke-AdminElevation',
         'Get-TKConfig', 'Set-TKConfig',
         'Resolve-LogDirectory',

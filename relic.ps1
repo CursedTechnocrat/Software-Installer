@@ -360,21 +360,21 @@ function Build-HtmlReport {
     if ($LocalCerts) {
         foreach ($cert in ($LocalCerts | Sort-Object DaysLeft)) {
             $badgeClass = switch ($cert.Status) {
-                'Expired'  { 'badge-crit' }
-                'Critical' { 'badge-crit' }
-                'Warning'  { 'badge-warn' }
-                default    { 'badge-ok'   }
+                'Expired'  { 'tk-badge-err'  }
+                'Critical' { 'tk-badge-err'  }
+                'Warning'  { 'tk-badge-warn' }
+                default    { 'tk-badge-ok'   }
             }
             $expiryStr = $cert.Expiry.ToString('yyyy-MM-dd HH:mm')
             $daysStr   = if ($cert.DaysLeft -lt 0) { "$($cert.DaysLeft)" } else { "$($cert.DaysLeft)" }
 
             $localRows += "            <tr>
-                <td>$(HtmlEncode $cert.Store)</td>
-                <td style='font-size:12px;word-break:break-all;'>$(HtmlEncode $cert.Subject)</td>
-                <td style='font-size:11px;color:#888;word-break:break-all;'>$(HtmlEncode $cert.Issuer)</td>
+                <td><code>$(HtmlEncode $cert.Store)</code></td>
+                <td class='tk-mono'>$(HtmlEncode $cert.Subject)</td>
+                <td class='tk-mono'>$(HtmlEncode $cert.Issuer)</td>
                 <td>$expiryStr</td>
                 <td>$daysStr</td>
-                <td><span class='badge $badgeClass'>$(HtmlEncode $cert.Status)</span></td>
+                <td><span class='$badgeClass'>$(HtmlEncode $cert.Status)</span></td>
             </tr>`n"
         }
     }
@@ -385,125 +385,112 @@ function Build-HtmlReport {
         $sslRows = ''
         foreach ($r in $SslResults) {
             $badgeClass = switch ($r.Status) {
-                'Expired'  { 'badge-crit' }
-                'Critical' { 'badge-crit' }
-                'Warning'  { 'badge-warn' }
-                'Error'    { 'badge-crit' }
-                default    { 'badge-ok'   }
+                'Expired'  { 'tk-badge-err'  }
+                'Critical' { 'tk-badge-err'  }
+                'Warning'  { 'tk-badge-warn' }
+                'Error'    { 'tk-badge-err'  }
+                default    { 'tk-badge-ok'   }
             }
 
             if ($r.Status -eq 'Error') {
                 $sslRows += "            <tr>
-                <td><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
-                <td style='font-size:12px;color:#e74c3c;'>$(HtmlEncode $r.Error)</td>
+                <td class='tk-mono'><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
+                <td class='tk-mono'>$(HtmlEncode $r.Error)</td>
                 <td>N/A</td>
                 <td>N/A</td>
-                <td><span class='badge badge-crit'>Error</span></td>
+                <td><span class='tk-badge-err'>Error</span></td>
             </tr>`n"
             } else {
                 $expiryStr = if ($r.Expiry) { $r.Expiry.ToString('yyyy-MM-dd HH:mm') } else { 'N/A' }
                 $daysStr   = if ($null -ne $r.DaysLeft) { "$($r.DaysLeft)" } else { 'N/A' }
                 $sslRows += "            <tr>
-                <td><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
-                <td style='font-size:12px;word-break:break-all;'>$(HtmlEncode $r.Subject)</td>
+                <td class='tk-mono'><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
+                <td class='tk-mono'>$(HtmlEncode $r.Subject)</td>
                 <td>$expiryStr</td>
                 <td>$daysStr</td>
-                <td><span class='badge $badgeClass'>$(HtmlEncode $r.Status)</span></td>
+                <td><span class='$badgeClass'>$(HtmlEncode $r.Status)</span></td>
             </tr>`n"
             }
         }
 
         $sslSection = @"
 
-<div class="section-title">SSL/TLS Remote Certificate Checks</div>
-<table>
-  <thead>
-    <tr>
-      <th>Host:Port</th>
-      <th>Subject</th>
-      <th>Expiry</th>
-      <th>Days Left</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
+  <div class="tk-divider"></div>
+
+  <div class="tk-card">
+    <div class="tk-card-header">
+      <span class="tk-card-label">SSL/TLS Remote Certificate Checks</span>
+    </div>
+    <table class="tk-table">
+      <thead>
+        <tr>
+          <th>Host:Port</th>
+          <th>Subject</th>
+          <th>Expiry</th>
+          <th>Days Left</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
 $sslRows
-  </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
 "@
     }
 
-    $orgLine = ''
     $cfg = Get-TKConfig
-    if (-not [string]::IsNullOrWhiteSpace($cfg.OrgName)) {
-        $orgLine = "$(HtmlEncode $cfg.OrgName) &nbsp;|&nbsp; "
+    $orgSubtitle = if (-not [string]::IsNullOrWhiteSpace($cfg.OrgName)) {
+        "$(HtmlEncode $cfg.OrgName) — $MachineName"
+    } else {
+        $MachineName
     }
 
-    $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>R.E.L.I.C. Certificate Audit — $MachineName</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Consolas, monospace; font-size: 14px; padding: 24px; }
-  h1 { color: #00d4ff; font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
-  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 24px; min-width: 120px; text-align: center; }
-  .card .val { font-size: 28px; font-weight: bold; color: #00d4ff; }
-  .card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-  .card.warn .val { color: #f39c12; }
-  .card.crit .val { color: #e74c3c; }
-  .card.ok   .val { color: #2ecc71; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 9px 12px; border-bottom: 1px solid #1e2d4d; vertical-align: top; }
-  tr:hover td { background: #1e2d4d; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-  .badge-ok   { background: #1a4a2e; color: #2ecc71; }
-  .badge-warn { background: #4a3a10; color: #f39c12; }
-  .badge-crit { background: #4a1a1a; color: #e74c3c; }
-  .section-title { color: #00d4ff; font-size: 15px; margin: 28px 0 10px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; }
-  .footer { margin-top: 32px; color: #555; font-size: 11px; }
-</style>
-</head>
-<body>
-<h1>R.E.L.I.C. — Certificate Audit Report</h1>
-<div class="subtitle">${orgLine}Machine: <strong>$MachineName</strong> &nbsp;|&nbsp; Generated: $ReportTimestamp</div>
+    $htmlHead = Get-TKHtmlHead `
+        -Title      'Certificate Audit Report' `
+        -ScriptName 'R.E.L.I.C.' `
+        -Subtitle    $orgSubtitle `
+        -MetaItems  ([ordered]@{
+            'Machine'   = $MachineName
+            'Generated' = $ReportTimestamp
+            'Stores'    = 'My, CA, Root, TrustedPublisher'
+        }) `
+        -NavItems   @('Local Certificates', 'SSL/TLS Checks')
 
-<div class="summary">
-  <div class="card"><div class="val">$totalCerts</div><div class="lbl">Total Certs</div></div>
-  <div class="card crit"><div class="val">$expiredCount</div><div class="lbl">Expired</div></div>
-  <div class="card crit"><div class="val">$critCount</div><div class="lbl">Critical (&lt;30d)</div></div>
-  <div class="card warn"><div class="val">$warnCount</div><div class="lbl">Warning (&lt;90d)</div></div>
-  <div class="card ok"><div class="val">$healthyCount</div><div class="lbl">Healthy</div></div>
-</div>
+    $htmlFoot = Get-TKHtmlFoot -ScriptName 'R.E.L.I.C. v1.0'
 
-<div class="section-title">Local Certificate Stores</div>
-<table>
-  <thead>
-    <tr>
-      <th>Store</th>
-      <th>Subject</th>
-      <th>Issuer</th>
-      <th>Expiry</th>
-      <th>Days Left</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
+    $html = $htmlHead + @"
+
+  <div class="tk-summary-row">
+    <div class="tk-summary-card info"><div class="tk-summary-num">$totalCerts</div><div class="tk-summary-lbl">Total Certs</div></div>
+    <div class="tk-summary-card err"><div class="tk-summary-num">$expiredCount</div><div class="tk-summary-lbl">Expired</div></div>
+    <div class="tk-summary-card err"><div class="tk-summary-num">$critCount</div><div class="tk-summary-lbl">Critical (&lt;30d)</div></div>
+    <div class="tk-summary-card warn"><div class="tk-summary-num">$warnCount</div><div class="tk-summary-lbl">Warning (&lt;90d)</div></div>
+    <div class="tk-summary-card ok"><div class="tk-summary-num">$healthyCount</div><div class="tk-summary-lbl">Healthy</div></div>
+  </div>
+
+  <div class="tk-card">
+    <div class="tk-card-header">
+      <span class="tk-card-label">Local Certificate Stores</span>
+    </div>
+    <table class="tk-table">
+      <thead>
+        <tr>
+          <th>Store</th>
+          <th>Subject</th>
+          <th>Issuer</th>
+          <th>Expiry</th>
+          <th>Days Left</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
 $localRows
-  </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
 $sslSection
-<div class="footer">
-  Generated by R.E.L.I.C. — Technician Toolkit &nbsp;|&nbsp; Stores audited: My, CA, Root, TrustedPublisher
-</div>
-</body>
-</html>
-"@
+"@ + $htmlFoot
 
     return $html
 }

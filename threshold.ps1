@@ -513,19 +513,19 @@ function Build-HtmlReport {
     # Build disk rows
     $diskRows = ""
     foreach ($d in $DiskData) {
-        $badgeColor = switch ($d.HealthStatus) {
-            'Healthy'   { '#00c853' }
-            'Warning'   { '#ffd600' }
-            'Unhealthy' { '#d50000' }
-            default     { '#757575' }
+        $badgeClass = switch ($d.HealthStatus) {
+            'Healthy'   { 'tk-badge-ok'   }
+            'Warning'   { 'tk-badge-warn' }
+            'Unhealthy' { 'tk-badge-err'  }
+            default     { 'tk-badge-info' }
         }
-        $bootTag = if ($d.IsBoot) { ' <span style="font-size:10px;background:#1565c0;padding:1px 5px;border-radius:3px;">BOOT</span>' } else { '' }
+        $bootTag = if ($d.IsBoot) { ' <span class="tk-badge-blue">BOOT</span>' } else { '' }
         $diskRows += @"
             <tr>
                 <td>$($d.FriendlyName)$bootTag</td>
                 <td>$($d.MediaType)</td>
                 <td>$($d.SizeFormatted)</td>
-                <td><span style="background:$badgeColor;color:#000;padding:2px 10px;border-radius:12px;font-weight:bold;font-size:12px;">$($d.HealthStatus)</span></td>
+                <td><span class="$badgeClass">$($d.HealthStatus)</span></td>
                 <td>$($d.OperationalStatus)</td>
                 <td>$($d.BusType)</td>
                 <td>$($d.PartitionStyle)</td>
@@ -536,39 +536,32 @@ function Build-HtmlReport {
     # Build volume rows
     $volRows = ""
     foreach ($v in $VolumeData) {
-        $rowBg = switch ($v.SpaceStatus) {
-            'Critical' { 'rgba(213,0,0,0.15)' }
-            'Warning'  { 'rgba(255,214,0,0.10)' }
-            default    { 'transparent' }
+        $barClass = switch ($v.SpaceStatus) {
+            'Critical' { 'err'  }
+            'Warning'  { 'warn' }
+            default    { 'ok'   }
         }
-        $barColor = switch ($v.SpaceStatus) {
-            'Critical' { '#d50000' }
-            'Warning'  { '#ffd600' }
-            default    { '#00c853' }
+        $statusBadgeClass = switch ($v.SpaceStatus) {
+            'Critical' { 'tk-badge-err'  }
+            'Warning'  { 'tk-badge-warn' }
+            default    { 'tk-badge-ok'   }
         }
         $barWidth = [Math]::Min(100, [Math]::Max(1, [int]$v.PercentFree))
-        $statusBadgeColor = switch ($v.SpaceStatus) {
-            'Critical' { '#d50000' }
-            'Warning'  { '#ffd600' }
-            default    { '#00c853' }
-        }
 
         $volRows += @"
-            <tr style="background:$rowBg;">
-                <td style="font-weight:bold;">$($v.DriveLetter):</td>
+            <tr>
+                <td><strong>$($v.DriveLetter):</strong></td>
                 <td>$($v.Label)</td>
                 <td>$($v.FileSystem)</td>
                 <td>$($v.SizeFormatted)</td>
                 <td>$($v.FreeFormatted)</td>
                 <td>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div style="flex:1;background:#2a2a4a;border-radius:4px;height:12px;min-width:80px;">
-                            <div style="width:$($barWidth)%;background:$barColor;height:12px;border-radius:4px;"></div>
-                        </div>
-                        <span style="min-width:40px;font-size:12px;">$($v.PercentFree)%</span>
+                    <div class="tk-progress-wrap">
+                        <div class="tk-progress-bar $barClass" style="width:$($barWidth)%"></div>
                     </div>
+                    <span class="tk-mono" style="font-size:11px;">$($v.PercentFree)%</span>
                 </td>
-                <td><span style="background:$statusBadgeColor;color:#000;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;">$($v.SpaceStatus)</span></td>
+                <td><span class="$statusBadgeClass">$($v.SpaceStatus)</span></td>
                 <td>$($v.HealthStatus)</td>
             </tr>
 "@
@@ -582,269 +575,130 @@ function Build-HtmlReport {
 
     if ($critVols) {
         foreach ($v in $critVols) {
-            $recommendations += "<li class='rec-critical'>Drive <strong>$($v.DriveLetter):</strong> ($($v.Label)) is critically low on space ($($v.PercentFree)% free). Immediate action required.</li>`n"
+            $recommendations += "<li class='tk-info-box' style='list-style:none;margin-bottom:8px;'><span class='tk-info-label tk-badge-err'>CRITICAL</span> Drive <strong>$($v.DriveLetter):</strong> ($($v.Label)) is critically low on space ($($v.PercentFree)% free). Immediate action required.</li>`n"
         }
     }
     if ($warnVols) {
         foreach ($v in $warnVols) {
-            $recommendations += "<li class='rec-warning'>Drive <strong>$($v.DriveLetter):</strong> ($($v.Label)) has low free space ($($v.PercentFree)% free). Consider cleanup.</li>`n"
+            $recommendations += "<li class='tk-info-box' style='list-style:none;margin-bottom:8px;'><span class='tk-info-label tk-badge-warn'>WARNING</span> Drive <strong>$($v.DriveLetter):</strong> ($($v.Label)) has low free space ($($v.PercentFree)% free). Consider cleanup.</li>`n"
         }
     }
     if ($badDisks) {
         foreach ($d in $badDisks) {
-            $recommendations += "<li class='rec-critical'>Physical disk <strong>$($d.FriendlyName)</strong> reports Health Status: <strong>$($d.HealthStatus)</strong>. Back up data immediately.</li>`n"
+            $recommendations += "<li class='tk-info-box' style='list-style:none;margin-bottom:8px;'><span class='tk-info-label tk-badge-err'>DISK ALERT</span> Physical disk <strong>$($d.FriendlyName)</strong> reports Health Status: <strong>$($d.HealthStatus)</strong>. Back up data immediately.</li>`n"
         }
     }
     if (-not $recommendations) {
-        $recommendations = "<li class='rec-ok'>All monitored disks and volumes are within healthy thresholds.</li>"
+        $recommendations = "<li class='tk-info-box' style='list-style:none;margin-bottom:8px;'><span class='tk-info-label tk-badge-ok'>OK</span> All monitored disks and volumes are within healthy thresholds.</li>"
     }
 
-    $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T.H.R.E.S.H.O.L.D. Report — $hostname</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Consolas, monospace;
-            background: #1a1a2e;
-            color: #e0e0e0;
-            padding: 24px;
-            min-height: 100vh;
-        }
-        .header {
-            border-bottom: 2px solid #00d4ff;
-            padding-bottom: 16px;
-            margin-bottom: 24px;
-        }
-        .header h1 {
-            font-size: 28px;
-            color: #00d4ff;
-            letter-spacing: 4px;
-            font-weight: 700;
-        }
-        .header .subtitle {
-            color: #9e9e9e;
-            font-size: 13px;
-            margin-top: 4px;
-        }
-        .header .meta {
-            color: #757575;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-        .cards {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-        .card {
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 8px;
-            padding: 16px 24px;
-            min-width: 150px;
-            flex: 1;
-        }
-        .card .card-label {
-            font-size: 11px;
-            color: #757575;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .card .card-value {
-            font-size: 26px;
-            font-weight: 700;
-            color: #00d4ff;
-            margin-top: 4px;
-        }
-        .card .card-sub {
-            font-size: 11px;
-            color: #9e9e9e;
-            margin-top: 2px;
-        }
-        .section {
-            margin-bottom: 28px;
-        }
-        .section-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #00d4ff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-left: 3px solid #00d4ff;
-            padding-left: 10px;
-            margin-bottom: 12px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        thead th {
-            background: #0f3460;
-            color: #00d4ff;
-            padding: 10px 12px;
-            text-align: left;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        tbody tr {
-            border-bottom: 1px solid #1e2a4a;
-        }
-        tbody tr:hover {
-            background: rgba(0, 212, 255, 0.05);
-        }
-        tbody td {
-            padding: 10px 12px;
-            color: #e0e0e0;
-        }
-        .rec-list {
-            list-style: none;
-            padding: 0;
-        }
-        .rec-list li {
-            padding: 10px 14px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
-            border-left: 4px solid;
-        }
-        .rec-critical {
-            background: rgba(213,0,0,0.15);
-            border-left-color: #d50000;
-            color: #ff8a80;
-        }
-        .rec-warning {
-            background: rgba(255,214,0,0.10);
-            border-left-color: #ffd600;
-            color: #fff176;
-        }
-        .rec-ok {
-            background: rgba(0,200,83,0.10);
-            border-left-color: #00c853;
-            color: #b9f6ca;
-        }
-        .note-box {
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-size: 12px;
-            color: #9e9e9e;
-            margin-top: 16px;
-        }
-        .note-box strong { color: #ffd600; }
-        .footer {
-            margin-top: 32px;
-            border-top: 1px solid #0f3460;
-            padding-top: 12px;
-            font-size: 11px;
-            color: #424242;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
+    $warnCountClass = if ($warnCount -gt 0) { 'warn' } else { 'ok' }
 
-<div class="header">
-    <h1>T.H.R.E.S.H.O.L.D.</h1>
-    <div class="subtitle">Tests Hardware Reliability, Evaluates Storage Health, &amp; Optimizes/Logs Disk data</div>
-    <div class="meta">Host: $hostname &nbsp;|&nbsp; Generated: $timestamp &nbsp;|&nbsp; Disk &amp; Storage Health Monitor v1.0</div>
-</div>
+    $html  = Get-TKHtmlHead `
+        -Title      'Disk & Storage Health Report' `
+        -ScriptName 'T.H.R.E.S.H.O.L.D.' `
+        -Subtitle   $hostname `
+        -MetaItems  ([ordered]@{
+            'Host'      = $hostname
+            'Generated' = $timestamp
+            'Tool'      = 'Disk & Storage Health Monitor v1.0'
+        }) `
+        -NavItems   @('Physical Disks', 'Volume Space', 'Recommendations')
 
-<div class="cards">
-    <div class="card">
-        <div class="card-label">Total Drives</div>
-        <div class="card-value">$totalDrives</div>
-        <div class="card-sub">Physical disks</div>
+    $html += @"
+
+<div class="tk-summary-row">
+    <div class="tk-summary-card info">
+        <div class="tk-summary-num">$totalDrives</div>
+        <div class="tk-summary-lbl">Total Drives</div>
     </div>
-    <div class="card">
-        <div class="card-label">Healthy</div>
-        <div class="card-value" style="color:#00c853;">$healthyCount</div>
-        <div class="card-sub">of $totalDrives disks</div>
+    <div class="tk-summary-card ok">
+        <div class="tk-summary-num">$healthyCount</div>
+        <div class="tk-summary-lbl">Healthy</div>
     </div>
-    <div class="card">
-        <div class="card-label">Warning / Critical</div>
-        <div class="card-value" style="color:$(if($warnCount -gt 0){'#ffd600'}else{'#00c853'});">$warnCount</div>
-        <div class="card-sub">disks need attention</div>
+    <div class="tk-summary-card $warnCountClass">
+        <div class="tk-summary-num">$warnCount</div>
+        <div class="tk-summary-lbl">Warning / Critical</div>
     </div>
-    <div class="card">
-        <div class="card-label">Total Storage</div>
-        <div class="card-value">$(Format-Bytes -Bytes ([long]$totalStorage))</div>
-        <div class="card-sub">across all volumes</div>
+    <div class="tk-summary-card info">
+        <div class="tk-summary-num">$(Format-Bytes -Bytes ([long]$totalStorage))</div>
+        <div class="tk-summary-lbl">Total Storage</div>
     </div>
-    <div class="card">
-        <div class="card-label">Free Storage</div>
-        <div class="card-value">$(Format-Bytes -Bytes ([long]$totalFree))</div>
-        <div class="card-sub">available across volumes</div>
+    <div class="tk-summary-card info">
+        <div class="tk-summary-num">$(Format-Bytes -Bytes ([long]$totalFree))</div>
+        <div class="tk-summary-lbl">Free Storage</div>
     </div>
 </div>
 
-<div class="section">
-    <div class="section-title">Physical Disks</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Size</th>
-                <th>Health Status</th>
-                <th>Operational Status</th>
-                <th>Bus Type</th>
-                <th>Partition Style</th>
-            </tr>
-        </thead>
-        <tbody>
+<div class="tk-section" id="physical-disks">
+    <div class="tk-card">
+        <div class="tk-card-header">
+            <span class="tk-card-label">Physical Disks</span>
+        </div>
+        <table class="tk-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Health Status</th>
+                    <th>Operational Status</th>
+                    <th>Bus Type</th>
+                    <th>Partition Style</th>
+                </tr>
+            </thead>
+            <tbody>
 $diskRows
-        </tbody>
-    </table>
-    <div class="note-box">
-        <strong>Note:</strong> Health Status is sourced from <code>Get-PhysicalDisk</code> and serves as a proxy for SMART data.
-        For full SMART attribute analysis (reallocated sectors, spin retries, uncorrectable errors, etc.),
-        use a dedicated tool such as <strong>CrystalDiskInfo</strong> or <strong>smartctl</strong>.
+            </tbody>
+        </table>
+        <div class="tk-info-box" style="margin-top:12px">
+            <span class="tk-info-label">NOTE</span>
+            Health Status is sourced from <code>Get-PhysicalDisk</code> and serves as a proxy for SMART data.
+            For full SMART attribute analysis (reallocated sectors, spin retries, uncorrectable errors, etc.),
+            use a dedicated tool such as <strong>CrystalDiskInfo</strong> or <strong>smartctl</strong>.
+        </div>
     </div>
 </div>
 
-<div class="section">
-    <div class="section-title">Volume Space</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Drive</th>
-                <th>Label</th>
-                <th>File System</th>
-                <th>Total Size</th>
-                <th>Free Space</th>
-                <th>% Free</th>
-                <th>Space Status</th>
-                <th>Health</th>
-            </tr>
-        </thead>
-        <tbody>
+<div class="tk-section" id="volume-space">
+    <div class="tk-card">
+        <div class="tk-card-header">
+            <span class="tk-card-label">Volume Space</span>
+        </div>
+        <table class="tk-table">
+            <thead>
+                <tr>
+                    <th>Drive</th>
+                    <th>Label</th>
+                    <th>File System</th>
+                    <th>Total Size</th>
+                    <th>Free Space</th>
+                    <th>% Free</th>
+                    <th>Space Status</th>
+                    <th>Health</th>
+                </tr>
+            </thead>
+            <tbody>
 $volRows
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div class="section">
-    <div class="section-title">Recommendations</div>
-    <ul class="rec-list">
+<div class="tk-section" id="recommendations">
+    <div class="tk-card">
+        <div class="tk-card-header">
+            <span class="tk-card-label">Recommendations</span>
+        </div>
+        <ul class="rec-list" style="list-style:none;padding:0;margin:0;">
 $recommendations
-    </ul>
+        </ul>
+    </div>
 </div>
 
-<div class="footer">
-    T.H.R.E.S.H.O.L.D. — Technician Toolkit &nbsp;|&nbsp; Disk &amp; Storage Health Monitor &nbsp;|&nbsp; $timestamp
-</div>
-
-</body>
-</html>
 "@
+
+    $html += Get-TKHtmlFoot -ScriptName 'T.H.R.E.S.H.O.L.D. v1.0'
 
     $html | Out-File -FilePath $outputPath -Encoding UTF8 -Force
     return $outputPath

@@ -808,7 +808,7 @@ function Export-StaleReport {
         $dept      = if ($u.Department) { HtmlEncode $u.Department } else { "N/A" }
         $dispName  = if ($u.DisplayName) { HtmlEncode $u.DisplayName } else { "N/A" }
 
-        $daysClass = if ($days -eq "N/A" -or [int]$days -gt 365) { "crit" } elseif ([int]$days -gt 180) { "warn" } else { "stale" }
+        $daysClass = if ($days -eq "N/A" -or [int]$days -gt 365) { "err" } elseif ([int]$days -gt 180) { "warn" } else { "warn" }
 
         $rows += @"
             <tr>
@@ -816,82 +816,60 @@ function Export-StaleReport {
                 <td>$dispName</td>
                 <td>$dept</td>
                 <td>$lastLogon</td>
-                <td><span class="badge badge-$daysClass">$days</span></td>
-                <td><span class="badge badge-ok">Enabled</span></td>
+                <td><span class="tk-badge-$daysClass">$days</span></td>
+                <td><span class="tk-badge-ok">Enabled</span></td>
             </tr>
 "@
     }
 
-    $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>B.A.S.T.I.O.N. Stale Accounts Report — $domain</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Consolas, monospace; font-size: 14px; padding: 24px; }
-  h1 { color: #00d4ff; font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
-  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 24px; min-width: 140px; text-align: center; }
-  .card .val { font-size: 28px; font-weight: bold; color: #00d4ff; }
-  .card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-  .card.warn .val { color: #f39c12; }
-  .card.crit .val { color: #e74c3c; }
-  .card.ok   .val { color: #2ecc71; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 9px 12px; border-bottom: 1px solid #1e2d4d; vertical-align: middle; }
-  tr:hover td { background: #1e2d4d; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-  .badge-ok      { background: #1a4a2e; color: #2ecc71; }
-  .badge-stale   { background: #4a3a10; color: #f39c12; }
-  .badge-warn    { background: #5a2e00; color: #e67e22; }
-  .badge-crit    { background: #4a1a1a; color: #e74c3c; }
-  .section-title { color: #00d4ff; font-size: 15px; margin: 28px 0 10px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; }
-  .footer { margin-top: 32px; color: #555; font-size: 11px; }
-  .note { background: #16213e; border-left: 3px solid #f39c12; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #ccc; border-radius: 0 4px 4px 0; }
-</style>
-</head>
-<body>
-<h1>B.A.S.T.I.O.N. — Stale Accounts Report</h1>
-<div class="subtitle">Domain: <strong>$domain</strong> &nbsp;|&nbsp; Generated: $reportTimestamp</div>
+    $html = (Get-TKHtmlHead `
+        -Title     'B.A.S.T.I.O.N. Stale Accounts Report' `
+        -ScriptName 'B.A.S.T.I.O.N.' `
+        -Subtitle  "Domain: $domain" `
+        -MetaItems ([ordered]@{ 'Generated' = $reportTimestamp; 'Stale Threshold' = '90 days' }) `
+        -NavItems  @('Stale User Accounts')) + @"
 
-<div class="note">
+<div class="tk-info-box">
+  <span class="tk-info-label">Note</span>
   Stale threshold: accounts enabled but with no logon activity in the past 90 days, or accounts that have never logged on.
   Review these accounts and disable or remove those that are no longer needed.
 </div>
 
-<div class="summary">
-  <div class="card warn"><div class="val">$($stale.Count)</div><div class="lbl">Total Stale</div></div>
-  <div class="card crit"><div class="val">$oldestLogon</div><div class="lbl">Oldest Last Logon</div></div>
-  <div class="card"><div class="val">$oldestUser</div><div class="lbl">Oldest Account</div></div>
+<div class="tk-summary-row">
+  <div class="tk-summary-card warn">
+    <div class="tk-summary-num">$($stale.Count)</div>
+    <div class="tk-summary-lbl">Total Stale</div>
+  </div>
+  <div class="tk-summary-card err">
+    <div class="tk-summary-num">$oldestLogon</div>
+    <div class="tk-summary-lbl">Oldest Last Logon</div>
+  </div>
+  <div class="tk-summary-card info">
+    <div class="tk-summary-num">$oldestUser</div>
+    <div class="tk-summary-lbl">Oldest Account</div>
+  </div>
 </div>
 
-<div class="section-title">Stale User Accounts</div>
-<table>
-  <thead>
-    <tr>
-      <th>Username</th>
-      <th>Display Name</th>
-      <th>Department</th>
-      <th>Last Logon</th>
-      <th>Days Inactive</th>
-      <th>Enabled</th>
-    </tr>
-  </thead>
-  <tbody>
-    $rows
-  </tbody>
-</table>
-
-<div class="footer">
-  Generated by B.A.S.T.I.O.N. — Technician Toolkit &nbsp;|&nbsp; Stale threshold: 90 days
+<div class="tk-section">
+  <div class="tk-section-title">Stale User Accounts</div>
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Display Name</th>
+        <th>Department</th>
+        <th>Last Logon</th>
+        <th>Days Inactive</th>
+        <th>Enabled</th>
+      </tr>
+    </thead>
+    <tbody>
+      $rows
+    </tbody>
+  </table>
 </div>
-</body>
-</html>
-"@
+
+"@ + (Get-TKHtmlFoot -ScriptName 'B.A.S.T.I.O.N. v1.0')
 
     $reportFilename = "BASTION_Stale_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename
@@ -1132,10 +1110,10 @@ function Export-PasswordExpiryReport {
     $rows = ""
     foreach ($u in $users) {
         $badgeClass = switch ($u.Status) {
-            'Expired'  { 'crit' }
-            'Critical' { 'crit' }
+            'Expired'  { 'err' }
+            'Critical' { 'err' }
             'Warning'  { 'warn' }
-            default    { 'stale' }
+            default    { 'info' }
         }
         $daysStr = if ($u.DaysLeft -lt 0) { "EXPIRED" } else { "$($u.DaysLeft)d" }
         $dept    = if ($u.Department)   { HtmlEncode $u.Department }   else { "N/A" }
@@ -1149,73 +1127,58 @@ function Export-PasswordExpiryReport {
                 <td>$dept</td>
                 <td>$email</td>
                 <td>$($u.Expiry.ToString("yyyy-MM-dd"))</td>
-                <td><span class="badge badge-$badgeClass">$daysStr</span></td>
+                <td><span class="tk-badge-$badgeClass">$daysStr</span></td>
             </tr>
 "@
     }
 
-    $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>B.A.S.T.I.O.N. Password Expiry Report — $domain</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Consolas, monospace; font-size: 14px; padding: 24px; }
-  h1 { color: #00d4ff; font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
-  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 24px; min-width: 120px; text-align: center; }
-  .card .val { font-size: 28px; font-weight: bold; color: #00d4ff; }
-  .card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-  .card.warn .val { color: #f39c12; }
-  .card.crit .val { color: #e74c3c; }
-  .card.ok   .val { color: #2ecc71; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 9px 12px; border-bottom: 1px solid #1e2d4d; vertical-align: middle; }
-  tr:hover td { background: #1e2d4d; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-  .badge-ok    { background: #1a4a2e; color: #2ecc71; }
-  .badge-stale { background: #1e3a5a; color: #5dade2; }
-  .badge-warn  { background: #4a3a10; color: #f39c12; }
-  .badge-crit  { background: #4a1a1a; color: #e74c3c; }
-  .section-title { color: #00d4ff; font-size: 15px; margin: 28px 0 10px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; }
-  .footer { margin-top: 32px; color: #555; font-size: 11px; }
-  .note { background: #16213e; border-left: 3px solid #f39c12; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #ccc; border-radius: 0 4px 4px 0; }
-</style>
-</head>
-<body>
-<h1>B.A.S.T.I.O.N. — Password Expiry Report</h1>
-<div class="subtitle">Domain: <strong>$domain</strong> &nbsp;|&nbsp; Threshold: $thresholdDays days &nbsp;|&nbsp; Generated: $reportTimestamp</div>
-<div class="note">
+    $html = (Get-TKHtmlHead `
+        -Title     'B.A.S.T.I.O.N. Password Expiry Report' `
+        -ScriptName 'B.A.S.T.I.O.N.' `
+        -Subtitle  "Domain: $domain" `
+        -MetaItems ([ordered]@{ 'Generated' = $reportTimestamp; 'Threshold' = "$thresholdDays days" }) `
+        -NavItems  @('Users with Expiring Passwords')) + @"
+
+<div class="tk-info-box">
+  <span class="tk-info-label">Note</span>
   Shows all enabled users (without PasswordNeverExpires) whose passwords expire within $thresholdDays days.
   Contact these users to prompt a password change, or reset passwords as appropriate.
 </div>
-<div class="summary">
-  <div class="card crit"><div class="val">$expiredCount</div><div class="lbl">Expired</div></div>
-  <div class="card crit"><div class="val">$criticalCount</div><div class="lbl">Critical (&lt;7d)</div></div>
-  <div class="card warn"><div class="val">$warningCount</div><div class="lbl">Warning (&lt;14d)</div></div>
-  <div class="card"><div class="val">$expiringCount</div><div class="lbl">Expiring Soon</div></div>
+
+<div class="tk-summary-row">
+  <div class="tk-summary-card err">
+    <div class="tk-summary-num">$expiredCount</div>
+    <div class="tk-summary-lbl">Expired</div>
+  </div>
+  <div class="tk-summary-card err">
+    <div class="tk-summary-num">$criticalCount</div>
+    <div class="tk-summary-lbl">Critical (&lt;7d)</div>
+  </div>
+  <div class="tk-summary-card warn">
+    <div class="tk-summary-num">$warningCount</div>
+    <div class="tk-summary-lbl">Warning (&lt;14d)</div>
+  </div>
+  <div class="tk-summary-card info">
+    <div class="tk-summary-num">$expiringCount</div>
+    <div class="tk-summary-lbl">Expiring Soon</div>
+  </div>
 </div>
-<div class="section-title">Users with Expiring Passwords</div>
-<table>
-  <thead>
-    <tr>
-      <th>Username</th><th>Display Name</th><th>Department</th><th>Email</th><th>Expires On</th><th>Days Left</th>
-    </tr>
-  </thead>
-  <tbody>
-    $rows
-  </tbody>
-</table>
-<div class="footer">
-  Generated by B.A.S.T.I.O.N. — Technician Toolkit &nbsp;|&nbsp; Threshold: $thresholdDays days
+
+<div class="tk-section">
+  <div class="tk-section-title">Users with Expiring Passwords</div>
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th>Username</th><th>Display Name</th><th>Department</th><th>Email</th><th>Expires On</th><th>Days Left</th>
+      </tr>
+    </thead>
+    <tbody>
+      $rows
+    </tbody>
+  </table>
 </div>
-</body>
-</html>
-"@
+
+"@ + (Get-TKHtmlFoot -ScriptName 'B.A.S.T.I.O.N. v1.0')
 
     $reportFilename = "BASTION_PwdExpiry_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $reportPath     = Join-Path (Resolve-LogDirectory -FallbackPath $ScriptPath) $reportFilename

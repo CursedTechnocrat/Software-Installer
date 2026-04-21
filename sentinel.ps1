@@ -582,16 +582,16 @@ function Build-HtmlReport {
     $svcRows = ''
     foreach ($svc in $Services) {
         $statusBadge = if ($svc.Status -eq 'Running') {
-            "<span class='badge badge-ok'>Running</span>"
+            "<span class='tk-badge-ok'>Running</span>"
         } elseif ($svc.Status -eq 'Stopped') {
-            "<span class='badge badge-crit'>Stopped</span>"
+            "<span class='tk-badge-err'>Stopped</span>"
         } else {
-            "<span class='badge badge-warn'>$(HtmlEncode($svc.Status))</span>"
+            "<span class='tk-badge-warn'>$(HtmlEncode($svc.Status))</span>"
         }
         $concernCell = if ($svc.Concern) {
-            "<span class='flag'>!! Concern</span>"
+            "<span class='tk-badge-err'>!! Concern</span>"
         } else {
-            "<span style='color:#555'>—</span>"
+            "<span style='color:#555'>-</span>"
         }
         $svcRows += "<tr>
             <td>$(HtmlEncode($svc.Name))</td>

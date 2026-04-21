@@ -312,7 +312,7 @@ $Tools = @(
 # ===========================
 
 function Show-Banner {
-    Clear-Host
+    [Console]::Clear()
     Write-Host ""
     Write-Host "  ██████╗ ██████╗ ██╗███╗   ███╗ ██████╗ ██╗██████╗ ███████╗" -ForegroundColor $ColorSchema.Header
     Write-Host " ██╔════╝ ██╔══██╗██║████╗ ████║██╔═══██╗██║██╔══██╗██╔════╝" -ForegroundColor $ColorSchema.Header
@@ -465,7 +465,7 @@ do {
         Invoke-Tool -Tool $MatchedTool
     }
     elseif ($Selection -eq 'Q') {
-        Clear-Host
+        [Console]::Clear()
         Write-Host ""
         Write-Host "  Closing GRIMOIRE. Stay arcane." -ForegroundColor $ColorSchema.Header
         Write-Host ""

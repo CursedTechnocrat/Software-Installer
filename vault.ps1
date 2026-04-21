@@ -615,43 +615,43 @@ function Build-HtmlReport {
     # ── License rows ─────────────────────────────────────────────────────────
     $licRows = [System.Text.StringBuilder]::new()
     foreach ($sku in ($LicenseData | Sort-Object FriendlyName)) {
-        $availClass = if ($sku.Available -lt 0) { 'badge-crit' }
-                      elseif ($sku.Available -le 5) { 'badge-warn' }
-                      else { 'badge-ok' }
+        $availClass = if ($sku.Available -lt 0) { 'tk-badge-err' }
+                      elseif ($sku.Available -le 5) { 'tk-badge-warn' }
+                      else { 'tk-badge-ok' }
         $statusCell = if ($sku.CapabilityStatus -ne 'Enabled') {
-            "<span class='badge badge-warn'>$(EscHtml $sku.CapabilityStatus)</span>"
+            "<span class='tk-badge-warn'>$(EscHtml $sku.CapabilityStatus)</span>"
         } else {
-            "<span class='badge badge-ok'>Active</span>"
+            "<span class='tk-badge-ok'>Active</span>"
         }
-        [void]$licRows.Append("<tr><td>$(EscHtml $sku.FriendlyName)</td><td><code>$(EscHtml $sku.SkuPartNumber)</code></td><td>$($sku.Assigned)</td><td>$($sku.Total)</td><td><span class='badge $availClass'>$($sku.Available)</span></td><td>$statusCell</td></tr>`n")
+        [void]$licRows.Append("<tr><td>$(EscHtml $sku.FriendlyName)</td><td><code>$(EscHtml $sku.SkuPartNumber)</code></td><td>$($sku.Assigned)</td><td>$($sku.Total)</td><td><span class='$availClass'>$($sku.Available)</span></td><td>$statusCell</td></tr>`n")
     }
 
     # ── Unlicensed rows ───────────────────────────────────────────────────────
     $unLicRows = [System.Text.StringBuilder]::new()
     if ($UnlicensedData.Count -eq 0) {
-        [void]$unLicRows.Append("<tr><td colspan='4' style='color:#2ecc71;text-align:center;'>No unlicensed enabled users found.</td></tr>")
+        [void]$unLicRows.Append("<tr><td colspan='4' class='tk-badge-ok' style='text-align:center;'>No unlicensed enabled users found.</td></tr>")
     } else {
         foreach ($u in ($UnlicensedData | Sort-Object DisplayName)) {
-            [void]$unLicRows.Append("<tr><td>$(EscHtml $u.DisplayName)</td><td>$(EscHtml $u.UPN)</td><td>$(EscHtml $u.Department)</td><td><span class='badge badge-ok'>Enabled</span></td></tr>`n")
+            [void]$unLicRows.Append("<tr><td>$(EscHtml $u.DisplayName)</td><td>$(EscHtml $u.UPN)</td><td>$(EscHtml $u.Department)</td><td><span class='tk-badge-ok'>Enabled</span></td></tr>`n")
         }
     }
 
     # ── Inactive rows ─────────────────────────────────────────────────────────
     $inactRows = [System.Text.StringBuilder]::new()
     if ($InactiveData.Count -eq 0) {
-        [void]$inactRows.Append("<tr><td colspan='4' style='color:#2ecc71;text-align:center;'>No inactive users found.</td></tr>")
+        [void]$inactRows.Append("<tr><td colspan='4' class='tk-badge-ok' style='text-align:center;'>No inactive users found.</td></tr>")
     } else {
         $sorted = $InactiveData | Sort-Object @{ Expression={ if ($_.DaysInactive -eq 'N/A') { 99999 } else { [int]$_.DaysInactive } }; Descending=$true }
         foreach ($u in $sorted) {
-            $badgeClass = if ($u.LastSignIn -eq 'Never') { 'badge-crit' } else { 'badge-warn' }
-            [void]$inactRows.Append("<tr><td>$(EscHtml $u.DisplayName)</td><td>$(EscHtml $u.UPN)</td><td><span class='badge $badgeClass'>$(EscHtml $u.LastSignIn)</span></td><td>$($u.DaysInactive)</td></tr>`n")
+            $badgeClass = if ($u.LastSignIn -eq 'Never') { 'tk-badge-err' } else { 'tk-badge-warn' }
+            [void]$inactRows.Append("<tr><td>$(EscHtml $u.DisplayName)</td><td>$(EscHtml $u.UPN)</td><td><span class='$badgeClass'>$(EscHtml $u.LastSignIn)</span></td><td>$($u.DaysInactive)</td></tr>`n")
         }
     }
 
     # ── No-MFA rows ───────────────────────────────────────────────────────────
     $mfaRows = [System.Text.StringBuilder]::new()
     if ($NoMfaData.Count -eq 0) {
-        [void]$mfaRows.Append("<tr><td colspan='3' style='color:#2ecc71;text-align:center;'>All users have MFA registered.</td></tr>")
+        [void]$mfaRows.Append("<tr><td colspan='3' class='tk-badge-ok' style='text-align:center;'>All users have MFA registered.</td></tr>")
     } else {
         foreach ($u in ($NoMfaData | Sort-Object DisplayName)) {
             [void]$mfaRows.Append("<tr><td>$(EscHtml $u.DisplayName)</td><td>$(EscHtml $u.UPN)</td><td>$(EscHtml $u.Department)</td></tr>`n")
@@ -661,94 +661,47 @@ function Build-HtmlReport {
     # ── Summary card colors ───────────────────────────────────────────────────
     $unlicClass  = if ($UnlicensedData.Count -gt 0) { 'warn' } else { 'ok' }
     $inactClass  = if ($InactiveData.Count   -gt 0) { 'warn' } else { 'ok' }
-    $mfaClass    = if ($NoMfaData.Count      -gt 0) { 'crit' } else { 'ok' }
+    $mfaClass    = if ($NoMfaData.Count      -gt 0) { 'err'  } else { 'ok' }
 
-    $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V.A.U.L.T. Audit Report — $tenantDisplay</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Consolas, monospace; font-size: 14px; }
-    header { background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%); padding: 40px 48px 36px; border-bottom: 2px solid #00d4ff; }
-    header .label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00d4ff; margin-bottom: 10px; }
-    header h1 { font-size: 28px; font-weight: 700; color: #00d4ff; margin-bottom: 6px; }
-    header .subtitle { font-size: 14px; color: #a0b0c8; }
-    .meta { margin-top: 18px; display: flex; gap: 28px; font-size: 12px; color: #6b8cae; flex-wrap: wrap; }
-    .meta span strong { color: #e0e0e0; }
-    main { max-width: 1100px; margin: 0 auto; padding: 40px 32px; display: flex; flex-direction: column; gap: 36px; }
-    /* Summary cards */
-    .summary { display: flex; gap: 16px; flex-wrap: wrap; }
-    .card-stat { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 18px 24px; min-width: 150px; text-align: center; border-top: 3px solid #00d4ff; }
-    .card-stat .val { font-size: 32px; font-weight: 800; color: #00d4ff; }
-    .card-stat .lbl { font-size: 11px; color: #6b8cae; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-    .card-stat.ok   .val { color: #2ecc71; }
-    .card-stat.warn .val { color: #f39c12; }
-    .card-stat.crit .val { color: #e74c3c; }
-    .card-stat.ok   { border-top-color: #2ecc71; }
-    .card-stat.warn { border-top-color: #f39c12; }
-    .card-stat.crit { border-top-color: #e74c3c; }
-    /* Section cards */
-    .section { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; overflow: hidden; }
-    .section-header { display: flex; align-items: center; gap: 12px; padding: 18px 24px; background: #0f2040; border-bottom: 1px solid #0f3460; }
-    .section-header h2 { font-size: 15px; font-weight: 700; color: #00d4ff; }
-    .section-header .count { margin-left: auto; font-size: 12px; font-weight: 700; color: #6b8cae; background: #1a1a2e; padding: 3px 10px; border-radius: 10px; }
-    .section-body { padding: 20px 24px; }
-    /* Tables */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #0a1628; color: #00d4ff; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-    td { padding: 9px 14px; border-bottom: 1px solid #1e2d4d; vertical-align: top; color: #d0d8e8; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #1e2d4d; }
-    code { font-family: Consolas, monospace; font-size: 12px; color: #a0b8d0; background: #0a1628; padding: 1px 5px; border-radius: 3px; }
-    /* Badges */
-    .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
-    .badge-ok   { background: #1a4a2e; color: #2ecc71; }
-    .badge-warn { background: #4a3a10; color: #f39c12; }
-    .badge-crit { background: #4a1a1a; color: #e74c3c; }
-    .badge-info { background: #1a2a4a; color: #00d4ff; }
-    /* Guidance box */
-    .guidance { background: #0a1628; border: 1px solid #00d4ff33; border-radius: 6px; padding: 16px 20px; color: #a0b8d0; font-size: 13px; line-height: 1.7; }
-    .guidance code { color: #f39c12; }
-    footer { background: #0a1628; border-top: 1px solid #0f3460; color: #3a5070; text-align: center; padding: 20px; font-size: 11px; margin-top: 8px; }
-  </style>
-</head>
-<body>
+    $htmlHead = Get-TKHtmlHead `
+        -Title      'V.A.U.L.T. Audit Report' `
+        -ScriptName 'V.A.U.L.T.' `
+        -Subtitle   "Microsoft 365 License &amp; User Security Audit -- $tenantDisplay" `
+        -MetaItems  ([ordered]@{
+            'Generated'    = $reportDate
+            'Connected As' = $connectedAs
+            'Tenant'       = $tenantDisplay
+        }) `
+        -NavItems   @(
+            'License Inventory',
+            'Unlicensed Users',
+            'Inactive Users',
+            'MFA Status',
+            'Shared Mailbox'
+        )
 
-<header>
-  <div class="label">Confidential — Internal Use Only</div>
-  <h1>V.A.U.L.T. Audit Report</h1>
-  <div class="subtitle">Microsoft 365 License &amp; User Security Audit — $tenantDisplay</div>
-  <div class="meta">
-    <span><strong>Generated:</strong> $reportDate</span>
-    <span><strong>Connected As:</strong> $connectedAs</span>
-    <span><strong>Tenant:</strong> $tenantDisplay</span>
-  </div>
-</header>
+    $htmlFoot = Get-TKHtmlFoot -ScriptName 'V.A.U.L.T. v1.0'
 
-<main>
+    $html = $htmlHead + @"
 
   <!-- Summary -->
-  <div class="summary">
-    <div class="card-stat"><div class="val">$totalUsers</div><div class="lbl">Total Enabled Users</div></div>
-    <div class="card-stat ok"><div class="val">$licensedCount</div><div class="lbl">Licensed Users</div></div>
-    <div class="card-stat $unlicClass"><div class="val">$($UnlicensedData.Count)</div><div class="lbl">Unlicensed Users</div></div>
-    <div class="card-stat $inactClass"><div class="val">$($InactiveData.Count)</div><div class="lbl">Inactive (90d+)</div></div>
-    <div class="card-stat $mfaClass"><div class="val">$($NoMfaData.Count)</div><div class="lbl">No MFA Registered</div></div>
-    <div class="card-stat"><div class="val">$($LicenseData.Count)</div><div class="lbl">License SKUs</div></div>
+  <div class="tk-summary-row">
+    <div class="tk-summary-card info"><div class="tk-summary-num">$totalUsers</div><div class="tk-summary-lbl">Total Enabled Users</div></div>
+    <div class="tk-summary-card ok"><div class="tk-summary-num">$licensedCount</div><div class="tk-summary-lbl">Licensed Users</div></div>
+    <div class="tk-summary-card $unlicClass"><div class="tk-summary-num">$($UnlicensedData.Count)</div><div class="tk-summary-lbl">Unlicensed Users</div></div>
+    <div class="tk-summary-card $inactClass"><div class="tk-summary-num">$($InactiveData.Count)</div><div class="tk-summary-lbl">Inactive (90d+)</div></div>
+    <div class="tk-summary-card $mfaClass"><div class="tk-summary-num">$($NoMfaData.Count)</div><div class="tk-summary-lbl">No MFA Registered</div></div>
+    <div class="tk-summary-card info"><div class="tk-summary-num">$($LicenseData.Count)</div><div class="tk-summary-lbl">License SKUs</div></div>
   </div>
 
   <!-- License Inventory -->
-  <div class="section">
-    <div class="section-header">
-      <h2>License SKU Inventory</h2>
-      <span class="count">$($LicenseData.Count) SKU(s)</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">License SKU Inventory</span>
+      <span class="tk-section-num">$($LicenseData.Count) SKU(s)</span>
     </div>
-    <div class="section-body">
-      <table>
+    <div class="tk-card">
+      <table class="tk-table">
         <thead>
           <tr><th>SKU Name</th><th>Part Number</th><th>Assigned</th><th>Total</th><th>Available</th><th>Status</th></tr>
         </thead>
@@ -760,13 +713,13 @@ function Build-HtmlReport {
   </div>
 
   <!-- Unlicensed Users -->
-  <div class="section">
-    <div class="section-header">
-      <h2>Unlicensed Enabled Users</h2>
-      <span class="count">$($UnlicensedData.Count) user(s)</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Unlicensed Enabled Users</span>
+      <span class="tk-section-num">$($UnlicensedData.Count) user(s)</span>
     </div>
-    <div class="section-body">
-      <table>
+    <div class="tk-card">
+      <table class="tk-table">
         <thead>
           <tr><th>Display Name</th><th>UPN</th><th>Department</th><th>Account Status</th></tr>
         </thead>
@@ -778,13 +731,13 @@ function Build-HtmlReport {
   </div>
 
   <!-- Inactive Users -->
-  <div class="section">
-    <div class="section-header">
-      <h2>Inactive Users — No Sign-In Within 90 Days</h2>
-      <span class="count">$($InactiveData.Count) user(s)</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Inactive Users -- No Sign-In Within 90 Days</span>
+      <span class="tk-section-num">$($InactiveData.Count) user(s)</span>
     </div>
-    <div class="section-body">
-      <table>
+    <div class="tk-card">
+      <table class="tk-table">
         <thead>
           <tr><th>Display Name</th><th>UPN</th><th>Last Sign-In</th><th>Days Inactive</th></tr>
         </thead>
@@ -796,13 +749,13 @@ function Build-HtmlReport {
   </div>
 
   <!-- MFA Status -->
-  <div class="section">
-    <div class="section-header">
-      <h2>Users Without MFA Registered</h2>
-      <span class="count">$($NoMfaData.Count) user(s)</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Users Without MFA Registered</span>
+      <span class="tk-section-num">$($NoMfaData.Count) user(s)</span>
     </div>
-    <div class="section-body">
-      <table>
+    <div class="tk-card">
+      <table class="tk-table">
         <thead>
           <tr><th>Display Name</th><th>UPN</th><th>Department</th></tr>
         </thead>
@@ -814,14 +767,15 @@ function Build-HtmlReport {
   </div>
 
   <!-- Shared Mailbox Note -->
-  <div class="section">
-    <div class="section-header">
-      <h2>Shared Mailbox Audit</h2>
-      <span class="count">Requires Exchange Online</span>
+  <div class="tk-section">
+    <div class="tk-card-header">
+      <span class="tk-section-title">Shared Mailbox Audit</span>
+      <span class="tk-section-num">Requires Exchange Online</span>
     </div>
-    <div class="section-body">
-      <div class="guidance">
-        <strong style="color:#f39c12;">Shared mailbox auditing requires the Exchange Online Management module.</strong><br><br>
+    <div class="tk-card">
+      <div class="tk-info-box">
+        <span class="tk-info-label">Note</span>
+        <strong>Shared mailbox auditing requires the Exchange Online Management module.</strong><br><br>
         Run the following commands in a separate PowerShell session:<br><br>
         <code>Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force</code><br>
         <code>Connect-ExchangeOnline -UserPrincipalName admin@$tenantDisplay</code><br>
@@ -833,15 +787,7 @@ function Build-HtmlReport {
     </div>
   </div>
 
-</main>
-
-<footer>
-  V.A.U.L.T. — Validates Assets &amp; User License Tracking &nbsp;|&nbsp; $tenantDisplay &nbsp;|&nbsp; $reportDate &nbsp;|&nbsp; Confidential
-</footer>
-
-</body>
-</html>
-"@
+"@ + $htmlFoot
 
     return $html
 }

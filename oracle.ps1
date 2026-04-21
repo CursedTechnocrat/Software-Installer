@@ -686,10 +686,10 @@ Write-Host "Generating HTML report..." -ForegroundColor $ColorSchema.Progress
 function ConvertTo-HtmlTable {
     param([array]$Objects, [string]$EmptyMessage = "No data available.")
     if (-not $Objects -or $Objects.Count -eq 0) {
-        return "<p class='empty'>$EmptyMessage</p>"
+        return "<p class='tk-info-box'>$EmptyMessage</p>"
     }
     $headers = $Objects[0].PSObject.Properties.Name
-    $html  = "<table><thead><tr>"
+    $html  = "<table class='tk-table'><thead><tr>"
     $html += ($headers | ForEach-Object { "<th>$_</th>" }) -join ""
     $html += "</tr></thead><tbody>"
     foreach ($row in $Objects) {
@@ -709,53 +709,53 @@ function ConvertTo-HtmlTable {
 $storageUnhealthy  = ($reportData['Storage'].PhysicalDisks   | Where-Object { $_.HealthStatus -ne 'Healthy' }).Count
 $raidCtrlUnhealthy = ($reportData['Storage'].RaidControllers  | Where-Object { $_.Status       -ne 'OK'      }).Count
 $storageBadge = if ($storageUnhealthy -eq 0 -and $raidCtrlUnhealthy -eq 0) {
-    "<span class='badge badge-ok'>Healthy</span>"
+    "<span class='tk-badge-ok'>Healthy</span>"
 } elseif ($raidCtrlUnhealthy -gt 0) {
-    "<span class='badge badge-err'>$raidCtrlUnhealthy controller issue(s)</span>"
+    "<span class='tk-badge-err'>$raidCtrlUnhealthy controller issue(s)</span>"
 } else {
-    "<span class='badge badge-err'>$storageUnhealthy degraded</span>"
+    "<span class='tk-badge-err'>$storageUnhealthy degraded</span>"
 }
 
 # Physical disk rows
 $physDiskRows = ""
 foreach ($pd in $reportData['Storage'].PhysicalDisks) {
-    $hColor = switch ($pd.HealthStatus) {
-        'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' }
+    $hBadge = switch ($pd.HealthStatus) {
+        'Healthy' { "tk-badge-ok" } 'Warning' { "tk-badge-warn" } default { "tk-badge-err" }
     }
     $physDiskRows += "<tr><td>$($pd.ID)</td><td>$($pd.Name)</td><td>$($pd.MediaType)</td><td>$($pd.BusType)</td><td>$($pd.SizeGB) GB</td>"
-    $physDiskRows += "<td style='color:$hColor;font-weight:600;'>$($pd.HealthStatus)</td><td>$($pd.OperationalStatus)</td></tr>"
+    $physDiskRows += "<td><span class='$hBadge'>$($pd.HealthStatus)</span></td><td>$($pd.OperationalStatus)</td></tr>"
 }
 
 # Virtual disk rows
 $virtDiskRows = ""
 foreach ($vd in $reportData['Storage'].VirtualDisks) {
-    $hColor = switch ($vd.HealthStatus) {
-        'Healthy' { '#2ecc71' } 'Warning' { '#f39c12' } default { '#e74c3c' }
+    $hBadge = switch ($vd.HealthStatus) {
+        'Healthy' { "tk-badge-ok" } 'Warning' { "tk-badge-warn" } default { "tk-badge-err" }
     }
     $virtDiskRows += "<tr><td>$($vd.Name)</td><td>$($vd.ResiliencyType)</td><td>$($vd.SizeGB) GB</td>"
-    $virtDiskRows += "<td style='color:$hColor;font-weight:600;'>$($vd.HealthStatus)</td><td>$($vd.OperationalStatus)</td></tr>"
+    $virtDiskRows += "<td><span class='$hBadge'>$($vd.HealthStatus)</span></td><td>$($vd.OperationalStatus)</td></tr>"
 }
 
 # RAID controller rows
 $raidCtrlRows = ""
 foreach ($rc in $reportData['Storage'].RaidControllers) {
-    $rcColor = if ($rc.Status -eq 'OK') { '#2ecc71' } else { '#f39c12' }
+    $rcBadge = if ($rc.Status -eq 'OK') { "tk-badge-ok" } else { "tk-badge-warn" }
     $raidCtrlRows += "<tr><td>$($rc.Name)</td><td>$($rc.Manufacturer)</td>"
-    $raidCtrlRows += "<td style='color:$rcColor;font-weight:600;'>$($rc.Status)</td><td>$($rc.DriverName)</td></tr>"
+    $raidCtrlRows += "<td><span class='$rcBadge'>$($rc.Status)</span></td><td>$($rc.DriverName)</td></tr>"
 }
 
 # Vendor CLI output blocks
 $raidVendorHtml = ""
 foreach ($rv in $reportData['Storage'].RaidVendorOutput) {
     $escaped = $rv.Output -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;'
-    $raidVendorHtml += "<h4 style='color:#aaa;font-size:0.82em;letter-spacing:1px;text-transform:uppercase;margin:14px 0 6px;'>$($rv.Tool) Output</h4>"
-    $raidVendorHtml += "<pre style='background:#0a1628;padding:12px;border-radius:4px;font-size:0.78em;color:#ccc;overflow-x:auto;white-space:pre-wrap;'>$escaped</pre>"
+    $raidVendorHtml += "<div class='tk-info-box' style='margin:14px 0 6px;'><span class='tk-info-label'>$($rv.Tool) Output</span></div>"
+    $raidVendorHtml += "<pre class='tk-mono' style='padding:12px;font-size:0.78em;overflow-x:auto;white-space:pre-wrap;'>$escaped</pre>"
 }
 
 # Disk rows for hardware section
 $diskRows = ""
 foreach ($d in $reportData['Hardware'].Disks) {
-    $barColor = if ($d.PctUsed -ge 90) { "#e74c3c" } elseif ($d.PctUsed -ge 75) { "#f39c12" } else { "#2ecc71" }
+    $barClass = if ($d.PctUsed -ge 90) { "err" } elseif ($d.PctUsed -ge 75) { "warn" } else { "ok" }
     $diskRows += @"
         <tr>
             <td>$($d.Drive)</td>
@@ -764,8 +764,8 @@ foreach ($d in $reportData['Hardware'].Disks) {
             <td>$($d.UsedGB) GB</td>
             <td>$($d.FreeGB) GB</td>
             <td>
-                <div style='background:#444;border-radius:4px;height:14px;width:100%;'>
-                    <div style='background:$barColor;width:$($d.PctUsed)%;height:14px;border-radius:4px;'></div>
+                <div class='tk-progress-wrap'>
+                    <div class='tk-progress-bar $barClass' style='width:$($d.PctUsed)%;'></div>
                 </div>
                 $($d.PctUsed)%
             </td>
@@ -792,9 +792,9 @@ $batteryHtml = if ($health.Battery) {
 # Updates badge
 $updateCount = $reportData['Updates'].Count
 $updateBadge = if ($updateCount -eq 0) {
-    "<span class='badge badge-ok'>Up to date</span>"
+    "<span class='tk-badge-ok'>Up to date</span>"
 } else {
-    "<span class='badge badge-warn'>$updateCount pending</span>"
+    "<span class='tk-badge-warn'>$updateCount pending</span>"
 }
 $updatesTable = if ($updateCount -gt 0) {
     ConvertTo-HtmlTable -Objects $reportData['Updates'] -EmptyMessage "No pending updates."
@@ -805,9 +805,9 @@ $updatesTable = if ($updateCount -gt 0) {
 # Events badge
 $eventCount = $reportData['Events'].Count
 $eventBadge = if ($eventCount -eq 0) {
-    "<span class='badge badge-ok'>Clean</span>"
+    "<span class='tk-badge-ok'>Clean</span>"
 } else {
-    "<span class='badge badge-warn'>$eventCount events</span>"
+    "<span class='tk-badge-warn'>$eventCount events</span>"
 }
 
 $softwareTable = ConvertTo-HtmlTable -Objects $reportData['Software']        -EmptyMessage "No software found."
@@ -816,19 +816,19 @@ $tasksTable    = ConvertTo-HtmlTable -Objects $reportData['ScheduledTasks']  -Em
 
 $taskCount = $reportData['ScheduledTasks'].Count
 $taskBadge = if ($taskCount -eq 0) {
-    "<span class='badge badge-ok'>None</span>"
+    "<span class='tk-badge-ok'>None</span>"
 } else {
-    "<span class='badge badge-info'>$taskCount task(s)</span>"
+    "<span class='tk-badge-info'>$taskCount task(s)</span>"
 }
 
 # AV / Security badge
 $avUnprotected = ($reportData['Security'] | Where-Object { $_.RealTimeProtection -eq 'Off' }).Count
 $avBadge = if ($reportData['Security'].Count -eq 0) {
-    "<span class='badge badge-warn'>No AV detected</span>"
+    "<span class='tk-badge-warn'>No AV detected</span>"
 } elseif ($avUnprotected -gt 0) {
-    "<span class='badge badge-err'>$avUnprotected unprotected</span>"
+    "<span class='tk-badge-err'>$avUnprotected unprotected</span>"
 } else {
-    "<span class='badge badge-ok'>Protected</span>"
+    "<span class='tk-badge-ok'>Protected</span>"
 }
 $securityTable = ConvertTo-HtmlTable -Objects $reportData['Security'] -EmptyMessage "No AV products detected."
 
