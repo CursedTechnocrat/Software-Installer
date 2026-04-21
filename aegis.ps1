@@ -428,27 +428,27 @@ $serviceItems = [System.Text.StringBuilder]::new()
 
 if ($vms.Count -gt 0) {
     $n = (($vms | Select-Object -ExpandProperty Name) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>Virtual Machines ($($vms.Count))</div><div class='svc-type'>Microsoft.Compute/virtualMachines</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>Virtual Machines ($($vms.Count))</span><code>Microsoft.Compute/virtualMachines</code><br>$n</div>`n")
 }
 if ($webApps.Count -gt 0) {
     $n = (($webApps | Select-Object -ExpandProperty Name) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>App Service / Functions ($($webApps.Count) sites)</div><div class='svc-type'>Microsoft.Web/sites</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>App Service / Functions ($($webApps.Count) sites)</span><code>Microsoft.Web/sites</code><br>$n</div>`n")
 }
 if ($sqlServers.Count -gt 0) {
     $n = (($sqlServers | Select-Object -ExpandProperty ServerName) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>Azure SQL ($($sqlServers.Count) servers, $totalDbCount databases)</div><div class='svc-type'>Microsoft.Sql/servers</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>Azure SQL ($($sqlServers.Count) servers, $totalDbCount databases)</span><code>Microsoft.Sql/servers</code><br>$n</div>`n")
 }
 if ($storageAccounts.Count -gt 0) {
     $n = (($storageAccounts | Select-Object -ExpandProperty StorageAccountName) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>Storage Accounts ($($storageAccounts.Count))</div><div class='svc-type'>Microsoft.Storage/storageAccounts</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>Storage Accounts ($($storageAccounts.Count))</span><code>Microsoft.Storage/storageAccounts</code><br>$n</div>`n")
 }
 if ($recoveryVaults.Count -gt 0) {
     $n = (($recoveryVaults | Select-Object -ExpandProperty Name) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>Recovery Services Vaults ($($recoveryVaults.Count))</div><div class='svc-type'>Microsoft.RecoveryServices/vaults</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>Recovery Services Vaults ($($recoveryVaults.Count))</span><code>Microsoft.RecoveryServices/vaults</code><br>$n</div>`n")
 }
 if ($appServicePlans.Count -gt 0) {
     $n = (($appServicePlans | Select-Object -ExpandProperty Name) | ForEach-Object { EscHtml $_ }) -join ', '
-    [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>App Service Plans ($($appServicePlans.Count))</div><div class='svc-type'>Microsoft.Web/serverfarms</div><div class='svc-note'>$n</div></div>`n")
+    [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>App Service Plans ($($appServicePlans.Count))</span><code>Microsoft.Web/serverfarms</code><br>$n</div>`n")
 }
 
 $extraTypes = [ordered]@{
@@ -470,7 +470,7 @@ foreach ($type in $extraTypes.Keys) {
     $matched = @($allResources | Where-Object { $_.ResourceType -ieq $type })
     if ($matched.Count -gt 0) {
         $n = ($matched | ForEach-Object { EscHtml $_.Name }) -join ', '
-        [void]$serviceItems.Append("<div class='service-item'><div class='svc-name'>$($extraTypes[$type]) ($($matched.Count))</div><div class='svc-type'>$type</div><div class='svc-note'>$n</div></div>`n")
+        [void]$serviceItems.Append("<div class='tk-info-box'><span class='tk-info-label'>$($extraTypes[$type]) ($($matched.Count))</span><code>$type</code><br>$n</div>`n")
     }
 }
 
@@ -487,42 +487,41 @@ foreach ($rule in ($exposedNsgRules | Sort-Object Priority)) {
         '5432' { 'Postgres (5432)' } '23' { 'Telnet (23)' }
         '*'    { 'All Ports (*)' } default { $rule.Port }
     }
-    [void]$secRows.Append("<tr><td><span class='pill orphan'>NSG</span></td><td><strong>$($rule.NSG)</strong> / $($rule.Rule)</td><td>$portLabel open to Internet</td><td>$($rule.RG)</td></tr>`n")
+    [void]$secRows.Append("<tr><td><span class='tk-badge-err'>NSG</span></td><td><strong>$($rule.NSG)</strong> / $($rule.Rule)</td><td>$portLabel open to Internet</td><td>$($rule.RG)</td></tr>`n")
 }
 
 # Public storage
 foreach ($sa in $publicStorageAccounts) {
     $n = EscHtml $sa.StorageAccountName
     $rg = EscHtml $sa.ResourceGroupName
-    [void]$secRows.Append("<tr><td><span class='pill partial'>Storage</span></td><td><strong>$n</strong></td><td>Public blob access not disabled</td><td>$rg</td></tr>`n")
+    [void]$secRows.Append("<tr><td><span class='tk-badge-warn'>Storage</span></td><td><strong>$n</strong></td><td>Public blob access not disabled</td><td>$rg</td></tr>`n")
 }
 
 # SQL allow-all firewall
 foreach ($fw in $sqlFirewallIssues) {
     $n = EscHtml $fw.Server; $r = EscHtml $fw.Rule; $range = EscHtml $fw.Range
-    [void]$secRows.Append("<tr><td><span class='pill orphan'>SQL FW</span></td><td><strong>$n</strong> / $r</td><td>Permissive firewall rule: $range</td><td>—</td></tr>`n")
+    [void]$secRows.Append("<tr><td><span class='tk-badge-err'>SQL FW</span></td><td><strong>$n</strong> / $r</td><td>Permissive firewall rule: $range</td><td>—</td></tr>`n")
 }
 
 # Apps without HTTPS
 foreach ($app in $httpApps) {
     $n = EscHtml $app.Name; $rg = EscHtml $app.ResourceGroup
-    [void]$secRows.Append("<tr><td><span class='pill partial'>App Svc</span></td><td><strong>$n</strong></td><td>HTTPS-only not enforced</td><td>$rg</td></tr>`n")
+    [void]$secRows.Append("<tr><td><span class='tk-badge-warn'>App Svc</span></td><td><strong>$n</strong></td><td>HTTPS-only not enforced</td><td>$rg</td></tr>`n")
 }
 
 $securityIssueCount = $exposedNsgRules.Count + $publicStorageAccounts.Count + $sqlFirewallIssues.Count + $httpApps.Count
 
 $securitySection = ''
 if ($securityIssueCount -gt 0 -or $true) {
-    $noIssueRow = if ($secRows.Length -eq 0) { "<tr><td colspan='4' style='text-align:center;color:#107c10;padding:20px'>No security issues detected in scanned areas.</td></tr>" } else { '' }
+    $noIssueRow = if ($secRows.Length -eq 0) { "<tr><td colspan='4' class='tk-badge-ok' style='text-align:center;padding:20px'>No security issues detected in scanned areas.</td></tr>" } else { '' }
     $securitySection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#fde7e9">🔒</div>
-    <h2>Security Posture</h2>
-    <span class="section-num">Section 3</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">Security Posture</span>
+    <span class="tk-section-num">Section 3</span>
   </div>
-  <div class="card-body">
-    <table class="status-table">
+  <div class="tk-card">
+    <table class="tk-table">
       <thead><tr><th>Type</th><th>Resource</th><th>Finding</th><th>Resource Group</th></tr></thead>
       <tbody>$($secRows.ToString())$noIssueRow</tbody>
     </table>
@@ -535,14 +534,14 @@ if ($securityIssueCount -gt 0 -or $true) {
 
 $rbacRows = [System.Text.StringBuilder]::new()
 foreach ($r in ($subOwners + $subContributors + $subUAAs | Sort-Object RoleDefinitionName, DisplayName)) {
-    $roleClass = if ($r.RoleDefinitionName -eq 'Owner') { 'orphan' } elseif ($r.RoleDefinitionName -eq 'User Access Administrator') { 'orphan' } else { 'partial' }
+    $roleClass = if ($r.RoleDefinitionName -eq 'Owner') { 'tk-badge-err' } elseif ($r.RoleDefinitionName -eq 'User Access Administrator') { 'tk-badge-err' } else { 'tk-badge-warn' }
     $who  = EscHtml ($r.DisplayName)
     $type = EscHtml ($r.ObjectType)
     $role = EscHtml ($r.RoleDefinitionName)
-    [void]$rbacRows.Append("<tr><td>$who</td><td>$type</td><td><span class='pill $roleClass'>$role</span></td><td>Subscription</td></tr>`n")
+    [void]$rbacRows.Append("<tr><td>$who</td><td>$type</td><td><span class='$roleClass'>$role</span></td><td>Subscription</td></tr>`n")
 }
 if ($rbacRows.Length -eq 0) {
-    [void]$rbacRows.Append("<tr><td colspan='4' style='text-align:center;color:#5c6b7a;padding:16px'>No subscription-level Owner / Contributor assignments found (or insufficient permissions to list).</td></tr>")
+    [void]$rbacRows.Append("<tr><td colspan='4' class='tk-badge-info' style='text-align:center;padding:16px'>No subscription-level Owner / Contributor assignments found (or insufficient permissions to list).</td></tr>")
 }
 
 $lockRows = [System.Text.StringBuilder]::new()
@@ -550,10 +549,10 @@ foreach ($res in ($unlockedCritical | Sort-Object ResourceType, Name)) {
     $n  = EscHtml $res.Name
     $t  = EscHtml ($res.ResourceType -replace 'Microsoft\.\w+/','')
     $rg = EscHtml $res.ResourceGroupName
-    [void]$lockRows.Append("<tr><td><strong>$n</strong></td><td>$t</td><td>$rg</td><td><span class='pill orphan'>No Lock</span></td></tr>`n")
+    [void]$lockRows.Append("<tr><td><strong>$n</strong></td><td>$t</td><td>$rg</td><td><span class='tk-badge-err'>No Lock</span></td></tr>`n")
 }
 if ($lockRows.Length -eq 0) {
-    [void]$lockRows.Append("<tr><td colspan='4' style='text-align:center;color:#107c10;padding:16px'>All critical resources have resource locks.</td></tr>")
+    [void]$lockRows.Append("<tr><td colspan='4' class='tk-badge-ok' style='text-align:center;padding:16px'>All critical resources have resource locks.</td></tr>")
 }
 
 $policyNote = if ($totalPolicyStates -eq 0) { 'No non-compliant states found (or no policies assigned / insufficient access).' } else { "$totalPolicyStates non-compliant policy state(s) detected." }

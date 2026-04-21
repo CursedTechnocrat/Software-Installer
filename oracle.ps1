@@ -832,188 +832,230 @@ $avBadge = if ($reportData['Security'].Count -eq 0) {
 }
 $securityTable = ConvertTo-HtmlTable -Objects $reportData['Security'] -EmptyMessage "No AV products detected."
 
-$htmlReport = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<title>O.R.A.C.L.E. — $env:COMPUTERNAME — $reportTimestamp</title>
-<style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; font-size: 14px; }
-  header { background: linear-gradient(135deg, #0f3460, #16213e); padding: 28px 40px; border-bottom: 3px solid #00d4ff; }
-  header h1 { color: #00d4ff; font-size: 2em; letter-spacing: 4px; font-weight: 700; }
-  header p  { color: #aaa; margin-top: 6px; font-size: 0.9em; }
-  header .meta { display: flex; gap: 30px; margin-top: 14px; flex-wrap: wrap; }
-  header .meta span { color: #ccc; font-size: 0.85em; }
-  header .meta strong { color: #00d4ff; }
-  main { padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
-  section { background: #16213e; border-radius: 8px; margin-bottom: 24px; overflow: hidden;
-            border: 1px solid #0f3460; }
-  section h2 { background: #0f3460; color: #00d4ff; padding: 14px 20px; font-size: 1em;
-               letter-spacing: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-  section .content { padding: 20px; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .kv { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #0f3460; }
-  .kv:last-child { border-bottom: none; }
-  .kv .key   { color: #888; min-width: 140px; font-size: 0.85em; }
-  .kv .value { color: #e0e0e0; font-weight: 500; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-  th { background: #0f3460; color: #00d4ff; padding: 10px 12px; text-align: left;
-       font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 0.78em; }
-  td { padding: 8px 12px; border-bottom: 1px solid #1e3a5f; color: #ccc; }
-  tr:hover td { background: #1e3a5f; }
-  .empty { color: #666; padding: 12px 0; font-style: italic; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78em;
-           font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-  .badge-ok   { background: #1a4a2e; color: #2ecc71; border: 1px solid #2ecc71; }
-  .badge-warn { background: #4a3000; color: #f39c12; border: 1px solid #f39c12; }
-  .badge-err  { background: #4a0000; color: #e74c3c; border: 1px solid #e74c3c; }
-  .badge-info { background: #0d2840; color: #00d4ff; border: 1px solid #00d4ff; }
-  footer { text-align: center; padding: 20px; color: #444; font-size: 0.8em; border-top: 1px solid #0f3460; }
-</style>
-</head>
-<body>
-<header>
-  <h1>O.R.A.C.L.E.</h1>
-  <p>Observes, Reports &amp; Audits Computer Logs &amp; Environments</p>
-  <div class="meta">
-    $(if (-not [string]::IsNullOrWhiteSpace((Get-TKConfig).OrgName)) { "<span><strong>Organisation:</strong> $(EscHtml (Get-TKConfig).OrgName)</span>" })
-    <span><strong>Machine:</strong> $env:COMPUTERNAME</span>
-    <span><strong>Run As:</strong> $env:USERDOMAIN\$env:USERNAME</span>
-    <span><strong>Generated:</strong> $reportTimestamp</span>
-    <span><strong>Storage:</strong> $storageBadge</span>
-    <span><strong>Updates:</strong> $updateBadge</span>
-    <span><strong>Events (24h):</strong> $eventBadge</span>
-    <span><strong>Ext. Tasks:</strong> $taskBadge</span>
-  </div>
-</header>
-<main>
+$tkConfig   = Get-TKConfig
+$tkOrgName  = if (-not [string]::IsNullOrWhiteSpace($tkConfig.OrgName)) { EscHtml $tkConfig.OrgName } else { $null }
+$tkSubtitle = if ($tkOrgName) { "$tkOrgName — $env:COMPUTERNAME" } else { $env:COMPUTERNAME }
+
+$tkMetaItems = [ordered]@{
+    'Machine'    = $env:COMPUTERNAME
+    'Run As'     = "$env:USERDOMAIN\$env:USERNAME"
+    'Generated'  = $reportTimestamp
+    'Storage'    = $storageBadge
+    'Updates'    = $updateBadge
+}
+
+$tkNavItems = @(
+    'Hardware',
+    'Operating System',
+    'Network Configuration',
+    'System Health',
+    'Storage & RAID Health',
+    'Pending Updates',
+    'Installed Software',
+    'Event Log',
+    'Scheduled Tasks',
+    'Security & AV'
+)
+
+$htmlReport = (Get-TKHtmlHead `
+    -Title      'System Diagnostic Report' `
+    -ScriptName 'O.R.A.C.L.E.' `
+    -Subtitle   $tkSubtitle `
+    -MetaItems  $tkMetaItems `
+    -NavItems   $tkNavItems) + @"
 
   <!-- HARDWARE -->
-  <section>
-    <h2>Hardware</h2>
-    <div class="content">
-      <div class="grid-2">
-        <div>
-          <div class="kv"><span class="key">Manufacturer</span><span class="value">$($hw.Manufacturer)</span></div>
-          <div class="kv"><span class="key">Model</span><span class="value">$($hw.Model)</span></div>
-          <div class="kv"><span class="key">Serial Number</span><span class="value">$($hw.Serial)</span></div>
-        </div>
-        <div>
-          <div class="kv"><span class="key">CPU</span><span class="value">$($hw.CPU)</span></div>
-          <div class="kv"><span class="key">Cores / Threads</span><span class="value">$($hw.Cores) / $($hw.Threads)</span></div>
-          <div class="kv"><span class="key">RAM</span><span class="value">$($hw.RAMGB) GB</span></div>
-        </div>
+  <div class="tk-section" id="hardware">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 1</span>
+        <h2 class="tk-section-title">Hardware</h2>
       </div>
-      <br>
-      <table>
-        <thead><tr><th>Drive</th><th>Label</th><th>Total</th><th>Used</th><th>Free</th><th>Usage</th></tr></thead>
-        <tbody>$diskRows</tbody>
-      </table>
+      <div style="padding:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div class="tk-info-box">
+            <div><span class="tk-info-label">Manufacturer</span> $($hw.Manufacturer)</div>
+            <div><span class="tk-info-label">Model</span> $($hw.Model)</div>
+            <div><span class="tk-info-label">Serial Number</span> $($hw.Serial)</div>
+          </div>
+          <div class="tk-info-box">
+            <div><span class="tk-info-label">CPU</span> $($hw.CPU)</div>
+            <div><span class="tk-info-label">Cores / Threads</span> $($hw.Cores) / $($hw.Threads)</div>
+            <div><span class="tk-info-label">RAM</span> $($hw.RAMGB) GB</div>
+          </div>
+        </div>
+        <table class="tk-table">
+          <thead><tr><th>Drive</th><th>Label</th><th>Total</th><th>Used</th><th>Free</th><th>Usage</th></tr></thead>
+          <tbody>$diskRows</tbody>
+        </table>
+      </div>
     </div>
-  </section>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- OPERATING SYSTEM -->
-  <section>
-    <h2>Operating System</h2>
-    <div class="content">
-      <div class="kv"><span class="key">OS</span><span class="value">$($os.Caption)</span></div>
-      <div class="kv"><span class="key">Build</span><span class="value">$($os.Build)</span></div>
-      <div class="kv"><span class="key">Architecture</span><span class="value">$($os.Architecture)</span></div>
-      <div class="kv"><span class="key">Install Date</span><span class="value">$($os.InstallDate)</span></div>
-      <div class="kv"><span class="key">Activation</span><span class="value">$($os.Activation)</span></div>
+  <div class="tk-section" id="operating-system">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 2</span>
+        <h2 class="tk-section-title">Operating System</h2>
+      </div>
+      <div style="padding:20px;">
+        <div class="tk-info-box">
+          <div><span class="tk-info-label">OS</span> $($os.Caption)</div>
+          <div><span class="tk-info-label">Build</span> $($os.Build)</div>
+          <div><span class="tk-info-label">Architecture</span> $($os.Architecture)</div>
+          <div><span class="tk-info-label">Install Date</span> $($os.InstallDate)</div>
+          <div><span class="tk-info-label">Activation</span> $($os.Activation)</div>
+        </div>
+      </div>
     </div>
-  </section>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- NETWORK -->
-  <section>
-    <h2>Network Configuration</h2>
-    <div class="content">
-      <table>
-        <thead><tr><th>Adapter</th><th>IP Address</th><th>MAC</th><th>Gateway</th><th>DNS</th></tr></thead>
-        <tbody>$netRows</tbody>
-      </table>
+  <div class="tk-section" id="network-configuration">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 3</span>
+        <h2 class="tk-section-title">Network Configuration</h2>
+      </div>
+      <div style="padding:20px;">
+        <table class="tk-table">
+          <thead><tr><th>Adapter</th><th>IP Address</th><th>MAC</th><th>Gateway</th><th>DNS</th></tr></thead>
+          <tbody>$netRows</tbody>
+        </table>
+      </div>
     </div>
-  </section>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- HEALTH -->
-  <section>
-    <h2>System Health</h2>
-    <div class="content">
-      <div class="kv"><span class="key">Last Boot</span><span class="value">$($health.LastBoot)</span></div>
-      <div class="kv"><span class="key">Uptime</span><span class="value">$($health.Uptime)</span></div>
-      <div class="kv"><span class="key">Battery</span><span class="value">$(if ($health.Battery) { "$($health.Battery.Charge)% — $($health.Battery.Status)" } else { "N/A" })</span></div>
+  <div class="tk-section" id="system-health">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 4</span>
+        <h2 class="tk-section-title">System Health</h2>
+      </div>
+      <div style="padding:20px;">
+        <div class="tk-info-box">
+          <div><span class="tk-info-label">Last Boot</span> $($health.LastBoot)</div>
+          <div><span class="tk-info-label">Uptime</span> $($health.Uptime)</div>
+          <div><span class="tk-info-label">Battery</span> $(if ($health.Battery) { "$($health.Battery.Charge)% - $($health.Battery.Status)" } else { "N/A" })</div>
+        </div>
+      </div>
     </div>
-  </section>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- STORAGE & RAID HEALTH -->
-  <section>
-    <h2>Storage &amp; RAID Health $storageBadge</h2>
-    <div class="content">
-      <h3 style="color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Physical Disks</h3>
-      $(if ($physDiskRows) {
-        "<table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Bus</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$physDiskRows</tbody></table>"
-      } else {
-        "<p class='empty'>No physical disk data available.</p>"
-      })
-      $(if ($virtDiskRows) {
-        "<h3 style='color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;'>Storage Spaces (Virtual Disks)</h3><table><thead><tr><th>Name</th><th>Resiliency</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$virtDiskRows</tbody></table>"
-      } else {
-        "<p style='color:#666;font-size:0.85em;margin-top:12px;'>No Storage Spaces virtual disks detected.</p>"
-      })
-      <h3 style="color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">Hardware RAID Controllers</h3>
-      $(if ($raidCtrlRows) {
-        "<table><thead><tr><th>Name</th><th>Manufacturer</th><th>Status</th><th>Driver</th></tr></thead><tbody>$raidCtrlRows</tbody></table>"
-      } else {
-        "<p style='color:#666;font-size:0.85em;'>No dedicated hardware RAID controllers detected.</p>"
-      })
-      $(if ($raidVendorHtml) {
-        "<h3 style='color:#00d4ff;font-size:0.85em;letter-spacing:1px;text-transform:uppercase;margin:16px 0 6px;'>Vendor CLI Detail</h3>$raidVendorHtml"
-      })
+  <div class="tk-section" id="storage-raid-health">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 5</span>
+        <h2 class="tk-section-title">Storage &amp; RAID Health</h2>
+        <span style="margin-left:auto;">$storageBadge</span>
+      </div>
+      <div style="padding:20px;">
+        <p class="tk-section-subtitle" style="margin-bottom:10px;">Physical Disks</p>
+        $(if ($physDiskRows) {
+          "<table class='tk-table'><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Bus</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$physDiskRows</tbody></table>"
+        } else {
+          "<div class='tk-info-box'>No physical disk data available.</div>"
+        })
+        $(if ($virtDiskRows) {
+          "<p class='tk-section-subtitle' style='margin:16px 0 10px;'>Storage Spaces (Virtual Disks)</p><table class='tk-table'><thead><tr><th>Name</th><th>Resiliency</th><th>Size</th><th>Health</th><th>Status</th></tr></thead><tbody>$virtDiskRows</tbody></table>"
+        } else {
+          "<div class='tk-info-box' style='margin-top:12px;'>No Storage Spaces virtual disks detected.</div>"
+        })
+        <p class="tk-section-subtitle" style="margin:16px 0 10px;">Hardware RAID Controllers</p>
+        $(if ($raidCtrlRows) {
+          "<table class='tk-table'><thead><tr><th>Name</th><th>Manufacturer</th><th>Status</th><th>Driver</th></tr></thead><tbody>$raidCtrlRows</tbody></table>"
+        } else {
+          "<div class='tk-info-box'>No dedicated hardware RAID controllers detected.</div>"
+        })
+        $(if ($raidVendorHtml) {
+          "<p class='tk-section-subtitle' style='margin:16px 0 6px;'>Vendor CLI Detail</p>$raidVendorHtml"
+        })
+      </div>
     </div>
-  </section>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- PENDING UPDATES -->
-  <section>
-    <h2>Pending Windows Updates $updateBadge</h2>
-    <div class="content">$updatesTable</div>
-  </section>
+  <div class="tk-section" id="pending-updates">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 6</span>
+        <h2 class="tk-section-title">Pending Windows Updates</h2>
+        <span style="margin-left:auto;">$updateBadge</span>
+      </div>
+      <div style="padding:20px;">$updatesTable</div>
+    </div>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- INSTALLED SOFTWARE -->
-  <section>
-    <h2>Installed Software ($($reportData['Software'].Count) apps)</h2>
-    <div class="content">$softwareTable</div>
-  </section>
+  <div class="tk-section" id="installed-software">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 7</span>
+        <h2 class="tk-section-title">Installed Software</h2>
+        <span class="tk-badge-info" style="margin-left:auto;">$($reportData['Software'].Count) apps</span>
+      </div>
+      <div style="padding:20px;">$softwareTable</div>
+    </div>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- EVENT LOG -->
-  <section>
-    <h2>Event Log — Errors &amp; Critical (Last 24h) $eventBadge</h2>
-    <div class="content">$eventsTable</div>
-  </section>
+  <div class="tk-section" id="event-log">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 8</span>
+        <h2 class="tk-section-title">Event Log — Errors &amp; Critical (Last 24h)</h2>
+        <span style="margin-left:auto;">$eventBadge</span>
+      </div>
+      <div style="padding:20px;">$eventsTable</div>
+    </div>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- SCHEDULED TASKS -->
-  <section>
-    <h2>Non-Microsoft Scheduled Tasks $taskBadge</h2>
-    <div class="content">$tasksTable</div>
-  </section>
+  <div class="tk-section" id="scheduled-tasks">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 9</span>
+        <h2 class="tk-section-title">Non-Microsoft Scheduled Tasks</h2>
+        <span style="margin-left:auto;">$taskBadge</span>
+      </div>
+      <div style="padding:20px;">$tasksTable</div>
+    </div>
+  </div>
+
+  <hr class="tk-divider">
 
   <!-- SECURITY / AV STATUS -->
-  <section>
-    <h2>Security &amp; Antivirus Status $avBadge</h2>
-    <div class="content">$securityTable</div>
-  </section>
+  <div class="tk-section" id="security-av">
+    <div class="tk-card">
+      <div class="tk-card-header">
+        <span class="tk-section-tag">PART 10</span>
+        <h2 class="tk-section-title">Security &amp; Antivirus Status</h2>
+        <span style="margin-left:auto;">$avBadge</span>
+      </div>
+      <div style="padding:20px;">$securityTable</div>
+    </div>
+  </div>
 
-</main>
-<footer>
-  Generated by O.R.A.C.L.E. — Part of the Technician Toolkit &nbsp;|&nbsp; $reportTimestamp
-</footer>
-</body>
-</html>
-"@
+"@ + (Get-TKHtmlFoot -ScriptName 'O.R.A.C.L.E. v1.0')
 
 try {
     $htmlReport | Out-File -FilePath $reportPath -Encoding UTF8 -Force

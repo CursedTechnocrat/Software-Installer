@@ -419,176 +419,129 @@ function Build-HtmlReport {
     # Port badge helper
     function Get-PortBadgeHtml {
         param([int[]]$Ports)
-        if (-not $Ports -or $Ports.Count -eq 0) { return '<span style="color:#666;">none</span>' }
+        if (-not $Ports -or $Ports.Count -eq 0) { return '<span class="tk-mono" style="color:#666;">none</span>' }
 
         $badges = foreach ($p in $Ports) {
             $label = switch ($p) {
-                21   { 'FTP'    }
-                22   { 'SSH'    }
-                23   { 'Telnet' }
-                80   { 'HTTP'   }
-                443  { 'HTTPS'  }
-                445  { 'SMB'    }
-                3389 { 'RDP'    }
-                5985 { 'WinRM'  }
+                21   { 'FTP'      }
+                22   { 'SSH'      }
+                23   { 'Telnet'   }
+                80   { 'HTTP'     }
+                443  { 'HTTPS'    }
+                445  { 'SMB'      }
+                3389 { 'RDP'      }
+                5985 { 'WinRM'    }
                 8080 { 'HTTP-Alt' }
-                8443 { 'HTTPS-Alt' }
-                default { "$p" }
+                8443 { 'HTTPS-Alt'}
+                default { "$p"   }
             }
 
-            $style = switch ($p) {
-                { $_ -in @(3389, 445, 23) } {
-                    'background:#4a0000;color:#ff6b6b;border:1px solid #e74c3c;'
-                }
-                { $_ -in @(80, 8080) } {
-                    'background:#4a3800;color:#f0c040;border:1px solid #f39c12;'
-                }
-                { $_ -in @(443, 8443) } {
-                    'background:#0a3a1a;color:#5ddf8a;border:1px solid #2ecc71;'
-                }
-                default {
-                    'background:#2a2a3e;color:#aaaacc;border:1px solid #555577;'
-                }
+            $badgeClass = switch ($p) {
+                { $_ -in @(3389, 445, 23) } { 'tk-badge-err'  }
+                { $_ -in @(80, 8080) }       { 'tk-badge-warn' }
+                { $_ -in @(443, 8443) }      { 'tk-badge-ok'   }
+                default                      { 'tk-badge-info' }
             }
 
-            "<span style='display:inline-block;padding:2px 7px;margin:2px;border-radius:4px;font-size:0.78em;font-weight:600;$style'>$label</span>"
+            "<span class=`"$badgeClass`">$label</span>"
         }
         return $badges -join ' '
     }
 
     # Build table rows
     $rows = foreach ($h in $script:DiscoveredHosts | Sort-Object { [version]$_.IP }) {
-        $hostname     = if ($h.Hostname) { [System.Net.WebUtility]::HtmlEncode($h.Hostname) } else { '<span style="color:#555;">—</span>' }
-        $mac          = if ($h.MAC)      { $h.MAC      } else { '<span style="color:#555;">—</span>' }
-        $rtt          = if ($h.ResponseTimeMs -ge 0) { "$($h.ResponseTimeMs) ms" } else { '—' }
-        $portBadges   = Get-PortBadgeHtml -Ports $h.OpenPorts
+        $hostname   = if ($h.Hostname) { [System.Net.WebUtility]::HtmlEncode($h.Hostname) } else { '<span style="color:#555;">-</span>' }
+        $mac        = if ($h.MAC)      { $h.MAC } else { '<span style="color:#555;">-</span>' }
+        $rtt        = if ($h.ResponseTimeMs -ge 0) { "$($h.ResponseTimeMs) ms" } else { '-' }
+        $portBadges = Get-PortBadgeHtml -Ports $h.OpenPorts
 
-        $rowClass = ''
-        if ($h.OpenPorts -contains 3389 -or $h.OpenPorts -contains 445 -or $h.OpenPorts -contains 23) {
-            $rowClass = 'row-danger'
+        $rowRisk = if ($h.OpenPorts -contains 3389 -or $h.OpenPorts -contains 445 -or $h.OpenPorts -contains 23) {
+            'err'
         } elseif ($h.OpenPorts.Count -gt 0) {
-            $rowClass = 'row-active'
+            'ok'
+        } else {
+            ''
         }
 
         @"
-            <tr class="$rowClass">
+            <tr>
                 <td>$($h.IP)</td>
                 <td>$hostname</td>
-                <td style="font-family:monospace;">$mac</td>
+                <td class="tk-mono">$mac</td>
                 <td>$portBadges</td>
-                <td style="text-align:right;">$rtt</td>
+                <td>$rtt</td>
+                $(if ($rowRisk) { "<td><span class=`"tk-badge-$rowRisk`">$(if ($rowRisk -eq 'err') {'Risk'} else {'Active'})</span></td>" } else { '<td></td>' })
             </tr>
 "@
     }
 
     $tableRows = $rows -join "`n"
 
-    $htmlReport = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>L.A.N.T.E.R.N. — Network Discovery Report</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a2e; color: #e0e0e0; font-size: 14px; min-height: 100vh; }
-    header { background: linear-gradient(135deg, #0f3460, #16213e); padding: 28px 40px; border-bottom: 3px solid #00d4ff; }
-    header h1 { font-size: 1.6em; color: #00d4ff; letter-spacing: 2px; margin-bottom: 4px; }
-    header p  { color: #8888bb; font-size: 0.9em; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
-    .cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-    .card {
-      flex: 1; min-width: 160px; background: #16213e; border-radius: 10px;
-      padding: 20px 24px; border-top: 3px solid #00d4ff; text-align: center;
-    }
-    .card.danger { border-top-color: #e74c3c; }
-    .card.warn   { border-top-color: #f39c12; }
-    .card.ok     { border-top-color: #2ecc71; }
-    .card-value  { font-size: 2.4em; font-weight: 700; color: #00d4ff; line-height: 1; }
-    .card.danger .card-value { color: #e74c3c; }
-    .card.warn   .card-value { color: #f39c12; }
-    .card.ok     .card-value { color: #2ecc71; }
-    .card-label  { font-size: 0.8em; color: #8888bb; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
-    section { background: #16213e; border-radius: 8px; margin-bottom: 24px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
-    section h2 { background: #0f3460; color: #00d4ff; padding: 14px 20px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 2px; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #0f3460; color: #00d4ff; padding: 10px 14px; text-align: left; font-size: 0.82em; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-    td { padding: 10px 14px; border-bottom: 1px solid #222244; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #1e2f56; }
-    tr.row-danger td { background: rgba(74,0,0,0.25); }
-    tr.row-danger:hover td { background: rgba(74,0,0,0.45); }
-    tr.row-active td { background: rgba(10,40,20,0.2); }
-    tr.row-active:hover td { background: rgba(10,40,20,0.4); }
-    .scan-note { padding: 14px 20px; color: #8888bb; font-size: 0.85em; font-style: italic; }
-    footer { text-align: center; padding: 24px; color: #444466; font-size: 0.8em; border-top: 1px solid #222244; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>&#9678; L.A.N.T.E.R.N.</h1>
-    <p>Locates &amp; Audits Network Topology, Enumerating Resources &amp; Nodes &mdash; Network Discovery &amp; Asset Inventory Tool</p>
-    <p style="margin-top:8px;">Generated: $generated &nbsp;|&nbsp; Host: $env:COMPUTERNAME &nbsp;|&nbsp; User: $env:USERNAME</p>
-  </header>
+    $rdpClass = if ($rdpExposed -gt 0) { 'err' } else { 'ok' }
+    $smbClass = if ($smbExposed -gt 0) { 'warn' } else { 'ok' }
 
-  <div class="container">
+    $subnet = Get-LocalSubnetPrefix
+    $subnetLabel = if ($subnet) { "$subnet.0/24" } else { 'Unknown' }
 
-    <div class="cards">
-      <div class="card ok">
-        <div class="card-value">$totalHosts</div>
-        <div class="card-label">Total Hosts</div>
-      </div>
-      <div class="card ok">
-        <div class="card-value">$totalHosts</div>
-        <div class="card-label">Responding</div>
-      </div>
-      <div class="card $(if($rdpExposed -gt 0){'danger'}else{'ok'})">
-        <div class="card-value">$rdpExposed</div>
-        <div class="card-label">RDP Exposed (3389)</div>
-      </div>
-      <div class="card $(if($smbExposed -gt 0){'warn'}else{'ok'})">
-        <div class="card-value">$smbExposed</div>
-        <div class="card-label">SMB Exposed (445)</div>
-      </div>
-    </div>
+    $htmlReport = (Get-TKHtmlHead `
+        -Title      'L.A.N.T.E.R.N. Network Discovery Report' `
+        -ScriptName 'L.A.N.T.E.R.N.' `
+        -Subtitle   'Network Discovery & Asset Inventory' `
+        -MetaItems  ([ordered]@{
+            'Generated' = $generated
+            'Subnet'    = $subnetLabel
+            'Host'      = $env:COMPUTERNAME
+        }) `
+        -NavItems   @('Host Inventory')) + @"
 
-    <section>
-      <h2>Host Inventory</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>IP Address</th>
-              <th>Hostname</th>
-              <th>MAC Address</th>
-              <th>Open Ports</th>
-              <th style="text-align:right;">Response Time</th>
-            </tr>
-          </thead>
-          <tbody>
-$tableRows
-          </tbody>
-        </table>
-      </div>
-      <div class="scan-note">
-        Port scan covers: 21 (FTP), 22 (SSH), 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 3389 (RDP), 5985 (WinRM), 8080, 8443.
-        Empty port column indicates no port scan has been performed for that host.
-      </div>
-    </section>
+<div class="tk-info-box">
+  <span class="tk-info-label">Note</span>
+  Port scan covers: 21 (FTP), 22 (SSH), 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 3389 (RDP), 5985 (WinRM), 8080, 8443.
+  An empty port column means no port scan has been performed yet for that host.
+</div>
 
+<div class="tk-summary-row">
+  <div class="tk-summary-card ok">
+    <div class="tk-summary-num">$totalHosts</div>
+    <div class="tk-summary-lbl">Total Hosts</div>
   </div>
+  <div class="tk-summary-card ok">
+    <div class="tk-summary-num">$totalHosts</div>
+    <div class="tk-summary-lbl">Responding</div>
+  </div>
+  <div class="tk-summary-card $rdpClass">
+    <div class="tk-summary-num">$rdpExposed</div>
+    <div class="tk-summary-lbl">RDP Exposed (3389)</div>
+  </div>
+  <div class="tk-summary-card $smbClass">
+    <div class="tk-summary-num">$smbExposed</div>
+    <div class="tk-summary-lbl">SMB Exposed (445)</div>
+  </div>
+</div>
 
-  <footer>
-    L.A.N.T.E.R.N. &mdash; Technician Toolkit &nbsp;|&nbsp; Report generated $generated
-  </footer>
-</body>
-</html>
-"@
+<div class="tk-section">
+  <div class="tk-section-title">Host Inventory</div>
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Hostname</th>
+        <th>MAC Address</th>
+        <th>Open Ports</th>
+        <th>Response Time</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+$tableRows
+    </tbody>
+  </table>
+</div>
+
+"@ + (Get-TKHtmlFoot -ScriptName 'L.A.N.T.E.R.N. v1.0')
 
     try {
-        $htmlReport | Out-File -FilePath $reportPath -Encoding UTF8 -Force
+        [System.IO.File]::WriteAllText($reportPath, $htmlReport, [System.Text.Encoding]::UTF8)
         Write-Host ("  [+] HTML report saved: {0}" -f $reportPath) -ForegroundColor $C.Success
     } catch {
         Write-Host ("  [-] Failed to write report: {0}" -f $_) -ForegroundColor $C.Error
