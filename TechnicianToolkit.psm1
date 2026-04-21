@@ -271,12 +271,12 @@ function Get-TKHtmlFoot {
     .PARAMETER ScriptName  Shown in footer right (e.g. 'O.R.A.C.L.E. v1.0').
     #>
     param([string]$ScriptName = 'TechnicianToolkit')
-    $ts   = Get-Date -Format 'yyyy-MM-dd HH:mm'
-    $host = $env:COMPUTERNAME
+    $ts       = Get-Date -Format 'yyyy-MM-dd HH:mm'
+    $hostName = $env:COMPUTERNAME
     return @"
 </div>
 <div class="tk-footer">
-  <span>Generated $ts on $host</span>
+  <span>Generated $ts on $hostName</span>
   <span>$(EscHtml $ScriptName)</span>
 </div>
 </body>

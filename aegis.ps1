@@ -18,7 +18,7 @@
     PS C:\> .\aegis.ps1 -OutputPath "C:\Reports\azure.html" -NoOpen
 
 .NOTES
-    Version  : 2.1
+    Version  : 2.2
     All required Az modules are installed automatically on first run.
 
     Tools Available
@@ -60,7 +60,34 @@ param(
     [switch]$Transcript
 )
 
-Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
+# ===========================
+# SHARED MODULE BOOTSTRAP
+# ===========================
+$TKModulePath = Join-Path $PSScriptRoot 'TechnicianToolkit.psm1'
+if (-not (Test-Path $TKModulePath)) {
+    $TKModuleUrl = 'https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/TechnicianToolkit.psm1'
+    Write-Host "  [*] Shared module TechnicianToolkit.psm1 not found - downloading from GitHub..." -ForegroundColor Magenta
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        Invoke-RestMethod -Uri $TKModuleUrl -OutFile $TKModulePath -ErrorAction Stop
+        $parseErrors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile($TKModulePath, [ref]$null, [ref]$parseErrors)
+        if ($parseErrors.Count -gt 0) {
+            Remove-Item -Path $TKModulePath -Force -ErrorAction SilentlyContinue
+            Write-Host "  [!!] Downloaded module failed syntax validation - file removed." -ForegroundColor Red
+            Write-Host "       $($parseErrors[0].Message)" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  [+] Module downloaded and verified." -ForegroundColor Green
+    } catch {
+        Write-Host "  [!!] Could not download TechnicianToolkit.psm1:" -ForegroundColor Red
+        Write-Host "       $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "       Place the module manually next to this script from:" -ForegroundColor Yellow
+        Write-Host "       $TKModuleUrl" -ForegroundColor Yellow
+        exit 1
+    }
+}
+Import-Module $TKModulePath -Force -ErrorAction Stop
 
 if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
@@ -741,14 +768,59 @@ if ($vms.Count -gt 0) {
 
 # -- Advisor -------------------------------------------------------------------
 
+# Schema-agnostic field extraction for Az.Advisor recommendations.
+# Az.Advisor 1.x used nested ShortDescription.Problem / ResourceId;
+# Az.Advisor 2.x flattened to ShortDescriptionProblem / ResourceMetadataResourceId;
+# some builds expose ResourceMetadata.ResourceId or ImpactedValue instead.
+function Get-AdvisorProblemText {
+    param($Rec)
+    foreach ($name in 'ShortDescriptionProblem','Description','Problem') {
+        $p = $Rec.PSObject.Properties[$name]
+        if ($p -and $p.Value -and "$($p.Value)".Trim()) { return "$($p.Value)" }
+    }
+    # Nested: ShortDescription.Problem
+    $sd = $Rec.PSObject.Properties['ShortDescription']
+    if ($sd -and $sd.Value -and $sd.Value.PSObject.Properties['Problem'] -and $sd.Value.Problem) {
+        return "$($sd.Value.Problem)"
+    }
+    return ''
+}
+function Get-AdvisorResourceId {
+    param($Rec)
+    foreach ($name in 'ResourceMetadataResourceId','ResourceId','ImpactedValue') {
+        $p = $Rec.PSObject.Properties[$name]
+        if ($p -and $p.Value -and "$($p.Value)".Trim()) { return "$($p.Value)" }
+    }
+    # Nested: ResourceMetadata.ResourceId
+    $rm = $Rec.PSObject.Properties['ResourceMetadata']
+    if ($rm -and $rm.Value -and $rm.Value.PSObject.Properties['ResourceId'] -and $rm.Value.ResourceId) {
+        return "$($rm.Value.ResourceId)"
+    }
+    return ''
+}
+
 $advisorSection = ''
 if ($advisorRecs.Count -gt 0) {
+    # One-shot diagnostic: if the first record gives us neither description nor
+    # resource id, the schema is unknown - surface the actual property names so
+    # we can extend the extractor rather than silently rendering blank cells.
+    $sample = $advisorRecs[0]
+    if (-not (Get-AdvisorProblemText $sample) -and -not (Get-AdvisorResourceId $sample)) {
+        $propList = ($sample.PSObject.Properties | ForEach-Object { $_.Name }) -join ', '
+        Write-Warn "Advisor recommendation schema not recognized. Properties on first record:"
+        Write-Info "  $propList"
+    }
+
     $advisorRows = [System.Text.StringBuilder]::new()
     foreach ($rec in ($advisorRecs | Sort-Object -Property @{E={switch($_.Impact){'High'{0}'Medium'{1}default{2}}}},Category | Select-Object -First 50)) {
         $impactClass = switch ($rec.Impact) { 'High' { 'tk-badge-err' } 'Medium' { 'tk-badge-warn' } default { 'tk-badge-ok' } }
-        $problem     = EscHtml ($rec.ShortDescription.Problem)
-        $resName     = EscHtml (($rec.ResourceId -split '/')[-1])
-        $cat         = EscHtml $rec.Category
+
+        $problemText    = Get-AdvisorProblemText $rec
+        $resourceIdText = Get-AdvisorResourceId  $rec
+
+        $problem = if ($problemText)    { EscHtml $problemText }                         else { '<span class="tk-badge-info">(no description)</span>' }
+        $resName = if ($resourceIdText) { EscHtml (($resourceIdText -split '/')[-1]) }   else { '-' }
+        $cat     = EscHtml $rec.Category
         [void]$advisorRows.Append("<tr><td>$problem</td><td>$cat</td><td><span class='$impactClass'>$(EscHtml $rec.Impact)</span></td><td>$resName</td></tr>`n")
     }
     $advisorSection = @"
@@ -988,7 +1060,7 @@ $htmlHead = Get-TKHtmlHead `
         'Recommendations'
     )
 
-$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.E.G.I.S. v2.0'
+$htmlFoot = Get-TKHtmlFoot -ScriptName 'A.E.G.I.S. v2.2'
 
 $html = $htmlHead + @"
 

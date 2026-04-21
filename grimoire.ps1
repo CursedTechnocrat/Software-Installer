@@ -63,7 +63,34 @@ param(
 # INITIALIZATION
 # ===========================
 
-Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
+# ===========================
+# SHARED MODULE BOOTSTRAP
+# ===========================
+$TKModulePath = Join-Path $PSScriptRoot 'TechnicianToolkit.psm1'
+if (-not (Test-Path $TKModulePath)) {
+    $TKModuleUrl = 'https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/TechnicianToolkit.psm1'
+    Write-Host "  [*] Shared module TechnicianToolkit.psm1 not found - downloading from GitHub..." -ForegroundColor Magenta
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        Invoke-RestMethod -Uri $TKModuleUrl -OutFile $TKModulePath -ErrorAction Stop
+        $parseErrors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile($TKModulePath, [ref]$null, [ref]$parseErrors)
+        if ($parseErrors.Count -gt 0) {
+            Remove-Item -Path $TKModulePath -Force -ErrorAction SilentlyContinue
+            Write-Host "  [!!] Downloaded module failed syntax validation - file removed." -ForegroundColor Red
+            Write-Host "       $($parseErrors[0].Message)" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  [+] Module downloaded and verified." -ForegroundColor Green
+    } catch {
+        Write-Host "  [!!] Could not download TechnicianToolkit.psm1:" -ForegroundColor Red
+        Write-Host "       $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "       Place the module manually next to this script from:" -ForegroundColor Yellow
+        Write-Host "       $TKModuleUrl" -ForegroundColor Yellow
+        exit 1
+    }
+}
+Import-Module $TKModulePath -Force -ErrorAction Stop
 Invoke-AdminElevation -ScriptFile $PSCommandPath
 
 $ScriptPath      = (Get-Location).Path
@@ -291,7 +318,7 @@ $Tools = @(
         Key         = '40'
         Name        = 'A.E.G.I.S.'
         File        = 'aegis.ps1'
-        Version     = '2.1'
+        Version     = '2.2'
         Description = 'Azure environment assessment  -  security posture, RBAC, backup coverage, HTML report'
         Color       = 'Cyan'
         Category    = 'Cloud & Identity'
