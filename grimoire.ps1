@@ -13,7 +13,7 @@
     PS C:\> .\grimoire.ps1 -WhatIf   # Launch tools in dry-run mode (passed through to each tool that supports it)
 
 .NOTES
-    Version : 1.2
+    Version : 1.3
 
     Tools Available
     ─────────────────────────────────────────────────────────────────
@@ -38,6 +38,7 @@
     S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
     A.U.G.U.R.             — Disk wear & health — SMART status, physical disk reliability, HTML report
     C.L.E.A.N.S.E.         — Disk cleanup — temp files, Windows Update cache, browser caches, Recycle Bin
+    S.C.R.Y.E.R.           — Unified diagnostic report — system, users, disks, SMART, services in one HTML
     R.E.L.I.C.             — Certificate health & SSL expiry monitoring
     H.E.A.R.T.H.           — Toolkit setup & configuration wizard
 
@@ -90,6 +91,15 @@ $CategoryOrder = @(
     'Cloud & Identity'
     'Data & Migration'
 )
+
+$CategoryKeys = [ordered]@{
+    'D' = 'Deployment & Onboarding'
+    'R' = 'Diagnostics & Reporting'
+    'S' = 'Security'
+    'N' = 'Network & Remote'
+    'C' = 'Cloud & Identity'
+    'M' = 'Data & Migration'
+}
 
 $Tools = @(
     # ── Deployment & Onboarding (1–9) ───────────────────────────────
@@ -335,7 +345,7 @@ function Show-Banner {
     Write-Host ""
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
     $toolCount = $Tools.Count
-    Write-Host "  Technician Toolkit  |  Hub v1.2  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
+    Write-Host "  Technician Toolkit  |  Hub v1.3  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
     if ($WhatIf) {
         Write-Host ""
@@ -349,27 +359,43 @@ function Show-Banner {
 # ===========================
 
 function Show-Menu {
-    Write-Host "  Select a tool to launch:" -ForegroundColor $ColorSchema.Header
+    Write-Host "  Select a category:" -ForegroundColor $ColorSchema.Header
     Write-Host ""
 
-    foreach ($category in $CategoryOrder) {
-        $categoryTools = $Tools | Where-Object { $_.Category -eq $category }
-        if (-not $categoryTools) { continue }
+    foreach ($key in $CategoryKeys.Keys) {
+        $cat   = $CategoryKeys[$key]
+        $count = ($Tools | Where-Object { $_.Category -eq $cat }).Count
+        Write-Host "  [$key]  $cat" -NoNewline -ForegroundColor $ColorSchema.Menu
+        Write-Host "  ($count tools)" -ForegroundColor $ColorSchema.Info
+    }
 
-        Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
-        Write-Host "  $category" -ForegroundColor $ColorSchema.Header
-        Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host ""
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host "  [Q]  Exit GRIMOIRE" -ForegroundColor $ColorSchema.Warning
+    Write-Host ""
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host ""
+}
+
+function Show-CategoryMenu {
+    param([string]$Category)
+
+    [Console]::Clear()
+    Write-Host ""
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host "  GRIMOIRE  /  $Category" -ForegroundColor $ColorSchema.Header
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host ""
+
+    foreach ($tool in ($Tools | Where-Object { $_.Category -eq $Category })) {
+        Write-Host "  [$($tool.Key)]  $($tool.Name)  " -NoNewline -ForegroundColor $tool.Color
+        Write-Host "v$($tool.Version)" -ForegroundColor $ColorSchema.Info
+        Write-Host "       $($tool.Description)" -ForegroundColor $ColorSchema.Info
         Write-Host ""
-
-        foreach ($tool in $categoryTools) {
-            Write-Host "  [$($tool.Key)]  $($tool.Name)  " -NoNewline -ForegroundColor $tool.Color
-            Write-Host "v$($tool.Version)" -ForegroundColor $ColorSchema.Info
-            Write-Host "       $($tool.Description)" -ForegroundColor $ColorSchema.Info
-            Write-Host ""
-        }
     }
 
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
+    Write-Host "  [B]  Back to categories" -ForegroundColor $ColorSchema.Warning
     Write-Host "  [Q]  Exit GRIMOIRE" -ForegroundColor $ColorSchema.Warning
     Write-Host ""
     Write-Host ("  " + ("-" * 62)) -ForegroundColor $ColorSchema.Header
@@ -461,32 +487,63 @@ function Pause-ForKey {
 # MAIN LOOP
 # ===========================
 
+$exitGrimoire = $false
+
 do {
     Show-Banner
     Show-Menu
 
-    Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Menu
-    $Selection = (Read-Host).Trim().ToUpper()
+    Write-Host -NoNewline "  Enter category: " -ForegroundColor $ColorSchema.Menu
+    $CatSelection = (Read-Host).Trim().ToUpper()
 
-    $MatchedTool = $Tools | Where-Object { $_.Key -eq $Selection }
-
-    if ($MatchedTool) {
-        Invoke-Tool -Tool $MatchedTool
-    }
-    elseif ($Selection -eq 'Q') {
-        [Console]::Clear()
-        Write-Host ""
-        Write-Host "  Closing GRIMOIRE. Stay arcane." -ForegroundColor $ColorSchema.Header
-        Write-Host ""
+    if ($CatSelection -eq 'Q') {
+        $exitGrimoire = $true
         break
     }
-    else {
+
+    $SelectedCategory = $CategoryKeys[$CatSelection]
+
+    if (-not $SelectedCategory) {
         Write-Host ""
-        Write-Host "  [!!] Invalid selection. Enter a tool number or Q to quit." -ForegroundColor $ColorSchema.Warning
+        Write-Host "  [!!] Invalid selection. Enter a category letter or Q to quit." -ForegroundColor $ColorSchema.Warning
         Start-Sleep -Seconds 1
+        continue
     }
 
-} while ($true)
+    $backToMain = $false
+    do {
+        Show-CategoryMenu -Category $SelectedCategory
+
+        Write-Host -NoNewline "  Enter selection: " -ForegroundColor $ColorSchema.Menu
+        $Selection = (Read-Host).Trim().ToUpper()
+
+        if ($Selection -eq 'Q') {
+            $exitGrimoire = $true
+            $backToMain   = $true
+        }
+        elseif ($Selection -eq 'B') {
+            $backToMain = $true
+        }
+        else {
+            $MatchedTool = $Tools | Where-Object { $_.Key -eq $Selection -and $_.Category -eq $SelectedCategory }
+            if ($MatchedTool) {
+                Invoke-Tool -Tool $MatchedTool
+            }
+            else {
+                Write-Host ""
+                Write-Host "  [!!] Invalid selection. Enter a tool number, [B] to go back, or [Q] to quit." -ForegroundColor $ColorSchema.Warning
+                Start-Sleep -Seconds 1
+            }
+        }
+
+    } while (-not $backToMain)
+
+} while (-not $exitGrimoire)
+
+[Console]::Clear()
+Write-Host ""
+Write-Host "  Closing GRIMOIRE. Stay arcane." -ForegroundColor $ColorSchema.Header
+Write-Host ""
 
 # ===========================
 # CLEANUP
