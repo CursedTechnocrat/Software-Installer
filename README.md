@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, PHANTOM, CIPHER, ARCHIVE, SPECTER, RUNEPRESS, LEYLINE, FORGE, AEGIS, BASTION, LANTERN, THRESHOLD, DWARF, PURGE, VAULT, SENTINEL, RELIC, HEARTH) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, PHANTOM, CIPHER, ARCHIVE, SPECTER, RUNEPRESS, LEYLINE, FORGE, AEGIS, BASTION, LANTERN, THRESHOLD, AUGUR, CLEANSE, VAULT, SENTINEL, RELIC, HEARTH) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -60,43 +60,43 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 
 | # | Script | Acronym | Purpose |
 |---|--------|---------|---------|
-| 7 | **oracle.ps1** | **O.R.A.C.L.E.** — Observes, Reports & Audits Computer Logs & Environments | System diagnostics, health assessment, and HTML report generation |
-| 8 | **ward.ps1** | **W.A.R.D.** — Watches Accounts, Reviews Roles & Detects anomalies | Local user account audit with role, last logon, flags, and HTML report |
-| 9 | **threshold.ps1** | **T.H.R.E.S.H.O.L.D.** — Tests Hardware Reliability, Evaluates Storage Health, & Optimizes/Logs Disk data | Disk space monitor — volume usage, low-space alerts, temp cleanup, old profile detection, HTML report |
-| 10 | **sentinel.ps1** | **S.E.N.T.I.N.E.L.** — Scans & Evaluates services, Networks, Tasks, Infrastructure, Node Events & Logs | Service, task & event log monitor — health check local or remote machine, HTML report |
-| 22 | **dwarf.ps1** | **D.W.A.R.F.** — Detects Wear, Audits Reliability & Forecasts Failures | Physical disk health — SMART status, wear prediction, failure forecast, hardware reliability, HTML report |
-| 23 | **purge.ps1** | **P.U.R.G.E.** — Purges Unwanted Remnants, Garbage & Ephemeral data | Disk cleanup — user & system temp, Windows Update cache, browser caches, Recycle Bin |
+| 10 | **oracle.ps1** | **O.R.A.C.L.E.** — Observes, Reports & Audits Computer Logs & Environments | System diagnostics, health assessment, and HTML report generation |
+| 11 | **ward.ps1** | **W.A.R.D.** — Watches Accounts, Reviews Roles & Detects anomalies | Local user account audit with role, last logon, flags, and HTML report |
+| 12 | **threshold.ps1** | **T.H.R.E.S.H.O.L.D.** — Tests Hardware Reliability, Evaluates Storage Health, & Optimizes/Logs Disk data | Disk space monitor — volume usage, low-space alerts, temp cleanup, old profile detection, HTML report |
+| 13 | **sentinel.ps1** | **S.E.N.T.I.N.E.L.** — Scans & Evaluates services, Networks, Tasks, Infrastructure, Node Events & Logs | Service, task & event log monitor — health check local or remote machine, HTML report |
+| 14 | **augur.ps1** | **A.U.G.U.R.** — Analyzes, Uncovers & Gauges Unit Reliability | Physical disk health — SMART status, wear prediction, failure forecast, hardware reliability, HTML report |
+| 15 | **cleanse.ps1** | **C.L.E.A.N.S.E.** — Cleans Leftover, Ephemeral And Neglected System Entries | Disk cleanup — user & system temp, Windows Update cache, browser caches, Recycle Bin |
 
 ### Security
 
 | # | Script | Acronym | Purpose |
 |---|--------|---------|---------|
-| 11 | **cipher.ps1** | **C.I.P.H.E.R.** — Configures & Implements Policy-based Hardware Encryption & Recovery | BitLocker drive encryption management — enable, disable, key backup |
-| 12 | **sigil.ps1** | **S.I.G.I.L.** — Secures Infrastructure: Governs via Integrated Lockdown | Security baseline enforcement — telemetry, UAC, firewall, audit policy, password policy |
-| 13 | **bastion.ps1** | **B.A.S.T.I.O.N.** — Bulk Active-directory Stewardship: Tasks, Identity, Operations & Namespacing | Active Directory user & group management — unlock, reset, lockout forensics, stale & expiry reports |
-| 14 | **relic.ps1** | **R.E.L.I.C.** — Reviews & Enumerates Latent Identity Certificates | Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report |
+| 20 | **cipher.ps1** | **C.I.P.H.E.R.** — Configures & Implements Policy-based Hardware Encryption & Recovery | BitLocker drive encryption management — enable, disable, key backup |
+| 21 | **sigil.ps1** | **S.I.G.I.L.** — Secures Infrastructure: Governs via Integrated Lockdown | Security baseline enforcement — telemetry, UAC, firewall, audit policy, password policy |
+| 22 | **bastion.ps1** | **B.A.S.T.I.O.N.** — Bulk Active-directory Stewardship: Tasks, Identity, Operations & Namespacing | Active Directory user & group management — unlock, reset, lockout forensics, stale & expiry reports |
+| 23 | **relic.ps1** | **R.E.L.I.C.** — Reviews & Enumerates Latent Identity Certificates | Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report |
 
 ### Network & Remote
 
 | # | Script | Acronym | Purpose |
 |---|--------|---------|---------|
-| 15 | **leyline.ps1** | **L.E.Y.L.I.N.E.** — Locates, Examines & Yields Latency, Infrastructure, Network & Endpoints | Network diagnostics & remediation — adapters, ping, DNS, port tests, IP renew, stack reset |
-| 16 | **specter.ps1** | **S.P.E.C.T.E.R.** — Sends PowerShell Execution Commands To External Remotes | Remote machine execution via WinRM — run toolkit tools without physical access |
-| 17 | **lantern.ps1** | **L.A.N.T.E.R.N.** — Locates & Audits Network Topology, Enumerating Resources & Nodes | Network discovery — subnet ping sweep, DNS lookup, MAC addresses, port scan, HTML report |
+| 30 | **leyline.ps1** | **L.E.Y.L.I.N.E.** — Locates, Examines & Yields Latency, Infrastructure, Network & Endpoints | Network diagnostics & remediation — adapters, ping, DNS, port tests, IP renew, stack reset |
+| 31 | **specter.ps1** | **S.P.E.C.T.E.R.** — Sends PowerShell Execution Commands To External Remotes | Remote machine execution via WinRM — run toolkit tools without physical access |
+| 32 | **lantern.ps1** | **L.A.N.T.E.R.N.** — Locates & Audits Network Topology, Enumerating Resources & Nodes | Network discovery — subnet ping sweep, DNS lookup, MAC addresses, port scan, HTML report |
 
 ### Cloud & Identity
 
 | # | Script | Acronym | Purpose |
 |---|--------|---------|---------|
-| 18 | **aegis.ps1** | **A.E.G.I.S.** — Azure Environment & Governance Inspection System | Azure subscription assessment — security posture, RBAC, backup coverage, Advisor alerts, HTML report |
-| 19 | **vault.ps1** | **V.A.U.L.T.** — Validates Assets & User License Tracking | Microsoft 365 license & mailbox audit — license assignments, MFA status, shared mailboxes, HTML report |
+| 40 | **aegis.ps1** | **A.E.G.I.S.** — Azure Environment & Governance Inspection System | Azure subscription assessment — security posture, RBAC, backup coverage, Advisor alerts, HTML report |
+| 41 | **vault.ps1** | **V.A.U.L.T.** — Validates Assets & User License Tracking | Microsoft 365 license & mailbox audit — license assignments, MFA status, shared mailboxes, HTML report |
 
 ### Data & Migration
 
 | # | Script | Acronym | Purpose |
 |---|--------|---------|---------|
-| 20 | **phantom.ps1** | **P.H.A.N.T.O.M.** — Portable Home Archive: Navigates & Transfers Objects to new Machine | Profile migration and data transfer between machines or profiles |
-| 21 | **archive.ps1** | **A.R.C.H.I.V.E.** — Automated Repository Compressing & Housing Important Volume Exports | Pre-reimaging profile backup — ZIP to local path or network share |
+| 50 | **phantom.ps1** | **P.H.A.N.T.O.M.** — Portable Home Archive: Navigates & Transfers Objects to new Machine | Profile migration and data transfer between machines or profiles |
+| 51 | **archive.ps1** | **A.R.C.H.I.V.E.** — Automated Repository Compressing & Housing Important Volume Exports | Pre-reimaging profile backup — ZIP to local path or network share |
 
 ---
 
@@ -254,7 +254,7 @@ Audits Windows services, scheduled tasks, and recent event log errors — locall
 
 ---
 
-### D.W.A.R.F.
+### A.U.G.U.R.
 
 Inspects every physical disk in the system for hardware-level reliability issues and SMART failure prediction.
 
@@ -266,12 +266,12 @@ Inspects every physical disk in the system for hardware-level reliability issues
 - Dark-themed HTML report with color-coded disk status badges
 - `-Unattended` for silent scan and HTML export
 
-> **DWARF vs THRESHOLD:** DWARF answers "is this drive about to fail?" (SMART/hardware).
+> **AUGUR vs THRESHOLD:** AUGUR answers "is this drive about to fail?" (SMART/hardware).
 > THRESHOLD answers "is this drive running out of space?" (volume usage/cleanup).
 
 ---
 
-### P.U.R.G.E.
+### C.L.E.A.N.S.E.
 
 Frees disk space by cleaning common junk accumulation points across the system.
 
@@ -566,11 +566,11 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\threshold.
 # S.E.N.T.I.N.E.L. — Service, task & event log monitor
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\sentinel.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/sentinel.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
-# D.W.A.R.F. — Physical disk health & SMART status
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\dwarf.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/dwarf.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+# A.U.G.U.R. — Physical disk health & SMART status
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\augur.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/augur.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
-# P.U.R.G.E. — Disk cleanup (temp, update cache, browser caches, Recycle Bin)
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/purge.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+# C.L.E.A.N.S.E. — Disk cleanup (temp, update cache, browser caches, Recycle Bin)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\cleanse.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/cleanse.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
 # ── Security ─────────────────────────────────────────────────────────────────
 
@@ -644,8 +644,8 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\ward.ps1          # User account audit and HTML report
 .\threshold.ps1     # Disk space monitor — volume usage, low-space alerts, cleanup
 .\sentinel.ps1      # Service, task, and event log monitor
-.\dwarf.ps1         # Physical disk health — SMART status, wear prediction, failure forecast
-.\purge.ps1         # Disk cleanup — temp files, update cache, browser caches, Recycle Bin
+.\augur.ps1         # Physical disk health — SMART status, wear prediction, failure forecast
+.\cleanse.ps1       # Disk cleanup — temp files, update cache, browser caches, Recycle Bin
 
 # Security
 .\cipher.ps1        # BitLocker drive encryption management
@@ -698,8 +698,8 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **ward.ps1** | None — audit runs automatically; stale threshold is 90 days (editable in script) |
 | **threshold.ps1** | None — thresholds are Warning < 15% free, Critical < 5% free (editable in script); old profile threshold is 90 days |
 | **sentinel.ps1** | None — critical service list editable in script; `-Target` accepts any WinRM-reachable hostname |
-| **dwarf.ps1** | None — scans all physical disks automatically; `-Unattended` for silent HTML export |
-| **purge.ps1** | None — categories selected interactively or all cleaned with `-Unattended`; `-WhatIf` for dry run |
+| **augur.ps1** | None — scans all physical disks automatically; `-Unattended` for silent HTML export |
+| **cleanse.ps1** | None — categories selected interactively or all cleaned with `-Unattended`; `-WhatIf` for dry run |
 | **cipher.ps1** | None — drive and action selected interactively at runtime |
 | **sigil.ps1** | None — categories selected interactively; screensaver timeout editable in script (default 600 s) |
 | **bastion.ps1** | None — user search and action selected interactively; stale threshold is 90 days (editable in script) |
@@ -742,8 +742,8 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **vault.ps1** | Log directory — `VAULT_<timestamp>.html` (combined license & mailbox report) |
 | **phantom.ps1** | Script directory — `PHANTOM_MigrationLog_<timestamp>.csv` |
 | **archive.ps1** | Script directory — `ARCHIVE_Log_<timestamp>.csv`; manifest inside ZIP |
-| **dwarf.ps1** | Log directory — `DWARF_<timestamp>.html` (dark-themed HTML report) |
-| **purge.ps1** | Console only — cleanup summary printed at completion; no log file |
+| **augur.ps1** | Log directory — `AUGUR_<timestamp>.html` (dark-themed HTML report) |
+| **cleanse.ps1** | Console only — cleanup summary printed at completion; no log file |
 
 ---
 
