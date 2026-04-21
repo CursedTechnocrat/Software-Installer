@@ -260,11 +260,18 @@ Describe 'GRIMOIRE registry integrity' {
 # and CHANGELOG (which documents the rename) are exempt.
 # ─────────────────────────────────────────────────────────────────────────────
 Describe 'Legacy tool names must not reappear' {
-    $legacyAcronyms = @(
-        'O.R.A.C.L.E.', 'S.E.N.T.I.N.E.L.', 'B.A.S.T.I.O.N.',
-        'V.A.U.L.T.',   'P.H.A.N.T.O.M.',   'S.P.E.C.T.E.R.',
-        'A.E.G.I.S.',   'R.E.L.I.C.'
-    )
+    # Pester 5 scoping: the pattern list must be defined in BeforeAll so it
+    # exists at Run time when each It block executes. Variables assigned in
+    # the Describe body only exist at Discovery time.
+    BeforeAll {
+        $script:LegacyAcronyms = @(
+            'O.R.A.C.L.E.', 'S.E.N.T.I.N.E.L.', 'B.A.S.T.I.O.N.',
+            'V.A.U.L.T.',   'P.H.A.N.T.O.M.',   'S.P.E.C.T.E.R.',
+            'A.E.G.I.S.',   'R.E.L.I.C.'
+        )
+    }
+
+    # Discovery time: enumerate files as -ForEach test cases
     $legacyStubs = @(
         'oracle.ps1','sentinel.ps1','bastion.ps1','vault.ps1',
         'phantom.ps1','specter.ps1','aegis.ps1','relic.ps1'
@@ -282,7 +289,7 @@ Describe 'Legacy tool names must not reappear' {
         ForEach-Object { @{ Name = $_.Name; FullName = $_.FullName } }
 
     It '<Name> contains no retired dotted acronyms' -ForEach $files {
-        $hits = Select-String -Path $FullName -SimpleMatch -Pattern $legacyAcronyms -ErrorAction SilentlyContinue
+        $hits = Select-String -Path $FullName -SimpleMatch -Pattern $script:LegacyAcronyms -ErrorAction SilentlyContinue
         $hits | Should -BeNullOrEmpty -Because "retired acronym found in $Name"
     }
 }
