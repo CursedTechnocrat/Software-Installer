@@ -1,6 +1,6 @@
-﻿<#
+<#
 .SYNOPSIS
-    P.U.R.G.E. — Purges Unwanted Remnants, Garbage & Ephemeral data
+    C.L.E.A.N.S.E. — Cleans Leftover, Ephemeral And Neglected System Entries
     Disk Cleanup Tool for PowerShell 5.1+
 
 .DESCRIPTION
@@ -10,20 +10,20 @@
     category and reports total freed space after cleanup.
 
 .USAGE
-    PS C:\> .\purge.ps1                    # Must be run as Administrator
-    PS C:\> .\purge.ps1 -Unattended        # Silent mode — cleans all categories, no prompts
-    PS C:\> .\purge.ps1 -WhatIf            # Preview what would be cleaned, without deleting anything
+    PS C:\> .\cleanse.ps1                    # Must be run as Administrator
+    PS C:\> .\cleanse.ps1 -Unattended        # Silent mode — cleans all categories, no prompts
+    PS C:\> .\cleanse.ps1 -WhatIf            # Preview what would be cleaned, without deleting anything
 
 .NOTES
-    Version : 1.1
+    Version : 1.2
 
     Tools Available
     ─────────────────────────────────────────────────────────────────
     G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
     O.R.A.C.L.E.           — System diagnostics & HTML report generation
     A.R.C.H.I.V.E.         — Pre-reimaging profile backup
-    D.W.A.R.F.             — Disk wear & health assessment, SMART status
-    P.U.R.G.E.             — Disk cleanup — temp, update cache, browser caches
+    A.U.G.U.R.             — Disk wear & health assessment, SMART status
+    C.L.E.A.N.S.E.         — Disk cleanup — temp, update cache, browser caches
 
     Color Schema
     ─────────────────────────────────────────
@@ -62,19 +62,19 @@ $ColorSchema = @{
 # BANNER
 # ─────────────────────────────────────────────────────────────────────────────
 
-function Show-PurgeBanner {
+function Show-CleanseBanner {
     if (-not $Unattended) { Clear-Host }
     Write-Host @"
 
-  ██████╗ ██╗   ██╗██████╗  ██████╗ ███████╗
-  ██╔══██╗██║   ██║██╔══██╗██╔════╝ ██╔════╝
-  ██████╔╝██║   ██║██████╔╝██║  ███╗█████╗
-  ██╔═══╝ ██║   ██║██╔══██╗██║   ██║██╔══╝
-  ██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
-  ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+   ██████╗██╗     ███████╗ █████╗ ███╗   ██╗███████╗███████╗
+  ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██╔════╝██╔════╝
+  ██║     ██║     █████╗  ███████║██╔██╗ ██║███████╗█████╗
+  ██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║╚════██║██╔══╝
+  ╚██████╗███████╗███████╗██║  ██║██║ ╚████║███████║███████╗
+   ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝
 
 "@ -ForegroundColor Cyan
-    Write-Host "    P.U.R.G.E. — Purges Unwanted Remnants, Garbage & Ephemeral data" -ForegroundColor Cyan
+    Write-Host "    C.L.E.A.N.S.E. — Cleans Leftover, Ephemeral And Neglected System Entries" -ForegroundColor Cyan
     Write-Host "    Disk Cleanup Tool" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -171,7 +171,7 @@ function Get-BrowserCachePaths {
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
-if (-not $Unattended) { Show-PurgeBanner }
+if (-not $Unattended) { Show-CleanseBanner }
 
 Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host "  SCANNING CLEANUP TARGETS" -ForegroundColor $ColorSchema.Header
@@ -274,7 +274,7 @@ Run-Category -ShouldRun ($runAll -or $selections -contains '5') -Label "Browser 
 
 Write-Host ""
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
-Write-Host "  PURGE COMPLETE" -ForegroundColor $ColorSchema.Header
+Write-Host "  CLEANSE COMPLETE" -ForegroundColor $ColorSchema.Header
 Write-Host ("  " + ("═" * 62)) -ForegroundColor $ColorSchema.Header
 Write-Host ""
 if ($WhatIf) {

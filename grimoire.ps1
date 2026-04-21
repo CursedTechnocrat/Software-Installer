@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     G.R.I.M.O.I.R.E. — General Repository for Integrated Management and Orchestration of IT Resources & Executables
     Technician Toolkit Hub for PowerShell 5.1+
@@ -13,7 +13,7 @@
     PS C:\> .\grimoire.ps1 -WhatIf   # Launch tools in dry-run mode (passed through to each tool that supports it)
 
 .NOTES
-    Version : 1.1
+    Version : 1.2
 
     Tools Available
     ─────────────────────────────────────────────────────────────────
@@ -36,8 +36,8 @@
     T.H.R.E.S.H.O.L.D.     — Disk & storage health monitoring
     V.A.U.L.T.             — M365 license & mailbox auditing
     S.E.N.T.I.N.E.L.       — Service & scheduled task monitoring
-    D.W.A.R.F.             — Disk wear & health — SMART status, physical disk reliability, HTML report
-    P.U.R.G.E.             — Disk cleanup — temp files, Windows Update cache, browser caches, Recycle Bin
+    A.U.G.U.R.             — Disk wear & health — SMART status, physical disk reliability, HTML report
+    C.L.E.A.N.S.E.         — Disk cleanup — temp files, Windows Update cache, browser caches, Recycle Bin
     R.E.L.I.C.             — Certificate health & SSL expiry monitoring
     H.E.A.R.T.H.           — Toolkit setup & configuration wizard
 
@@ -92,7 +92,7 @@ $CategoryOrder = @(
 )
 
 $Tools = @(
-    # ── Deployment & Onboarding ──────────────────────────────────────
+    # ── Deployment & Onboarding (1–9) ───────────────────────────────
     [PSCustomObject]@{
         Key         = '1'
         Name        = 'C.O.V.E.N.A.N.T.'
@@ -147,9 +147,9 @@ $Tools = @(
         Color       = 'White'
         Category    = 'Deployment & Onboarding'
     },
-    # ── Diagnostics & Reporting ──────────────────────────────────────
+    # ── Diagnostics & Reporting (10–19) ─────────────────────────────
     [PSCustomObject]@{
-        Key         = '7'
+        Key         = '10'
         Name        = 'O.R.A.C.L.E.'
         File        = 'oracle.ps1'
         Version     = '1.0'
@@ -158,7 +158,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '8'
+        Key         = '11'
         Name        = 'W.A.R.D.'
         File        = 'ward.ps1'
         Version     = '1.0'
@@ -167,7 +167,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '9'
+        Key         = '12'
         Name        = 'T.H.R.E.S.H.O.L.D.'
         File        = 'threshold.ps1'
         Version     = '1.0'
@@ -176,7 +176,7 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '10'
+        Key         = '13'
         Name        = 'S.E.N.T.I.N.E.L.'
         File        = 'sentinel.ps1'
         Version     = '1.0'
@@ -185,26 +185,26 @@ $Tools = @(
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '22'
-        Name        = 'D.W.A.R.F.'
-        File        = 'dwarf.ps1'
-        Version     = '1.0'
+        Key         = '14'
+        Name        = 'A.U.G.U.R.'
+        File        = 'augur.ps1'
+        Version     = '1.1'
         Description = 'Disk wear & health — SMART status, physical disk reliability, HTML report'
         Color       = 'Yellow'
         Category    = 'Diagnostics & Reporting'
     },
     [PSCustomObject]@{
-        Key         = '23'
-        Name        = 'P.U.R.G.E.'
-        File        = 'purge.ps1'
-        Version     = '1.1'
+        Key         = '15'
+        Name        = 'C.L.E.A.N.S.E.'
+        File        = 'cleanse.ps1'
+        Version     = '1.2'
         Description = 'Disk cleanup — temp files, Windows Update cache, browser caches, Recycle Bin'
         Color       = 'Magenta'
         Category    = 'Diagnostics & Reporting'
     },
-    # ── Security ─────────────────────────────────────────────────────
+    # ── Security (20–29) ─────────────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '11'
+        Key         = '20'
         Name        = 'C.I.P.H.E.R.'
         File        = 'cipher.ps1'
         Version     = '1.0'
@@ -213,7 +213,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '12'
+        Key         = '21'
         Name        = 'S.I.G.I.L.'
         File        = 'sigil.ps1'
         Version     = '1.0'
@@ -222,7 +222,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '13'
+        Key         = '22'
         Name        = 'B.A.S.T.I.O.N.'
         File        = 'bastion.ps1'
         Version     = '1.0'
@@ -231,7 +231,7 @@ $Tools = @(
         Category    = 'Security'
     },
     [PSCustomObject]@{
-        Key         = '14'
+        Key         = '23'
         Name        = 'R.E.L.I.C.'
         File        = 'relic.ps1'
         Version     = '1.0'
@@ -239,9 +239,9 @@ $Tools = @(
         Color       = 'Yellow'
         Category    = 'Security'
     },
-    # ── Network & Remote ─────────────────────────────────────────────
+    # ── Network & Remote (30–39) ─────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '15'
+        Key         = '30'
         Name        = 'L.E.Y.L.I.N.E.'
         File        = 'leyline.ps1'
         Version     = '1.0'
@@ -250,7 +250,7 @@ $Tools = @(
         Category    = 'Network & Remote'
     },
     [PSCustomObject]@{
-        Key         = '16'
+        Key         = '31'
         Name        = 'S.P.E.C.T.E.R.'
         File        = 'specter.ps1'
         Version     = '1.0'
@@ -259,7 +259,7 @@ $Tools = @(
         Category    = 'Network & Remote'
     },
     [PSCustomObject]@{
-        Key         = '17'
+        Key         = '32'
         Name        = 'L.A.N.T.E.R.N.'
         File        = 'lantern.ps1'
         Version     = '1.0'
@@ -267,9 +267,9 @@ $Tools = @(
         Color       = 'Cyan'
         Category    = 'Network & Remote'
     },
-    # ── Cloud & Identity ─────────────────────────────────────────────
+    # ── Cloud & Identity (40–49) ─────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '18'
+        Key         = '40'
         Name        = 'A.E.G.I.S.'
         File        = 'aegis.ps1'
         Version     = '1.0'
@@ -278,7 +278,7 @@ $Tools = @(
         Category    = 'Cloud & Identity'
     },
     [PSCustomObject]@{
-        Key         = '19'
+        Key         = '41'
         Name        = 'V.A.U.L.T.'
         File        = 'vault.ps1'
         Version     = '1.0'
@@ -286,9 +286,9 @@ $Tools = @(
         Color       = 'Green'
         Category    = 'Cloud & Identity'
     },
-    # ── Data & Migration ─────────────────────────────────────────────
+    # ── Data & Migration (50–59) ─────────────────────────────────────
     [PSCustomObject]@{
-        Key         = '20'
+        Key         = '50'
         Name        = 'P.H.A.N.T.O.M.'
         File        = 'phantom.ps1'
         Version     = '1.1'
@@ -297,7 +297,7 @@ $Tools = @(
         Category    = 'Data & Migration'
     },
     [PSCustomObject]@{
-        Key         = '21'
+        Key         = '51'
         Name        = 'A.R.C.H.I.V.E.'
         File        = 'archive.ps1'
         Version     = '1.0'
@@ -326,7 +326,7 @@ function Show-Banner {
     Write-Host ""
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
     $toolCount = $Tools.Count
-    Write-Host "  Technician Toolkit  |  Hub v1.1  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
+    Write-Host "  Technician Toolkit  |  Hub v1.2  |  $toolCount tools  |  Run as Administrator" -ForegroundColor $ColorSchema.Info
     Write-Host ("  " + ("─" * 62)) -ForegroundColor $ColorSchema.Header
     if ($WhatIf) {
         Write-Host ""

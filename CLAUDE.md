@@ -86,7 +86,7 @@ $ColorSchema = @{
 ### Parameter Conventions
 
 - All interactive tools expose `[switch]$Unattended` — skips prompts, runs defaults.
-- Destructive tools (PHANTOM, PURGE) also expose `[switch]$WhatIf` — previews actions without
+- Destructive tools (PHANTOM, CLEANSE) also expose `[switch]$WhatIf` — previews actions without
   executing them. GRIMOIRE auto-detects and passes `-WhatIf` to any tool that declares it.
 - Tools that write logs expose `[switch]$Transcript`.
 
@@ -122,13 +122,13 @@ updates the file.
 4. Add the script's filename to the Quick Launch and Usage sections in `README.md`.
 5. The syntax-validation and module-import compliance Pester tests will cover it automatically.
 
-## Tool Distinctions: THRESHOLD vs DWARF
+## Tool Distinctions: THRESHOLD vs AUGUR
 
 Both tools deal with disk health but cover different layers:
 
 | Tool | Focus |
 |------|-------|
 | **T.H.R.E.S.H.O.L.D.** | Volume space monitoring — used/free space, low-space alerts, temp cleanup, old profile detection |
-| **D.W.A.R.F.** | Physical hardware health — SMART status, wear prediction, failure forecasting, bus/media type |
+| **A.U.G.U.R.** | Physical hardware health — SMART status, wear prediction, failure forecasting, bus/media type |
 
-Run THRESHOLD for "is this drive running out of space?"; run DWARF for "is this drive about to die?".
+Run THRESHOLD for "is this drive running out of space?"; run AUGUR for "is this drive about to die?".
