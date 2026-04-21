@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    A.E.G.I.S. — Azure Environment & Governance Inspection System
+    A.E.G.I.S.  -  Azure Environment & Governance Inspection System
     Azure subscription assessment and HTML report generator for PowerShell 5.1+
 
 .DESCRIPTION
@@ -22,27 +22,27 @@
     All required Az modules are installed automatically on first run.
 
     Tools Available
-    ─────────────────────────────────────────────────────────────────
-    G.R.I.M.O.I.R.E.       — Technician Toolkit hub and central launcher
-    R.U.N.E.P.R.E.S.S.     — Printer driver installation & configuration
-    R.E.S.T.O.R.A.T.I.O.N. — Windows Update management
-    C.O.N.J.U.R.E.         — Software deployment via winget / Chocolatey
-    O.R.A.C.L.E.           — System diagnostics & HTML report generation
-    C.O.V.E.N.A.N.T.       — Machine onboarding & Entra ID domain join
-    P.H.A.N.T.O.M.         — Profile migration & data transfer
-    C.I.P.H.E.R.           — BitLocker drive encryption management
-    W.A.R.D.               — User account & local security audit
-    A.R.C.H.I.V.E.         — Pre-reimaging profile backup
-    S.I.G.I.L.             — Security baseline & policy enforcement
-    S.P.E.C.T.E.R.         — Remote machine execution via WinRM
-    L.E.Y.L.I.N.E.         — Network diagnostics & remediation
-    F.O.R.G.E.             — Driver update detection & installation
-    A.E.G.I.S.             — Azure environment & governance inspection
-    R.E.L.I.C.             — Certificate health & SSL expiry monitoring
-    H.E.A.R.T.H.           — Toolkit setup & configuration wizard
+    -----------------------------------------------------------------
+    G.R.I.M.O.I.R.E.        -  Technician Toolkit hub and central launcher
+    R.U.N.E.P.R.E.S.S.      -  Printer driver installation & configuration
+    R.E.S.T.O.R.A.T.I.O.N.  -  Windows Update management
+    C.O.N.J.U.R.E.          -  Software deployment via winget / Chocolatey
+    O.R.A.C.L.E.            -  System diagnostics & HTML report generation
+    C.O.V.E.N.A.N.T.        -  Machine onboarding & Entra ID domain join
+    P.H.A.N.T.O.M.          -  Profile migration & data transfer
+    C.I.P.H.E.R.            -  BitLocker drive encryption management
+    W.A.R.D.                -  User account & local security audit
+    A.R.C.H.I.V.E.          -  Pre-reimaging profile backup
+    S.I.G.I.L.              -  Security baseline & policy enforcement
+    S.P.E.C.T.E.R.          -  Remote machine execution via WinRM
+    L.E.Y.L.I.N.E.          -  Network diagnostics & remediation
+    F.O.R.G.E.              -  Driver update detection & installation
+    A.E.G.I.S.              -  Azure environment & governance inspection
+    R.E.L.I.C.              -  Certificate health & SSL expiry monitoring
+    H.E.A.R.T.H.            -  Toolkit setup & configuration wizard
 
     Color Schema
-    ─────────────────────────────────────────
+    -----------------------------------------
     Cyan     Headers and section dividers
     Magenta  Progress indicators
     Green    Success / complete
@@ -62,9 +62,9 @@ Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
 
 if ($Transcript) { Start-TKTranscript -LogRoot (Resolve-LogDirectory -FallbackPath $PSScriptRoot) }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COLOR SCHEMA
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 $C = @{
     Header   = 'Cyan'
@@ -75,9 +75,9 @@ $C = @{
     Progress = 'Magenta'
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # BANNER
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Clear-Host
 Write-Host @"
@@ -90,13 +90,13 @@ Write-Host @"
   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝╚══════╝
 
 "@ -ForegroundColor Cyan
-Write-Host "  A.E.G.I.S. — Azure Environment & Governance Inspection System" -ForegroundColor Cyan
+Write-Host "  A.E.G.I.S.  -  Azure Environment & Governance Inspection System" -ForegroundColor Cyan
 Write-Host "  Azure Subscription Assessment & Report Generator  v2.0" -ForegroundColor Cyan
 Write-Host ""
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # MODULE AUTO-INSTALL
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Write-Section "MODULE CHECK & INSTALL"
 
@@ -119,7 +119,7 @@ $needsInstall = $requiredModules | Where-Object { -not (Get-Module -ListAvailabl
 if ($needsInstall) {
     Write-Warn "Missing modules: $($needsInstall -join ', ')"
     Write-Step "Installing missing modules from PSGallery (CurrentUser scope)..."
-    Write-Host "      This only runs once — modules are cached after first install." -ForegroundColor $C.Info
+    Write-Host "      This only runs once  -  modules are cached after first install." -ForegroundColor $C.Info
     Write-Host ""
 
     foreach ($mod in $needsInstall) {
@@ -128,7 +128,7 @@ if ($needsInstall) {
             Install-Module -Name $mod -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
             Write-Ok "$mod installed"
         } catch {
-            Write-Warn "Could not install $mod — related checks will be skipped: $($_.Exception.Message)"
+            Write-Warn "Could not install $mod  -  related checks will be skipped: $($_.Exception.Message)"
         }
     }
     Write-Host ""
@@ -139,15 +139,15 @@ foreach ($mod in $requiredModules) {
 }
 Write-Ok "All modules ready"
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # AUTHENTICATION
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Write-Section "AUTHENTICATION"
 
 $ctx = Get-AzContext -ErrorAction SilentlyContinue
 if (-not $ctx) {
-    Write-Step "No active Azure session — launching browser login..."
+    Write-Step "No active Azure session  -  launching browser login..."
     try {
         Connect-AzAccount -ErrorAction Stop | Out-Null
         $ctx = Get-AzContext -ErrorAction Stop
@@ -188,9 +188,9 @@ $subId   = $ctx.Subscription.Id
 Write-Ok "Subscription: $subName  ($subId)"
 Write-Host ""
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # DATA COLLECTION
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Write-Section "COLLECTING RESOURCE DATA"
 
@@ -234,10 +234,10 @@ foreach ($srv in $sqlServers) {
         if ($rule.StartIpAddress -eq '0.0.0.0' -and $rule.EndIpAddress -in @('0.0.0.0','255.255.255.255')) {
             # 0.0.0.0/0.0.0.0 = Azure services rule (acceptable); 0.0.0.0/255.255.255.255 = allow all (not acceptable)
             if ($rule.EndIpAddress -eq '255.255.255.255') {
-                $sqlFirewallIssues += [pscustomobject]@{ Server = $srv.ServerName; Rule = $rule.FirewallRuleName; Range = "$($rule.StartIpAddress) – $($rule.EndIpAddress)" }
+                $sqlFirewallIssues += [pscustomobject]@{ Server = $srv.ServerName; Rule = $rule.FirewallRuleName; Range = "$($rule.StartIpAddress) - $($rule.EndIpAddress)" }
             }
         } elseif ($rule.StartIpAddress -ne '0.0.0.0' -and $rule.EndIpAddress -eq '255.255.255.255') {
-            $sqlFirewallIssues += [pscustomobject]@{ Server = $srv.ServerName; Rule = $rule.FirewallRuleName; Range = "$($rule.StartIpAddress) – $($rule.EndIpAddress)" }
+            $sqlFirewallIssues += [pscustomobject]@{ Server = $srv.ServerName; Rule = $rule.FirewallRuleName; Range = "$($rule.StartIpAddress) - $($rule.EndIpAddress)" }
         }
     }
 }
@@ -371,9 +371,9 @@ try {
 
 Write-Host ""
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # ANALYSIS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Write-Section "ANALYZING"
 
@@ -416,13 +416,13 @@ $suspectPlans = @($appServicePlans | Where-Object { $_.Name -match 'ASP-[A-Za-z0
 Write-Ok "Analysis complete"
 Write-Host ""
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # BUILD HTML SECTIONS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 Write-Step "Generating HTML report..."
 
-# ── Services ──────────────────────────────────────────────────────────────────
+# -- Services ------------------------------------------------------------------
 
 $serviceItems = [System.Text.StringBuilder]::new()
 
@@ -474,7 +474,7 @@ foreach ($type in $extraTypes.Keys) {
     }
 }
 
-# ── Security Posture ──────────────────────────────────────────────────────────
+# -- Security Posture ----------------------------------------------------------
 
 $secRows = [System.Text.StringBuilder]::new()
 
@@ -500,7 +500,7 @@ foreach ($sa in $publicStorageAccounts) {
 # SQL allow-all firewall
 foreach ($fw in $sqlFirewallIssues) {
     $n = EscHtml $fw.Server; $r = EscHtml $fw.Rule; $range = EscHtml $fw.Range
-    [void]$secRows.Append("<tr><td><span class='tk-badge-err'>SQL FW</span></td><td><strong>$n</strong> / $r</td><td>Permissive firewall rule: $range</td><td>—</td></tr>`n")
+    [void]$secRows.Append("<tr><td><span class='tk-badge-err'>SQL FW</span></td><td><strong>$n</strong> / $r</td><td>Permissive firewall rule: $range</td><td> - </td></tr>`n")
 }
 
 # Apps without HTTPS
@@ -530,7 +530,7 @@ if ($securityIssueCount -gt 0 -or $true) {
 "@
 }
 
-# ── Access & Governance ───────────────────────────────────────────────────────
+# -- Access & Governance -------------------------------------------------------
 
 $rbacRows = [System.Text.StringBuilder]::new()
 foreach ($r in ($subOwners + $subContributors + $subUAAs | Sort-Object RoleDefinitionName, DisplayName)) {
@@ -567,7 +567,7 @@ if ($nonCompliantPolicies.Count -gt 0) {
         [void]$policyRows.Append("<tr><td>$pname</td><td>$asgn</td><td>$res</td></tr>`n")
     }
     if ($nonCompliantPolicies.Count -gt 25) {
-        [void]$policyRows.Append("<tr><td colspan='3' class='tk-badge-warn' style='padding:10px 14px'>... and $($nonCompliantPolicies.Count - 25) more — review in Azure Portal under Policy &gt; Compliance.</td></tr>")
+        [void]$policyRows.Append("<tr><td colspan='3' class='tk-badge-warn' style='padding:10px 14px'>... and $($nonCompliantPolicies.Count - 25) more  -  review in Azure Portal under Policy &gt; Compliance.</td></tr>")
     }
 } else {
     [void]$policyRows.Append("<tr><td colspan='3' class='tk-badge-ok' style='text-align:center;padding:16px'>$policyNote</td></tr>")
@@ -603,7 +603,7 @@ $governanceSection = @"
 </div>
 "@
 
-# ── VM Inventory ──────────────────────────────────────────────────────────────
+# -- VM Inventory --------------------------------------------------------------
 
 $vmRows = [System.Text.StringBuilder]::new()
 foreach ($vm in $vms) {
@@ -629,7 +629,7 @@ if ($vms.Count -gt 0) {
 "@
 }
 
-# ── SQL Database Inventory ────────────────────────────────────────────────────
+# -- SQL Database Inventory ----------------------------------------------------
 
 $dbRows = [System.Text.StringBuilder]::new()
 foreach ($srv in $sqlServers) {
@@ -643,14 +643,13 @@ foreach ($srv in $sqlServers) {
 $dbSection = ''
 if ($totalDbCount -gt 0) {
     $dbSection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#fff4ce">🗄️</div>
-    <h2>SQL Database Inventory</h2>
-    <span class="section-num">Section 6</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">SQL Database Inventory</span>
+    <span class="tk-section-num">Section 6</span>
   </div>
-  <div class="card-body">
-    <table class="status-table">
+  <div class="tk-card">
+    <table class="tk-table">
       <thead><tr><th>Database Name</th><th>Server</th><th>SKU / Tier</th><th>Classification</th></tr></thead>
       <tbody>$($dbRows.ToString())</tbody>
     </table>
@@ -659,29 +658,28 @@ if ($totalDbCount -gt 0) {
 "@
 }
 
-# ── Backup Coverage ───────────────────────────────────────────────────────────
+# -- Backup Coverage -----------------------------------------------------------
 
 $bkpRows = [System.Text.StringBuilder]::new()
 foreach ($vm in $vms) {
     $item = $backupRows | Where-Object { $_.VMName -ieq $vm.Name } | Select-Object -First 1
     if ($item) {
-        $statusClass = if ($item.Status -eq 'Healthy') { 'full' } elseif ($item.Status) { 'partial' } else { 'unknown' }
-        [void]$bkpRows.Append("<tr><td><strong>$(EscHtml $vm.Name)</strong></td><td><span class='pill $statusClass'>$(EscHtml $item.Status)</span></td><td>$(EscHtml $item.Vault)</td><td>$(EscHtml $item.LastBackup)</td><td>$(EscHtml $item.PolicyName)</td></tr>`n")
+        $statusClass = if ($item.Status -eq 'Healthy') { 'tk-badge-ok' } elseif ($item.Status) { 'tk-badge-warn' } else { 'tk-badge-info' }
+        [void]$bkpRows.Append("<tr><td><strong>$(EscHtml $vm.Name)</strong></td><td><span class='$statusClass'>$(EscHtml $item.Status)</span></td><td>$(EscHtml $item.Vault)</td><td>$(EscHtml $item.LastBackup)</td><td>$(EscHtml $item.PolicyName)</td></tr>`n")
     } else {
-        [void]$bkpRows.Append("<tr><td><strong>$(EscHtml $vm.Name)</strong></td><td><span class='pill orphan'>Not Protected</span></td><td>—</td><td>—</td><td>—</td></tr>`n")
+        [void]$bkpRows.Append("<tr><td><strong>$(EscHtml $vm.Name)</strong></td><td><span class='tk-badge-err'>Not Protected</span></td><td> - </td><td> - </td><td> - </td></tr>`n")
     }
 }
 $backupSection = ''
 if ($vms.Count -gt 0) {
     $backupSection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#dff6dd">💾</div>
-    <h2>VM Backup Coverage</h2>
-    <span class="section-num">Section 7</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">VM Backup Coverage</span>
+    <span class="tk-section-num">Section 7</span>
   </div>
-  <div class="card-body">
-    <table class="status-table">
+  <div class="tk-card">
+    <table class="tk-table">
       <thead><tr><th>VM Name</th><th>Protection Status</th><th>Vault</th><th>Last Backup</th><th>Policy</th></tr></thead>
       <tbody>$($bkpRows.ToString())</tbody>
     </table>
@@ -690,27 +688,26 @@ if ($vms.Count -gt 0) {
 "@
 }
 
-# ── Advisor ───────────────────────────────────────────────────────────────────
+# -- Advisor -------------------------------------------------------------------
 
 $advisorSection = ''
 if ($advisorRecs.Count -gt 0) {
     $advisorRows = [System.Text.StringBuilder]::new()
     foreach ($rec in ($advisorRecs | Sort-Object -Property @{E={switch($_.Impact){'High'{0}'Medium'{1}default{2}}}},Category | Select-Object -First 50)) {
-        $impactClass = switch ($rec.Impact) { 'High' { 'orphan' } 'Medium' { 'partial' } default { 'full' } }
+        $impactClass = switch ($rec.Impact) { 'High' { 'tk-badge-err' } 'Medium' { 'tk-badge-warn' } default { 'tk-badge-ok' } }
         $problem     = EscHtml ($rec.ShortDescription.Problem)
         $resName     = EscHtml (($rec.ResourceId -split '/')[-1])
         $cat         = EscHtml $rec.Category
-        [void]$advisorRows.Append("<tr><td>$problem</td><td>$cat</td><td><span class='pill $impactClass'>$(EscHtml $rec.Impact)</span></td><td>$resName</td></tr>`n")
+        [void]$advisorRows.Append("<tr><td>$problem</td><td>$cat</td><td><span class='$impactClass'>$(EscHtml $rec.Impact)</span></td><td>$resName</td></tr>`n")
     }
     $advisorSection = @"
-<div class="card">
-  <div class="card-header">
-    <div class="icon" style="background:#fde7e9">⚡</div>
-    <h2>Azure Advisor Recommendations</h2>
-    <span class="section-num">Section 8</span>
+<div class="tk-section">
+  <div class="tk-card-header">
+    <span class="tk-section-title">Azure Advisor Recommendations</span>
+    <span class="tk-section-num">Section 8</span>
   </div>
-  <div class="card-body">
-    <table class="status-table">
+  <div class="tk-card">
+    <table class="tk-table">
       <thead><tr><th>Recommendation</th><th>Category</th><th>Impact</th><th>Resource</th></tr></thead>
       <tbody>$($advisorRows.ToString())</tbody>
     </table>
@@ -719,9 +716,9 @@ if ($advisorRecs.Count -gt 0) {
 "@
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # ISSUES
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 $issues = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -755,7 +752,7 @@ if ($unlockedCritical.Count -gt 0) {
 # Governance issues
 if ($highAdvisor -gt 0) {
     $issues.Add(@{ Sev='high'; Title="$highAdvisor Unresolved High-Impact Azure Advisor Alerts"
-        Body="Azure Advisor is flagging $highAdvisor High-severity and $medAdvisor Medium issues from live telemetry — Microsoft's own assessment of availability, security, and cost risk in this subscription." })
+        Body="Azure Advisor is flagging $highAdvisor High-severity and $medAdvisor Medium issues from live telemetry  -  Microsoft's own assessment of availability, security, and cost risk in this subscription." })
 }
 if ($untaggedPct -gt 50) {
     $issues.Add(@{ Sev='high'; Title="~$untaggedPct% of Resources Have No Tags"
@@ -764,19 +761,19 @@ if ($untaggedPct -gt 50) {
 if ($adHocDbs.Count -gt 3) {
     $sample = (($adHocDbs | Select-Object -First 5 | Select-Object -ExpandProperty DatabaseName) | ForEach-Object { EscHtml $_ }) -join ', '
     $issues.Add(@{ Sev='high'; Title="$($adHocDbs.Count) Ad-Hoc / Date-Stamped Databases Detected"
-        Body="Databases matching backup/copy/date patterns: $sample$(if($adHocDbs.Count -gt 5){', and more'}). Manual copies are risky and costly — use Azure SQL point-in-time restore instead." })
+        Body="Databases matching backup/copy/date patterns: $sample$(if($adHocDbs.Count -gt 5){', and more'}). Manual copies are risky and costly  -  use Azure SQL point-in-time restore instead." })
 }
 if ($subOwners.Count -gt 3) {
     $ownerList = ($subOwners | ForEach-Object { EscHtml $_.DisplayName }) -join ', '
     $issues.Add(@{ Sev='high'; Title="$($subOwners.Count) Principals Hold Owner at Subscription Scope"
-        Body="Subscription-level Owners: $ownerList. Owner is the highest privilege level — any of these accounts being compromised grants full control over every resource in the subscription. Reduce to the minimum required and prefer Contributor for day-to-day work." })
+        Body="Subscription-level Owners: $ownerList. Owner is the highest privilege level  -  any of these accounts being compromised grants full control over every resource in the subscription. Reduce to the minimum required and prefer Contributor for day-to-day work." })
 }
 
 # Operational issues
 if ($vmsWithoutMon.Count -gt 0) {
     $vmList = ($vmsWithoutMon | ForEach-Object { EscHtml $_ }) -join ', '
     $issues.Add(@{ Sev='med'; Title="$($vmsWithoutMon.Count) VMs Have No Extensions Deployed"
-        Body="VMs without any extensions: $vmList. No diagnostics, no Log Analytics — if these VMs fail or degrade, there is no telemetry to diagnose the cause." })
+        Body="VMs without any extensions: $vmList. No diagnostics, no Log Analytics  -  if these VMs fail or degrade, there is no telemetry to diagnose the cause." })
 }
 if ($unbackedVms.Count -gt 0) {
     $vmList = ($unbackedVms | ForEach-Object { EscHtml $_ }) -join ', '
@@ -792,11 +789,11 @@ if ($regions.Count -gt 2) {
         Body="Regions in use: $(($regions | ForEach-Object { EscHtml $_ }) -join ', '). Multi-region spread without a deliberate geo-redundancy design adds egress cost and management complexity." })
 }
 if ($appServicePlans.Count -gt 2) {
-    $issues.Add(@{ Sev='med'; Title="$($appServicePlans.Count) App Service Plans — Verify All Are Active"
+    $issues.Add(@{ Sev='med'; Title="$($appServicePlans.Count) App Service Plans  -  Verify All Are Active"
         Body="Plans: $(( $appServicePlans | Select-Object -ExpandProperty Name | ForEach-Object { EscHtml $_ }) -join ', '). Idle plans incur cost. Auto-generated or timestamp-named plans are likely from abandoned deployments." })
 }
 if ($recoveryVaults.Count -gt 1) {
-    $issues.Add(@{ Sev='med'; Title="$($recoveryVaults.Count) Recovery Vaults — Ownership Unclear"
+    $issues.Add(@{ Sev='med'; Title="$($recoveryVaults.Count) Recovery Vaults  -  Ownership Unclear"
         Body="Multiple vaults: $(($recoveryVaults | Select-Object -ExpandProperty Name | ForEach-Object { EscHtml $_ }) -join ', '). Verify which vault protects which VMs and consolidate if possible." })
 }
 if ($orphanedDisks.Count -gt 0) {
@@ -817,22 +814,23 @@ if ($issues.Count -eq 0) {
 $issueHtml = [System.Text.StringBuilder]::new()
 foreach ($issue in $issues) {
     $sevLabel = switch ($issue.Sev) { 'high' { 'High' } 'med' { 'Med' } default { 'Low' } }
-    [void]$issueHtml.Append("<div class='issue'><div class='sev $($issue.Sev)'>$sevLabel</div><div class='body'><strong>$(EscHtml $issue.Title)</strong><p>$($issue.Body)</p></div></div>`n")
+    $sevBadge = switch ($issue.Sev) { 'high' { 'tk-badge-err' } 'med' { 'tk-badge-warn' } default { 'tk-badge-ok' } }
+    [void]$issueHtml.Append("<div class='tk-info-box'><span class='$sevBadge'>$sevLabel</span> <strong>$(EscHtml $issue.Title)</strong><p>$($issue.Body)</p></div>`n")
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # RECOMMENDATIONS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 $recs = [System.Collections.Generic.List[hashtable]]::new()
 
 if ($exposedNsgRules.Count -gt 0) {
-    $recs.Add(@{ P='immediate'; L='Immediate'; Title='Remove Internet-Exposed NSG Rules — Use Azure Bastion'
-        Body="Replace inbound NSG rules that allow RDP/SSH from any source with Azure Bastion for secure browser-based access. Azure Bastion is already deployed in this subscription — use it and remove the open NSG rules." })
+    $recs.Add(@{ P='immediate'; L='Immediate'; Title='Remove Internet-Exposed NSG Rules  -  Use Azure Bastion'
+        Body="Replace inbound NSG rules that allow RDP/SSH from any source with Azure Bastion for secure browser-based access. Azure Bastion is already deployed in this subscription  -  use it and remove the open NSG rules." })
 }
 if ($sqlFirewallIssues.Count -gt 0) {
     $recs.Add(@{ P='immediate'; L='Immediate'; Title='Restrict SQL Server Firewall Rules'
-        Body="Remove allow-all (0.0.0.0–255.255.255.255) SQL firewall rules. Replace with specific IP ranges or, better, use private endpoints with network-level isolation to remove SQL from the public internet entirely." })
+        Body="Remove allow-all (0.0.0.0-255.255.255.255) SQL firewall rules. Replace with specific IP ranges or, better, use private endpoints with network-level isolation to remove SQL from the public internet entirely." })
 }
 if ($publicStorageAccounts.Count -gt 0) {
     $recs.Add(@{ P='immediate'; L='Immediate'; Title='Disable Public Blob Access on All Storage Accounts'
@@ -848,7 +846,7 @@ if ($unlockedCritical.Count -gt 0) {
 }
 if ($untaggedPct -gt 20) {
     $recs.Add(@{ P='immediate'; L='Immediate'; Title='Implement a Tagging Policy'
-        Body="Apply mandatory tags — at minimum <em>Environment</em>, <em>Application</em>, <em>Owner</em>, and <em>CostCenter</em> — to all resources. Use Azure Policy with a Deny effect to enforce tags on new resources. Only $tagCoverage% of resources are currently tagged." })
+        Body="Apply mandatory tags  -  at minimum <em>Environment</em>, <em>Application</em>, <em>Owner</em>, and <em>CostCenter</em>  -  to all resources. Use Azure Policy with a Deny effect to enforce tags on new resources. Only $tagCoverage% of resources are currently tagged." })
 }
 if ($highAdvisor -gt 0) {
     $recs.Add(@{ P='immediate'; L='Immediate'; Title="Resolve $highAdvisor High-Impact Advisor Alerts"
@@ -860,7 +858,7 @@ if ($adHocDbs.Count -gt 3) {
 }
 if ($subOwners.Count -gt 3) {
     $recs.Add(@{ P='short'; L='Short-Term'; Title='Reduce Subscription-Level Owner Assignments'
-        Body="$($subOwners.Count) principals currently hold Owner at subscription scope. Audit each assignment — downgrade to Contributor where full Owner is not required, and prefer just-in-time access (PIM) for break-glass scenarios." })
+        Body="$($subOwners.Count) principals currently hold Owner at subscription scope. Audit each assignment  -  downgrade to Contributor where full Owner is not required, and prefer just-in-time access (PIM) for break-glass scenarios." })
 }
 if ($unbackedVms.Count -gt 0) {
     $recs.Add(@{ P='short'; L='Short-Term'; Title='Enroll All VMs in a Backup Policy'
@@ -876,7 +874,7 @@ if ($vmsWithoutMon.Count -gt 0) {
 }
 if ($orphanedDisks.Count -gt 0 -or $unassociatedIPs.Count -gt 0) {
     $recs.Add(@{ P='short'; L='Short-Term'; Title='Remove Orphaned Resources'
-        Body="Delete $($orphanedDisks.Count) unattached disk(s) and $($unassociatedIPs.Count) unassociated public IP(s) — ongoing cost with no operational value." })
+        Body="Delete $($orphanedDisks.Count) unattached disk(s) and $($unassociatedIPs.Count) unassociated public IP(s)  -  ongoing cost with no operational value." })
 }
 if ($recoveryVaults.Count -gt 1) {
     $recs.Add(@{ P='short'; L='Short-Term'; Title='Consolidate Backup Vaults'
@@ -895,12 +893,13 @@ $recs.Add(@{ P='long'; L='Long-Term'; Title='Formalize Dev / Test / Prod Environ
 
 $recHtml = [System.Text.StringBuilder]::new()
 foreach ($rec in $recs) {
-    [void]$recHtml.Append("<div class='rec'><div class='priority $($rec.P)'>$(EscHtml $rec.L)</div><div class='body'><strong>$(EscHtml $rec.Title)</strong><p>$($rec.Body)</p></div></div>`n")
+    $recBadge = switch ($rec.P) { 'immediate' { 'tk-badge-err' } 'short' { 'tk-badge-warn' } 'medium' { 'tk-badge-blue' } default { 'tk-badge-info' } }
+    [void]$recHtml.Append("<div class='tk-info-box'><span class='$recBadge'>$(EscHtml $rec.L)</span> <strong>$(EscHtml $rec.Title)</strong><p>$($rec.Body)</p></div>`n")
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # ASSEMBLE HTML
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 $reportDate = Get-Date -Format "MMMM d, yyyy"
 $orgName    = EscHtml $subName
@@ -908,10 +907,10 @@ $subIdEsc   = EscHtml $subId
 $regionDisp = ($regions | ForEach-Object { EscHtml $_ }) -join ', '
 
 $defenderStatBox = if ($defenderPct -ne $null) {
-    $dColor = if ($defenderPct -ge 70) { 'green' } elseif ($defenderPct -ge 40) { 'yellow' } else { 'red' }
-    "<div class='stat-box $dColor'><div class='num'>$defenderPct%</div><div class='lbl'>Defender Secure Score</div></div>"
+    $dClass = if ($defenderPct -ge 70) { 'ok' } elseif ($defenderPct -ge 40) { 'warn' } else { 'err' }
+    "<div class='tk-summary-card $dClass'><div class='tk-summary-num'>$defenderPct%</div><div class='tk-summary-lbl'>Defender Secure Score</div></div>"
 } else {
-    "<div class='stat-box blue'><div class='num'>N/A</div><div class='lbl'>Defender Secure Score</div></div>"
+    "<div class='tk-summary-card info'><div class='tk-summary-num'>N/A</div><div class='tk-summary-lbl'>Defender Secure Score</div></div>"
 }
 
 $html = @"
@@ -920,7 +919,7 @@ $html = @"
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Azure Environment Assessment — $orgName</title>
+  <title>Azure Environment Assessment  -  $orgName</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; }
@@ -983,9 +982,9 @@ $html = @"
 <body>
 
 <header>
-  <div class="label">Confidential — Internal Use Only</div>
+  <div class="label">Confidential  -  Internal Use Only</div>
   <h1>Azure Environment Assessment</h1>
-  <div class="subtitle">$orgName — Cloud Infrastructure Review</div>
+  <div class="subtitle">$orgName  -  Cloud Infrastructure Review</div>
   <div class="meta">
     <span><strong>Report Date:</strong> $reportDate</span>
     <span><strong>Subscription:</strong> $orgName</span>
@@ -1020,7 +1019,7 @@ $html = @"
         $defenderStatBox
       </div>
       <p style="margin-top:20px; font-size:14px; color:#3a4a5c;">
-        This assessment covers <strong>$orgName</strong> — $($allResources.Count) resources across
+        This assessment covers <strong>$orgName</strong>  -  $($allResources.Count) resources across
         $($resourceGroups.Count) resource groups and $($regions.Count) region(s).
         $(if($exposedNsgRules.Count -gt 0){"<strong style='color:#a4262c'>$($exposedNsgRules.Count) NSG rule(s) expose sensitive ports to the internet</strong> and require immediate attention. "})$(if($unlockedCritical.Count -gt 0){"$($unlockedCritical.Count) critical resources have no delete lock. "})The environment has $highAdvisor high-impact Advisor alerts, $($adHocDbs.Count) ad-hoc database copies, and approximately $untaggedPct% of resources without tags.
       </p>
@@ -1091,13 +1090,13 @@ $html = @"
 </html>
 "@
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # OUTPUT
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 $html | Out-File -FilePath $OutputPath -Encoding UTF8 -Force
 
-Write-Host ("  " + ("─" * 62)) -ForegroundColor $C.Header
+Write-Host ("  " + ("-" * 62)) -ForegroundColor $C.Header
 Write-Host ""
 Write-Ok "Report saved: $OutputPath"
 
