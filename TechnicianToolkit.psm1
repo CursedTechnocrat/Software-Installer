@@ -11,14 +11,14 @@
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-#region ── Logging Helpers ───────────────────────────────────────────────────
+#region -- Logging Helpers ---------------------------------------------------
 
 function Write-Section {
     param([string]$Title)
     Write-Host ""
-    Write-Host ("  " + ("─" * 62)) -ForegroundColor Cyan
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor Cyan
     Write-Host "  $Title" -ForegroundColor Cyan
-    Write-Host ("  " + ("─" * 62)) -ForegroundColor Cyan
+    Write-Host ("  " + ("-" * 62)) -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -30,7 +30,7 @@ function Write-Info { param([string]$Msg) Write-Host ("      {0}" -f $Msg) -Fore
 
 #endregion
 
-#region ── Error Telemetry ───────────────────────────────────────────────────
+#region -- Error Telemetry ---------------------------------------------------
 
 function Write-TKError {
     <#
@@ -80,8 +80,8 @@ function Write-TKError {
                 themeColor   = 'FF0000'
                 summary      = "TechnicianToolkit error in $ScriptName"
                 sections     = @(@{
-                    activityTitle    = "TechnicianToolkit — $ScriptName [$Category]"
-                    activitySubtitle = "$($entry.Host) / $($entry.User)  •  $($entry.Timestamp)"
+                    activityTitle    = "TechnicianToolkit - $ScriptName [$Category]"
+                    activitySubtitle = "$($entry.Host) / $($entry.User)  |  $($entry.Timestamp)"
                     activityText     = $Message
                 })
             } | ConvertTo-Json -Depth 5
@@ -90,12 +90,12 @@ function Write-TKError {
                 -ContentType 'application/json' -ErrorAction Stop | Out-Null
         }
     }
-    catch { <# webhook failures are silent — never interrupt the caller #> }
+    catch { <# webhook failures are silent - never interrupt the caller #> }
 }
 
 #endregion
 
-#region ── HTML Utilities ────────────────────────────────────────────────────
+#region -- HTML Utilities ----------------------------------------------------
 
 function EscHtml {
     param([string]$s)
@@ -105,7 +105,7 @@ function EscHtml {
 
 #endregion
 
-#region ── Config Helpers ────────────────────────────────────────────────────
+#region -- Config Helpers ----------------------------------------------------
 
 function Get-TKConfig {
     <#
@@ -231,7 +231,7 @@ function Resolve-LogDirectory {
 
 #endregion
 
-#region ── Privilege Management ──────────────────────────────────────────────
+#region -- Privilege Management ----------------------------------------------
 
 function Test-IsAdmin {
     ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
