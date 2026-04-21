@@ -166,15 +166,28 @@ Describe 'PowerShell syntax — all scripts' {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Module import compliance — every tool script must import TechnicianToolkit.psm1
+# Module bootstrap compliance — every tool script must use the shared-module
+# bootstrap block so the module is auto-downloaded when missing and imports
+# fail loudly (-ErrorAction Stop) rather than silently partially-executing.
 # ─────────────────────────────────────────────────────────────────────────────
-Describe 'Module import compliance — all tool scripts' {
+Describe 'Module bootstrap compliance — all tool scripts' {
     $scripts = Get-ChildItem -Path (Join-Path $PSScriptRoot '..') -Filter '*.ps1' -File
 
     foreach ($script in $scripts) {
-        It "$($script.Name) imports TechnicianToolkit.psm1" {
+        It "$($script.Name) defines `$TKModulePath next to `$PSScriptRoot" {
             $content = Get-Content $script.FullName -Raw
-            $content | Should -Match 'Import-Module.*TechnicianToolkit\.psm1'
+            $content | Should -Match '\$TKModulePath\s*=\s*Join-Path\s+\$PSScriptRoot\s+''TechnicianToolkit\.psm1'''
+        }
+
+        It "$($script.Name) imports via `$TKModulePath with -ErrorAction Stop" {
+            $content = Get-Content $script.FullName -Raw
+            $content | Should -Match 'Import-Module\s+\$TKModulePath\s+-Force\s+-ErrorAction\s+Stop'
+        }
+
+        It "$($script.Name) no longer uses the silent-fail import" {
+            $content = Get-Content $script.FullName -Raw
+            # The old pattern (quoted path, no -ErrorAction) must be gone.
+            $content | Should -Not -Match 'Import-Module\s+"\$PSScriptRoot\\TechnicianToolkit\.psm1"\s+-Force\s*$'
         }
     }
 }

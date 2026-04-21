@@ -24,9 +24,42 @@ TechnicianToolkit/
 Every tool script must follow this initialization pattern at the top (after the param block):
 
 ```powershell
-Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force
+# ===========================
+# SHARED MODULE BOOTSTRAP
+# ===========================
+$TKModulePath = Join-Path $PSScriptRoot 'TechnicianToolkit.psm1'
+if (-not (Test-Path $TKModulePath)) {
+    $TKModuleUrl = 'https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/TechnicianToolkit.psm1'
+    Write-Host "  [*] Shared module TechnicianToolkit.psm1 not found - downloading from GitHub..." -ForegroundColor Magenta
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        Invoke-RestMethod -Uri $TKModuleUrl -OutFile $TKModulePath -ErrorAction Stop
+        $parseErrors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile($TKModulePath, [ref]$null, [ref]$parseErrors)
+        if ($parseErrors.Count -gt 0) {
+            Remove-Item -Path $TKModulePath -Force -ErrorAction SilentlyContinue
+            Write-Host "  [!!] Downloaded module failed syntax validation - file removed." -ForegroundColor Red
+            Write-Host "       $($parseErrors[0].Message)" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  [+] Module downloaded and verified." -ForegroundColor Green
+    } catch {
+        Write-Host "  [!!] Could not download TechnicianToolkit.psm1:" -ForegroundColor Red
+        Write-Host "       $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "       Place the module manually next to this script from:" -ForegroundColor Yellow
+        Write-Host "       $TKModuleUrl" -ForegroundColor Yellow
+        exit 1
+    }
+}
+Import-Module $TKModulePath -Force -ErrorAction Stop
 Invoke-AdminElevation -ScriptFile $PSCommandPath
 ```
+
+The bootstrap ensures a single-file distribution works — drop any tool .ps1 on a
+machine and it will pull `TechnicianToolkit.psm1` from GitHub on first run. TLS 1.2
+is forced for older Windows builds. `-ErrorAction Stop` on the final `Import-Module`
+prevents the silent-partial-execution failure mode (where a missing module used to
+let the script continue until it hit an undefined function like `Get-TKHtmlHead`).
 
 `Invoke-AdminElevation` re-launches the script as Administrator if not already elevated.
 Scripts that use `Assert-AdminPrivilege` instead will error-exit if not elevated rather
@@ -145,11 +178,12 @@ updates the file.
 ### Adding a New Tool
 
 1. Copy the header block from an existing tool and update acronym, synopsis, version.
-2. Add `Import-Module "$PSScriptRoot\TechnicianToolkit.psm1" -Force` and the appropriate
-   admin check (`Invoke-AdminElevation` or `Assert-AdminPrivilege`).
+2. Add the shared-module bootstrap block (see the initialization pattern above) and the
+   appropriate admin check (`Invoke-AdminElevation` or `Assert-AdminPrivilege`). Copy the
+   block verbatim from an existing tool — the Pester suite enforces the exact shape.
 3. Register the tool in `grimoire.ps1`'s `$Tools` array with a unique numeric `Key`.
 4. Add the script's filename to the Quick Launch and Usage sections in `README.md`.
-5. The syntax-validation and module-import compliance Pester tests will cover it automatically.
+5. The syntax-validation and module-bootstrap compliance Pester tests will cover it automatically.
 
 ## Tool Distinctions: THRESHOLD vs AUGUR
 
