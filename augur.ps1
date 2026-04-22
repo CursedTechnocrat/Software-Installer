@@ -95,10 +95,6 @@ function Show-AugurBanner {
 # HTML HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-function HtmlEncode([string]$s) {
-    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-}
-
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
@@ -274,17 +270,17 @@ foreach ($d in $diskReport) {
     $sBadge = if ($d.SMARTPrediction -eq 'FAILING') { 'tk-badge-err' } elseif ($d.SMARTPrediction -eq 'OK') { 'tk-badge-ok' } else { 'tk-badge-info' }
     $diskRows += @"
     <tr>
-      <td>$(HtmlEncode $d.ID)</td>
-      <td>$(HtmlEncode $d.Name)</td>
-      <td>$(HtmlEncode $d.Serial)</td>
-      <td>$(HtmlEncode $d.MediaType)</td>
-      <td>$(HtmlEncode $d.BusType)</td>
+      <td>$(EscHtml $d.ID)</td>
+      <td>$(EscHtml $d.Name)</td>
+      <td>$(EscHtml $d.Serial)</td>
+      <td>$(EscHtml $d.MediaType)</td>
+      <td>$(EscHtml $d.BusType)</td>
       <td>$($d.SizeGB) GB</td>
-      <td><span class="$hBadge">$(HtmlEncode $d.HealthStatus)</span></td>
-      <td>$(HtmlEncode $d.OperationalStatus)</td>
-      <td><span class="$sBadge">$(HtmlEncode $d.SMARTPrediction)</span></td>
-      <td><code>$(HtmlEncode $d.SMARTReason)</code></td>
-      <td>$(HtmlEncode $d.Firmware)</td>
+      <td><span class="$hBadge">$(EscHtml $d.HealthStatus)</span></td>
+      <td>$(EscHtml $d.OperationalStatus)</td>
+      <td><span class="$sBadge">$(EscHtml $d.SMARTPrediction)</span></td>
+      <td><code>$(EscHtml $d.SMARTReason)</code></td>
+      <td>$(EscHtml $d.Firmware)</td>
     </tr>
 "@
 }
@@ -296,13 +292,13 @@ foreach ($v in $volumeReport) {
     $vhBadge   = switch ($v.Health) { 'Healthy' { 'tk-badge-ok' } 'Warning' { 'tk-badge-warn' } default { 'tk-badge-err' } }
     $volumeRows += @"
     <tr>
-      <td><code>$(HtmlEncode $v.Drive)</code></td>
-      <td>$(HtmlEncode $v.Label)</td>
-      <td>$(HtmlEncode $v.FileSystem)</td>
+      <td><code>$(EscHtml $v.Drive)</code></td>
+      <td>$(EscHtml $v.Label)</td>
+      <td>$(EscHtml $v.FileSystem)</td>
       <td>$($v.TotalGB) GB</td>
       <td>$($v.FreeGB) GB</td>
       <td><span class="$barBadge">$($v.PctUsed)%</span></td>
-      <td><span class="$vhBadge">$(HtmlEncode $v.Health)</span></td>
+      <td><span class="$vhBadge">$(EscHtml $v.Health)</span></td>
     </tr>
 "@
 }

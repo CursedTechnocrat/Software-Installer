@@ -39,6 +39,90 @@ Describe 'EscHtml' {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Format-Bytes
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'Format-Bytes' {
+    It 'returns bytes for values under 1 KB' {
+        Format-Bytes 512 | Should -Be '512 B'
+    }
+    It 'returns KB for values under 1 MB' {
+        Format-Bytes 2048 | Should -Be '2.00 KB'
+    }
+    It 'returns MB for values under 1 GB' {
+        Format-Bytes (5 * 1MB) | Should -Be '5.00 MB'
+    }
+    It 'returns GB for values under 1 TB' {
+        Format-Bytes (3 * 1GB) | Should -Be '3.00 GB'
+    }
+    It 'returns TB for values at or above 1 TB' {
+        Format-Bytes (2 * 1TB) | Should -Be '2.00 TB'
+    }
+    It 'handles zero bytes' {
+        Format-Bytes 0 | Should -Be '0 B'
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Get-TKHtmlHead / Get-TKHtmlFoot — structural smoke tests
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'HTML report helpers' {
+    Context 'Get-TKHtmlHead' {
+        It 'returns a well-formed HTML preamble' {
+            $html = Get-TKHtmlHead -Title 'Unit Test' -ScriptName 'T.E.S.T.'
+            $html | Should -Match '^<!DOCTYPE html>'
+            $html | Should -Match '<html lang="en">'
+            $html | Should -Match '<title>Unit Test</title>'
+            $html | Should -Match '<div class="tk-main">'
+        }
+        It 'embeds the shared CSS block' {
+            $html = Get-TKHtmlHead -Title 'X' -ScriptName 'X'
+            $html | Should -Match '--tk-bg:'
+            $html | Should -Match 'class="tk-page-header"'
+        }
+        It 'HTML-escapes a title containing special characters' {
+            $html = Get-TKHtmlHead -Title '<script>&"' -ScriptName 'X'
+            $html | Should -Match '&lt;script&gt;&amp;&quot;'
+        }
+        It 'renders a meta bar when MetaItems are supplied' {
+            $meta = [ordered]@{ Generated = '2026-04-22'; Host = 'UNIT01' }
+            $html = Get-TKHtmlHead -Title 'X' -ScriptName 'X' -MetaItems $meta
+            $html | Should -Match 'class=''tk-meta-bar'''
+            $html | Should -Match '>Generated<'
+            $html | Should -Match '>UNIT01<'
+        }
+        It 'renders a nav bar when NavItems are supplied' {
+            $html = Get-TKHtmlHead -Title 'X' -ScriptName 'X' -NavItems @('Alpha','Beta')
+            $html | Should -Match 'class=''tk-nav'''
+            $html | Should -Match '>Alpha<'
+            $html | Should -Match '>Beta<'
+        }
+    }
+
+    Context 'Get-TKHtmlFoot' {
+        It 'closes the document' {
+            $html = Get-TKHtmlFoot -ScriptName 'T.E.S.T. v1'
+            $html | Should -Match '</body>'
+            $html | Should -Match '</html>'
+        }
+        It 'includes the script name in the footer' {
+            $html = Get-TKHtmlFoot -ScriptName 'T.E.S.T. v1'
+            $html | Should -Match 'T\.E\.S\.T\. v1'
+        }
+    }
+
+    Context 'round-trip' {
+        It 'head + body + foot produces balanced HTML' {
+            $doc = (Get-TKHtmlHead -Title 'X' -ScriptName 'X') + '<p>body</p>' + (Get-TKHtmlFoot -ScriptName 'X')
+            # Each opening tag should have exactly one closing tag.
+            ($doc | Select-String -Pattern '<html' -AllMatches).Matches.Count   | Should -Be 1
+            ($doc | Select-String -Pattern '</html>' -AllMatches).Matches.Count | Should -Be 1
+            ($doc | Select-String -Pattern '<body'  -AllMatches).Matches.Count  | Should -Be 1
+            ($doc | Select-String -Pattern '</body>' -AllMatches).Matches.Count | Should -Be 1
+        }
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Get-TKConfig
 # ─────────────────────────────────────────────────────────────────────────────
 Describe 'Get-TKConfig' {
@@ -142,6 +226,7 @@ Describe 'Module exports' {
         @{ fn = 'Write-Fail' }
         @{ fn = 'Write-Info' }
         @{ fn = 'EscHtml' }
+        @{ fn = 'Format-Bytes' }
         @{ fn = 'Get-TKHtmlCss' }
         @{ fn = 'Get-TKHtmlHead' }
         @{ fn = 'Get-TKHtmlFoot' }
@@ -291,5 +376,87 @@ Describe 'Legacy tool names must not reappear' {
     It '<Name> contains no retired dotted acronyms' -ForEach $files {
         $hits = Select-String -Path $FullName -SimpleMatch -Pattern $script:LegacyAcronyms -ErrorAction SilentlyContinue
         $hits | Should -BeNullOrEmpty -Because "retired acronym found in $Name"
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# -WhatIf compliance — destructive tools must declare -WhatIf so that GRIMOIRE
+# can pass it through in dry-run mode. See grimoire.ps1 Invoke-Tool.
+# ─────────────────────────────────────────────────────────────────────────────
+Describe '-WhatIf declared on destructive tools' {
+    # Tools that make persistent, hard-to-reverse changes: file moves, registry
+    # writes, domain joins, disk encryption toggles, AV policy changes.
+    $destructiveCases = @(
+        'revenant.ps1','archive.ps1','covenant.ps1','sigil.ps1','cleanse.ps1','cipher.ps1'
+    ) | ForEach-Object {
+        @{ Name = $_; FullName = (Join-Path $PSScriptRoot "..\$_") }
+    }
+
+    It '<Name> declares -WhatIf' -ForEach $destructiveCases {
+        $errors = $null
+        $ast    = [System.Management.Automation.Language.Parser]::ParseFile(
+            $FullName, [ref]$null, [ref]$errors
+        )
+        $paramNames = $ast.FindAll({
+            param($node)
+            $node -is [System.Management.Automation.Language.ParameterAst]
+        }, $true) | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $paramNames | Should -Contain 'WhatIf'
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deprecation stub integrity — each legacy-name stub must forward every
+# argument to its renamed replacement and show a one-line deprecation warning.
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'Deprecation stub forwarding' {
+    # Stub -> expected forwarding target (set at v3.0 rename).
+    $stubCases = @(
+        @{ Stub = 'oracle.ps1';   Target = 'auspex.ps1'    }
+        @{ Stub = 'sentinel.ps1'; Target = 'gargoyle.ps1'  }
+        @{ Stub = 'bastion.ps1';  Target = 'citadel.ps1'   }
+        @{ Stub = 'vault.ps1';    Target = 'reliquary.ps1' }
+        @{ Stub = 'phantom.ps1';  Target = 'revenant.ps1'  }
+        @{ Stub = 'specter.ps1';  Target = 'shade.ps1'     }
+        @{ Stub = 'aegis.ps1';    Target = 'talisman.ps1'  }
+        @{ Stub = 'relic.ps1';    Target = 'artifact.ps1'  }
+    ) | ForEach-Object {
+        $_ + @{ StubPath = (Join-Path $PSScriptRoot "..\$($_.Stub)") }
+    }
+
+    It '<Stub> forwards to <Target>' -ForEach $stubCases {
+        $content = Get-Content $StubPath -Raw
+        # Forwarding site: `& $target @fwd` where $target = Join-Path ... '<target>.ps1'
+        $content | Should -Match ([regex]::Escape("Join-Path `$PSScriptRoot '$Target'"))
+        $content | Should -Match '&\s+\$target\s+@fwd'
+    }
+
+    It '<Stub> emits a deprecation warning' -ForEach $stubCases {
+        $content = Get-Content $StubPath -Raw
+        $content | Should -Match 'Write-Warning\s+"[^"]*deprecated'
+    }
+
+    It '<Stub> captures remaining args via ValueFromRemainingArguments' -ForEach $stubCases {
+        $content = Get-Content $StubPath -Raw
+        $content | Should -Match 'ValueFromRemainingArguments'
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Duplicated helpers removed — the local HtmlEncode / Format-Bytes definitions
+# that were consolidated into the shared module must not reappear.
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'No duplicated helper functions' {
+    $toolCases = Get-ChildItem -Path (Join-Path $PSScriptRoot '..') -Filter '*.ps1' -File |
+        ForEach-Object { @{ Name = $_.Name; FullName = $_.FullName } }
+
+    It '<Name> does not redefine HtmlEncode locally' -ForEach $toolCases {
+        $content = Get-Content $FullName -Raw
+        $content | Should -Not -Match '(?m)^\s*function\s+HtmlEncode\b'
+    }
+
+    It '<Name> does not redefine Format-Bytes locally' -ForEach $toolCases {
+        $content = Get-Content $FullName -Raw
+        $content | Should -Not -Match '(?m)^\s*function\s+Format-Bytes\b'
     }
 }

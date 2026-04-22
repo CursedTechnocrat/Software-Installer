@@ -544,4 +544,14 @@ Write-Host ""
 foreach ($f in $DownloadedFiles) {
     Remove-Item -Path $f -Force -ErrorAction SilentlyContinue
 }
-if ($PSCommandPath) { Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue }
+
+# Self-delete grimoire.ps1 after a one-shot bootstrapped session so the host
+# stays clean when run from `irm … | iex`-style quick-launch snippets.
+# Skip the self-delete when the script lives inside a git checkout — that's a
+# clone, not a throwaway download, and silently removing it would lose work.
+if ($PSCommandPath) {
+    $isRepoCheckout = Test-Path (Join-Path $PSScriptRoot '.git')
+    if (-not $isRepoCheckout) {
+        Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue
+    }
+}

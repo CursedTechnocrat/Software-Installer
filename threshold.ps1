@@ -99,15 +99,6 @@ function Show-Banner {
 
 #region ── Helpers ──────────────────────────────────────────────────────────────
 
-function Format-Bytes {
-    param([long]$Bytes)
-    if ($Bytes -lt 1KB)  { return "$Bytes B" }
-    if ($Bytes -lt 1MB)  { return "{0:N1} KB" -f ($Bytes / 1KB) }
-    if ($Bytes -lt 1GB)  { return "{0:N2} MB" -f ($Bytes / 1MB) }
-    if ($Bytes -lt 1TB)  { return "{0:N2} GB" -f ($Bytes / 1GB) }
-    return "{0:N2} TB" -f ($Bytes / 1TB)
-}
-
 function Get-HealthColor {
     param([string]$Status)
     switch ($Status) {

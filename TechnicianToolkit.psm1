@@ -103,6 +103,21 @@ function EscHtml {
     $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
 }
 
+function Format-Bytes {
+    <#
+    .SYNOPSIS
+        Formats a byte count as a human-readable string (B/KB/MB/GB/TB).
+    .EXAMPLE
+        Format-Bytes 1572864   # -> '1.50 MB'
+    #>
+    param([Parameter(Mandatory)][long]$Bytes)
+    if ($Bytes -lt 1KB) { return "$Bytes B" }
+    if ($Bytes -lt 1MB) { return "{0:N2} KB" -f ($Bytes / 1KB) }
+    if ($Bytes -lt 1GB) { return "{0:N2} MB" -f ($Bytes / 1MB) }
+    if ($Bytes -lt 1TB) { return "{0:N2} GB" -f ($Bytes / 1GB) }
+    return "{0:N2} TB" -f ($Bytes / 1TB)
+}
+
 function Get-TKHtmlCss {
     return @'
 <style>
@@ -451,4 +466,4 @@ function Invoke-AdminElevation {
 
 #endregion
 
-Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Get-TKHtmlCss, Get-TKHtmlHead, Get-TKHtmlFoot, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory, Start-TKTranscript, Stop-TKTranscript, Write-TKError
+Export-ModuleMember -Function Write-Section, Write-Step, Write-Ok, Write-Warn, Write-Fail, Write-Info, EscHtml, Format-Bytes, Get-TKHtmlCss, Get-TKHtmlHead, Get-TKHtmlFoot, Test-IsAdmin, Assert-AdminPrivilege, Invoke-AdminElevation, Get-TKConfig, Set-TKConfig, Resolve-LogDirectory, Start-TKTranscript, Stop-TKTranscript, Write-TKError

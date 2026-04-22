@@ -7,6 +7,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **`Format-Bytes` helper** in `TechnicianToolkit.psm1`. Unifies the byte-to-human-readable formatter that was previously duplicated in `cleanse.ps1` and `threshold.ps1`. Supports B/KB/MB/GB/TB with two-decimal precision.
+- **Pester coverage for HTML report helpers.** New `Describe 'HTML report helpers'` block exercises `Get-TKHtmlHead` / `Get-TKHtmlFoot` — document structure, CSS embedding, meta-bar / nav-bar rendering, HTML-escape of special characters in the title, and round-trip tag balance.
+- **Pester coverage for `Format-Bytes`** — B, KB, MB, GB, TB, and zero-byte cases.
+- **`-WhatIf` compliance test** — asserts that each destructive tool (`revenant`, `archive`, `covenant`, `sigil`, `cleanse`, `cipher`) declares the `-WhatIf` switch so GRIMOIRE's dry-run passthrough has something to bind.
+- **Deprecation stub forwarding test** — asserts each v3.0 legacy-name stub (`oracle`, `sentinel`, `bastion`, `vault`, `phantom`, `specter`, `aegis`, `relic`) forwards to the correct renamed target, emits a `Write-Warning`, and captures remaining arguments via `ValueFromRemainingArguments`.
+- **No-duplicated-helpers test** — guards against re-introducing local `HtmlEncode` / `Format-Bytes` definitions in any tool script.
+- **`Write-TKError` wired into `covenant.ps1`** at the three domain-join failure paths (unattended AD, interactive AD, Entra ID). Failures now emit a Teams webhook notification when one is configured, not just a console line.
+
+### Changed
+- **`HtmlEncode` helper removed from five tools** (`augur.ps1`, `artifact.ps1`, `citadel.ps1`, `gargoyle.ps1`, `ward.ps1`) — each reimplemented the same escape logic. Callers now use the module's `EscHtml`, which also handles null input.
+- **Local `Format-Bytes` definitions removed from `cleanse.ps1` and `threshold.ps1`** in favour of the module export. Threshold's output format changes slightly — KB values now show two decimals instead of one for consistency with the other units.
+- **`revenant.ps1` source-path parameters validated** — `-SourcePath` and `-ArchiveZip` now carry `[ValidateScript]` attributes that reject non-existent paths at parameter-bind time rather than failing deeper in the script.
+- **`grimoire.ps1` self-delete guarded against git checkouts.** The cleanup that removes `$PSCommandPath` after a one-shot hub session now skips when a `.git` directory is present next to the script, so running GRIMOIRE from a cloned working tree no longer silently deletes the file.
+
 ---
 
 ## [3.0.0] - 2026-04-21

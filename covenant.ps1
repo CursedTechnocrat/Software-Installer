@@ -290,6 +290,7 @@ if ($Unattended) {
                 catch {
                     Write-Host "    [-] AD join failed: $_" -ForegroundColor $ColorSchema.Error
                     Add-ActionRecord -Step "AD Join" -Status "Failed" -Detail $_
+                    Write-TKError -ScriptName 'covenant' -Message "AD join to '$ADDomain' failed: $($_.Exception.Message)" -Category 'AD Join'
                 }
             }
         }
@@ -406,6 +407,7 @@ if ($Unattended) {
             & cmdkey /delete:login.microsoftonline.com 2>$null | Out-Null
             Write-Host "    [-] Unexpected error during join: $_" -ForegroundColor $ColorSchema.Error
             Add-ActionRecord -Step "Entra ID Join" -Status "Failed" -Detail $_
+            Write-TKError -ScriptName 'covenant' -Message "Entra ID join failed: $($_.Exception.Message)" -Category 'Entra Join'
         }
         finally {
             # Always zero out the BSTR pointer
@@ -467,6 +469,7 @@ if ($Unattended) {
             catch {
                 Write-Host "    [-] AD join failed: $_" -ForegroundColor $ColorSchema.Error
                 Add-ActionRecord -Step "AD Join" -Status "Failed" -Detail $_
+                Write-TKError -ScriptName 'covenant' -Message "AD join to '$adDomainInput' failed: $($_.Exception.Message)" -Category 'AD Join'
             }
         }
     }

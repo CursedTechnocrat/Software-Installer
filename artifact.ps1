@@ -112,11 +112,6 @@ function Show-ArtifactBanner {
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-function HtmlEncode {
-    param([string]$s)
-    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-}
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CORE DATA FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -363,12 +358,12 @@ function Build-HtmlReport {
             $daysStr   = if ($cert.DaysLeft -lt 0) { "$($cert.DaysLeft)" } else { "$($cert.DaysLeft)" }
 
             $localRows += "            <tr>
-                <td><code>$(HtmlEncode $cert.Store)</code></td>
-                <td class='tk-mono'>$(HtmlEncode $cert.Subject)</td>
-                <td class='tk-mono'>$(HtmlEncode $cert.Issuer)</td>
+                <td><code>$(EscHtml $cert.Store)</code></td>
+                <td class='tk-mono'>$(EscHtml $cert.Subject)</td>
+                <td class='tk-mono'>$(EscHtml $cert.Issuer)</td>
                 <td>$expiryStr</td>
                 <td>$daysStr</td>
-                <td><span class='$badgeClass'>$(HtmlEncode $cert.Status)</span></td>
+                <td><span class='$badgeClass'>$(EscHtml $cert.Status)</span></td>
             </tr>`n"
         }
     }
@@ -388,8 +383,8 @@ function Build-HtmlReport {
 
             if ($r.Status -eq 'Error') {
                 $sslRows += "            <tr>
-                <td class='tk-mono'><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
-                <td class='tk-mono'>$(HtmlEncode $r.Error)</td>
+                <td class='tk-mono'><strong>$(EscHtml $r.Hostname)</strong>:$($r.Port)</td>
+                <td class='tk-mono'>$(EscHtml $r.Error)</td>
                 <td>N/A</td>
                 <td>N/A</td>
                 <td><span class='tk-badge-err'>Error</span></td>
@@ -398,11 +393,11 @@ function Build-HtmlReport {
                 $expiryStr = if ($r.Expiry) { $r.Expiry.ToString('yyyy-MM-dd HH:mm') } else { 'N/A' }
                 $daysStr   = if ($null -ne $r.DaysLeft) { "$($r.DaysLeft)" } else { 'N/A' }
                 $sslRows += "            <tr>
-                <td class='tk-mono'><strong>$(HtmlEncode $r.Hostname)</strong>:$($r.Port)</td>
-                <td class='tk-mono'>$(HtmlEncode $r.Subject)</td>
+                <td class='tk-mono'><strong>$(EscHtml $r.Hostname)</strong>:$($r.Port)</td>
+                <td class='tk-mono'>$(EscHtml $r.Subject)</td>
                 <td>$expiryStr</td>
                 <td>$daysStr</td>
-                <td><span class='$badgeClass'>$(HtmlEncode $r.Status)</span></td>
+                <td><span class='$badgeClass'>$(EscHtml $r.Status)</span></td>
             </tr>`n"
             }
         }
@@ -435,7 +430,7 @@ $sslRows
 
     $cfg = Get-TKConfig
     $orgSubtitle = if (-not [string]::IsNullOrWhiteSpace($cfg.OrgName)) {
-        "$(HtmlEncode $cfg.OrgName)  -  $MachineName"
+        "$(EscHtml $cfg.OrgName)  -  $MachineName"
     } else {
         $MachineName
     }

@@ -22,9 +22,11 @@
 
 param(
     [switch]$Unattended,
+    [ValidateScript({ [string]::IsNullOrWhiteSpace($_) -or (Test-Path -LiteralPath $_) })]
     [string]$SourcePath = "",
     [string]$DestPath   = "",
     [string]$Items      = "A",
+    [ValidateScript({ [string]::IsNullOrWhiteSpace($_) -or (Test-Path -LiteralPath $_) })]
     [string]$ArchiveZip = "",
     [switch]$Transcript,
     [switch]$WhatIf

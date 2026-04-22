@@ -118,11 +118,6 @@ function Show-GargoyleBanner {
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-function HtmlEncode {
-    param([string]$s)
-    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-}
-
 function Show-Spinner {
     param([string]$Message, [scriptblock]$Work)
     $frames = @('|','/','-','\')
@@ -580,7 +575,7 @@ function Build-HtmlReport {
         } elseif ($svc.Status -eq 'Stopped') {
             "<span class='tk-badge-err'>Stopped</span>"
         } else {
-            "<span class='tk-badge-warn'>$(HtmlEncode($svc.Status))</span>"
+            "<span class='tk-badge-warn'>$(EscHtml($svc.Status))</span>"
         }
         $concernCell = if ($svc.Concern) {
             "<span class='tk-badge-err'>!! Concern</span>"
@@ -588,10 +583,10 @@ function Build-HtmlReport {
             "<span style='color:#555'>-</span>"
         }
         $svcRows += "<tr>
-            <td>$(HtmlEncode($svc.Name))</td>
-            <td>$(HtmlEncode($svc.DisplayName))</td>
+            <td>$(EscHtml($svc.Name))</td>
+            <td>$(EscHtml($svc.DisplayName))</td>
             <td>$statusBadge</td>
-            <td>$(HtmlEncode($svc.StartType))</td>
+            <td>$(EscHtml($svc.StartType))</td>
             <td>$concernCell</td>
         </tr>`n"
     }
@@ -612,13 +607,13 @@ function Build-HtmlReport {
         } elseif ($t.State -eq 'Running') {
             "<span class='tk-badge-ok'>Running</span>"
         } else {
-            "<span class='tk-badge-info'>$(HtmlEncode($t.State))</span>"
+            "<span class='tk-badge-info'>$(EscHtml($t.State))</span>"
         }
         $lastRun  = if ($t.LastRunTime -and $t.LastRunTime -gt [datetime]'1900-01-01') { $t.LastRunTime.ToString('yyyy-MM-dd HH:mm') } else { 'Never' }
         $nextRun  = if ($t.NextRunTime -and $t.NextRunTime -gt [datetime]'1900-01-01') { $t.NextRunTime.ToString('yyyy-MM-dd HH:mm') } else { 'N/A' }
         $taskRowsFlagged += "<tr>
-            <td>$(HtmlEncode($t.TaskName))</td>
-            <td class='tk-mono' style='font-size:11px'>$(HtmlEncode($t.TaskPath))</td>
+            <td>$(EscHtml($t.TaskName))</td>
+            <td class='tk-mono' style='font-size:11px'>$(EscHtml($t.TaskPath))</td>
             <td>$stateBadge</td>
             <td>$lastRun</td>
             <td>$resultBadge</td>
@@ -632,9 +627,9 @@ function Build-HtmlReport {
     foreach ($t in $msFailed) {
         $lastRun = if ($t.LastRunTime -and $t.LastRunTime -gt [datetime]'1900-01-01') { $t.LastRunTime.ToString('yyyy-MM-dd HH:mm') } else { 'Never' }
         $taskRowsMs += "<tr>
-            <td>$(HtmlEncode($t.TaskName))</td>
-            <td class='tk-mono' style='font-size:11px'>$(HtmlEncode($t.TaskPath))</td>
-            <td><span class='tk-badge-info'>$(HtmlEncode($t.State))</span></td>
+            <td>$(EscHtml($t.TaskName))</td>
+            <td class='tk-mono' style='font-size:11px'>$(EscHtml($t.TaskPath))</td>
+            <td><span class='tk-badge-info'>$(EscHtml($t.State))</span></td>
             <td>$lastRun</td>
             <td><span class='tk-badge-warn'>$($t.LastTaskResult)</span></td>
             <td>N/A</td>
@@ -646,7 +641,7 @@ function Build-HtmlReport {
     if ($Events -and $Events.SourceSummary) {
         foreach ($src in $Events.SourceSummary) {
             $cntBadge = if ($src.Count -ge 10) { 'tk-badge-err' } elseif ($src.Count -ge 3) { 'tk-badge-warn' } else { 'tk-badge-info' }
-            $srcRows += "<tr><td>$(HtmlEncode($src.Source))</td><td><span class='$cntBadge'>$($src.Count)</span></td></tr>`n"
+            $srcRows += "<tr><td>$(EscHtml($src.Source))</td><td><span class='$cntBadge'>$($src.Count)</span></td></tr>`n"
         }
     }
 
@@ -663,9 +658,9 @@ function Build-HtmlReport {
             $evtRows += "<tr>
                 <td class='tk-mono'>$timeStr</td>
                 <td>$logBadge</td>
-                <td>$(HtmlEncode($evt.Source))</td>
+                <td>$(EscHtml($evt.Source))</td>
                 <td class='tk-mono'>$($evt.EventID)</td>
-                <td style='font-size:12px'>$(HtmlEncode($evt.Message))</td>
+                <td style='font-size:12px'>$(EscHtml($evt.Message))</td>
             </tr>`n"
         }
     }

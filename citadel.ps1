@@ -124,11 +124,6 @@ function Get-DaysInactive {
     return [int]((Get-Date) - $Date).TotalDays
 }
 
-function HtmlEncode {
-    param([string]$s)
-    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-}
-
 # ─────────────────────────────────────────────────────────────────────────────
 # MODULE & DOMAIN CHECK
 # ─────────────────────────────────────────────────────────────────────────────
@@ -799,14 +794,14 @@ function Export-StaleReport {
     foreach ($u in $stale) {
         $lastLogon = Format-LastLogon $u.LastLogonDate
         $days      = Get-DaysInactive $u.LastLogonDate
-        $dept      = if ($u.Department) { HtmlEncode $u.Department } else { "N/A" }
-        $dispName  = if ($u.DisplayName) { HtmlEncode $u.DisplayName } else { "N/A" }
+        $dept      = if ($u.Department) { EscHtml $u.Department } else { "N/A" }
+        $dispName  = if ($u.DisplayName) { EscHtml $u.DisplayName } else { "N/A" }
 
         $daysClass = if ($days -eq "N/A" -or [int]$days -gt 365) { "err" } elseif ([int]$days -gt 180) { "warn" } else { "warn" }
 
         $rows += @"
             <tr>
-                <td><strong>$(HtmlEncode $u.SamAccountName)</strong></td>
+                <td><strong>$(EscHtml $u.SamAccountName)</strong></td>
                 <td>$dispName</td>
                 <td>$dept</td>
                 <td>$lastLogon</td>
@@ -1110,13 +1105,13 @@ function Export-PasswordExpiryReport {
             default    { 'info' }
         }
         $daysStr = if ($u.DaysLeft -lt 0) { "EXPIRED" } else { "$($u.DaysLeft)d" }
-        $dept    = if ($u.Department)   { HtmlEncode $u.Department }   else { "N/A" }
-        $disp    = if ($u.DisplayName)  { HtmlEncode $u.DisplayName }  else { "N/A" }
-        $email   = if ($u.EmailAddress) { HtmlEncode $u.EmailAddress } else { "N/A" }
+        $dept    = if ($u.Department)   { EscHtml $u.Department }   else { "N/A" }
+        $disp    = if ($u.DisplayName)  { EscHtml $u.DisplayName }  else { "N/A" }
+        $email   = if ($u.EmailAddress) { EscHtml $u.EmailAddress } else { "N/A" }
 
         $rows += @"
             <tr>
-                <td><strong>$(HtmlEncode $u.SamAccountName)</strong></td>
+                <td><strong>$(EscHtml $u.SamAccountName)</strong></td>
                 <td>$disp</td>
                 <td>$dept</td>
                 <td>$email</td>

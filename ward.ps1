@@ -169,10 +169,6 @@ function Get-AccountData {
 # HTML REPORT GENERATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-function HtmlEncode([string]$s) {
-    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-}
-
 function Build-HtmlReport {
     param([array]$Accounts, [string]$MachineName, [string]$ReportTimestamp)
 
@@ -196,18 +192,18 @@ function Build-HtmlReport {
             "<span class='tk-badge-info'>Standard</span>"
         }
         $flagCell = if ($acct.Flags) {
-            "<span class='tk-badge-warn'>$(HtmlEncode($acct.Flags))</span>"
+            "<span class='tk-badge-warn'>$(EscHtml($acct.Flags))</span>"
         } else { "" }
 
         $rows += @"
             <tr>
-                <td><strong>$(HtmlEncode($acct.Name))</strong></td>
-                <td>$(HtmlEncode($acct.FullName))</td>
+                <td><strong>$(EscHtml($acct.Name))</strong></td>
+                <td>$(EscHtml($acct.FullName))</td>
                 <td>$enabledBadge</td>
                 <td>$adminBadge</td>
-                <td>$(HtmlEncode($acct.LastLogon))</td>
-                <td>$(HtmlEncode($acct.PasswordLastSet))</td>
-                <td>$(HtmlEncode($acct.PasswordExpires))</td>
+                <td>$(EscHtml($acct.LastLogon))</td>
+                <td>$(EscHtml($acct.PasswordLastSet))</td>
+                <td>$(EscHtml($acct.PasswordExpires))</td>
                 <td>$flagCell</td>
             </tr>
 "@
