@@ -324,6 +324,15 @@ $Tools = @(
         Description = 'Pre-reimaging profile backup  -  ZIP to local or network share'
         Color       = 'Magenta'
         Category    = 'Data & Migration'
+    },
+    [PSCustomObject]@{
+        Key         = '52'
+        Name        = 'T.E.T.H.E.R.'
+        File        = 'tether.ps1'
+        Version     = '3.0'
+        Description = 'OneDrive Known-Folder-Move pre-migration validator  -  client, accounts, KFM, volume, sync errors, HTML report'
+        Color       = 'Cyan'
+        Category    = 'Data & Migration'
     }
 )
 

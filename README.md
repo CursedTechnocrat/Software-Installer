@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, TETHER, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -99,6 +99,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 |---|--------|---------|---------|
 | 50 | **revenant.ps1** | **R.E.V.E.N.A.N.T.** — Relocates, Extracts, Validates Environments, Networks, Accounts 'N Transfers | Profile migration and data transfer between machines or profiles |
 | 51 | **archive.ps1** | **A.R.C.H.I.V.E.** — Automated Repository Compressing & Housing Important Volume Exports | Pre-reimaging profile backup — ZIP to local path or network share |
+| 52 | **tether.ps1** | **T.E.T.H.E.R.** — Tests Endpoint Tethering: Hosted Environment Readiness | OneDrive Known-Folder-Move pre-migration validator — client, accounts, KFM status, content volume, recent sync errors, HTML report |
 
 ---
 
@@ -513,6 +514,21 @@ Creates a compressed ZIP backup of a selected user profile before a machine is r
 
 ---
 
+### T.E.T.H.E.R.
+
+Pre-migration validator that answers the single question a technician cares about before a laptop swap or reimage: "Is this user's data actually going to be in the cloud when we hand them a new machine?"
+
+- OneDrive client state: installed path, file version, process running
+- Signed-in accounts: lists every Business / Personal account in `HKCU:\Software\Microsoft\OneDrive\Accounts` with email, sync-root path, and tenant ID
+- Known Folder Move: Desktop, Documents, and Pictures — for each, resolves the `User Shell Folders` registry entry and flags whether it redirects into OneDrive or sits locally
+- Content volume: file count and total size per known folder with `Format-Bytes` colour coding (>5 GB yellow, >25 GB red) so a technician can anticipate upload time
+- Sync errors: surfaces OneDrive-related Application log events from the last 7 days
+- Readiness verdict: red / yellow / green based on client state + account + KFM coverage, with specific issues and warnings enumerated
+- Dark-themed HTML report with OrgName prefix from `config.json` and a summary-card row including the verdict
+- `-Unattended` silent run that exports the HTML without opening the browser
+
+---
+
 ## Requirements
 
 | Requirement | Notes |
@@ -656,6 +672,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\revenant.p
 
 # A.R.C.H.I.V.E. — Pre-reimaging profile backup
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\archive.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/archive.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
+# T.E.T.H.E.R. — OneDrive Known-Folder-Move pre-migration validator
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\tether.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/tether.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 ```
 
 > All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
@@ -710,7 +729,8 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 
 # Data & Migration
 .\revenant.ps1       # Profile migration and data transfer
-.\archive.ps1       # Pre-reimaging profile backup to ZIP
+.\archive.ps1        # Pre-reimaging profile backup to ZIP
+.\tether.ps1         # OneDrive Known-Folder-Move pre-migration validator
 ```
 
 All scripts must be run as Administrator.
@@ -759,6 +779,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **golem.ps1** | None — tenant, device scope, and report scope selected interactively at runtime |
 | **revenant.ps1** | `config.json` — `Revenant.DefaultDestination`; source, items, and destination also selectable interactively |
 | **archive.ps1** | `config.json` — `Archive.DefaultDestination`; profile, items, and destination also selectable interactively |
+| **tether.ps1** | None — reads HKCU OneDrive and User Shell Folders registry and enumerates Desktop / Documents / Pictures for the currently logged-on user |
 
 ---
 
@@ -794,6 +815,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **golem.ps1** | Log directory — `GOLEM_<timestamp>.html` (Intune / MDM compliance report) |
 | **revenant.ps1** | Log directory — `REVENANT_MigrationLog_<timestamp>.csv` |
 | **archive.ps1** | Script directory — `ARCHIVE_Log_<timestamp>.csv`; manifest inside ZIP |
+| **tether.ps1** | Log directory — `TETHER_<timestamp>.html` (OneDrive KFM readiness report) |
 
 ---
 
