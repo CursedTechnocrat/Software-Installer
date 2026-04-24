@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -92,6 +92,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 40 | **talisman.ps1** | **T.A.L.I.S.M.A.N.** — Tenant Assessment, Logging, Infrastructure, Security, Monitoring & Access Navigator | Azure subscription assessment — security posture, RBAC, backup coverage, Advisor alerts, HTML report |
 | 41 | **reliquary.ps1** | **R.E.L.I.Q.U.A.R.Y.** — Reports, Evaluates Licenses, Inventories, Quotas, Users, Access & Registration Yields | Microsoft 365 license & mailbox audit — license assignments, MFA status, shared mailboxes, HTML report |
 | 42 | **golem.ps1** | **G.O.L.E.M.** — Governs & Observes Licensed Endpoint Management | Intune / MDM compliance audit — managed devices, compliance state, stale devices, configuration profiles, HTML report |
+| 43 | **wraith.ps1** | **W.R.A.I.T.H.** — Watches Registrations, Access, Identities, Tokens & Hygiene | Entra ID identity hygiene audit — guests, privileged roles, password-never-expires, stale admins, disabled-but-licensed, HTML report |
 
 ### Data & Migration
 
@@ -479,6 +480,21 @@ Connects to Microsoft Graph and audits the Intune-managed device estate.
 
 ---
 
+### W.R.A.I.T.H.
+
+Connects to Microsoft Graph and audits Entra ID identity hygiene — the security-and-cost questions that RELIQUARY (licensing) and GOLEM (devices) don't cover.
+
+- Guest users: every guest in the tenant with creation date, last sign-in, and invite state; flags guests inactive 90+ days for external-access cleanup
+- Privileged role holders: every member of every active directory role, one row per user-per-role; high-tier roles (Global Admin, Privileged Role Admin, User Admin, Exchange / SharePoint / Security / Conditional Access Admin) called out in the console summary
+- Password never expires: cloud-only members with `DisablePasswordExpiration` set — the classic shared-mailbox / service-account hygiene miss
+- Stale privileged users: deduplicated set of admins from the role audit who have not signed in in 60+ days, annotated with all their role assignments
+- Disabled but licensed: disabled accounts still consuming paid SKUs (cost-leak after off-boarding)
+- Dark-themed HTML report with OrgName prefix from `config.json` and six summary cards, one per audit section
+- Telemetry via `Write-TKError` on Graph auth failure and each Graph query failure
+- `-Unattended` to auto-connect and export the full report without prompts
+
+---
+
 ## Data & Migration
 
 ### R.E.V.E.N.A.N.T.
@@ -561,10 +577,11 @@ Outlook data-file discovery that inventories every PST (and optionally OST) on t
 | WinRM enabled on target machine | `shade.ps1`, `gargoyle.ps1` (remote mode) |
 | RSAT ActiveDirectory module | `citadel.ps1` (auto-installed if missing) |
 | Az PowerShell modules | `talisman.ps1` (auto-installed if missing) |
-| Microsoft.Graph modules | `reliquary.ps1`, `golem.ps1` (auto-installed if missing) |
+| Microsoft.Graph modules | `reliquary.ps1`, `golem.ps1`, `wraith.ps1` (auto-installed if missing) |
 | Azure subscription + appropriate RBAC | `talisman.ps1` |
-| Microsoft 365 tenant + Global Reader or equivalent | `reliquary.ps1`, `golem.ps1` |
+| Microsoft 365 tenant + Global Reader or equivalent | `reliquary.ps1`, `golem.ps1`, `wraith.ps1` |
 | Microsoft Intune licence + DeviceManagement Graph permissions | `golem.ps1` |
+| RoleManagement.Read.Directory + AuditLog.Read.All Graph scopes | `wraith.ps1` |
 | On-premises Active Directory domain membership | `citadel.ps1` |
 
 ---
@@ -681,6 +698,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\reliquary.
 # G.O.L.E.M. — Intune / MDM compliance audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\golem.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/golem.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
+# W.R.A.I.T.H. — Entra ID identity hygiene audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\wraith.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/wraith.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
 # ── Data & Migration ─────────────────────────────────────────────────────────
 
 # R.E.V.E.N.A.N.T. — Profile migration
@@ -745,6 +765,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\talisman.ps1      # Azure environment assessment and HTML report
 .\reliquary.ps1     # Microsoft 365 license and mailbox audit
 .\golem.ps1         # Intune / MDM compliance audit and HTML report
+.\wraith.ps1        # Entra ID identity hygiene audit and HTML report
 
 # Data & Migration
 .\revenant.ps1       # Profile migration and data transfer
@@ -797,6 +818,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **talisman.ps1** | `-SubscriptionId` — target a specific Azure subscription; `-OutputPath` — HTML report destination; `-NoOpen` — suppress auto-open after export |
 | **reliquary.ps1** | None — tenant and report scope selected interactively at runtime |
 | **golem.ps1** | None — tenant, device scope, and report scope selected interactively at runtime |
+| **wraith.ps1** | None — tenant and audit scope selected interactively at runtime |
 | **revenant.ps1** | `config.json` — `Revenant.DefaultDestination`; source, items, and destination also selectable interactively |
 | **archive.ps1** | `config.json` — `Archive.DefaultDestination`; profile, items, and destination also selectable interactively |
 | **tether.ps1** | None — reads HKCU OneDrive and User Shell Folders registry and enumerates Desktop / Documents / Pictures for the currently logged-on user |
@@ -834,6 +856,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **talisman.ps1** | `-OutputPath` (default `%TEMP%`) — `azure-assessment-<timestamp>.html`; auto-opens in browser |
 | **reliquary.ps1** | Log directory — `RELIQUARY_<timestamp>.html` (combined license & mailbox report) |
 | **golem.ps1** | Log directory — `GOLEM_<timestamp>.html` (Intune / MDM compliance report) |
+| **wraith.ps1** | Log directory — `WRAITH_<timestamp>.html` (Entra ID identity hygiene report) |
 | **revenant.ps1** | Log directory — `REVENANT_MigrationLog_<timestamp>.csv` |
 | **archive.ps1** | Script directory — `ARCHIVE_Log_<timestamp>.csv`; manifest inside ZIP |
 | **tether.ps1** | Log directory — `TETHER_<timestamp>.html` (OneDrive KFM readiness report) |

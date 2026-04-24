@@ -306,6 +306,15 @@ $Tools = @(
         Color       = 'Yellow'
         Category    = 'Cloud & Identity'
     },
+    [PSCustomObject]@{
+        Key         = '43'
+        Name        = 'W.R.A.I.T.H.'
+        File        = 'wraith.ps1'
+        Version     = '3.0'
+        Description = 'Entra ID identity hygiene audit  -  guests, privileged roles, password-never-expires, stale admins, disabled-but-licensed'
+        Color       = 'Red'
+        Category    = 'Cloud & Identity'
+    },
     # ── Data & Migration (50–59) ─────────────────────────────────────
     [PSCustomObject]@{
         Key         = '50'
