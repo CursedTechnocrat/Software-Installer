@@ -277,6 +277,15 @@ $Tools = @(
         Color       = 'Red'
         Category    = 'Security'
     },
+    [PSCustomObject]@{
+        Key         = '25'
+        Name        = 'T.O.T.E.M.'
+        File        = 'totem.ps1'
+        Version     = '3.0'
+        Description = 'TPM health audit  -  presence, spec, ownership, readiness, BitLocker dependency, attestation'
+        Color       = 'Cyan'
+        Category    = 'Security'
+    },
     # ── Network & Remote (30–39) ─────────────────────────────────────
     [PSCustomObject]@{
         Key         = '30'

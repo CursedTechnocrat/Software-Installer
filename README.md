@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON, TOTEM) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -79,6 +79,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 22 | **citadel.ps1** | **C.I.T.A.D.E.L.** — Centralizes Identity, Tasks, Accounts, Directories, Entitlements & Logons | Active Directory user & group management — unlock, reset, lockout forensics, stale & expiry reports |
 | 23 | **artifact.ps1** | **A.R.T.I.F.A.C.T.** — Audits, Reports Trust, Identity, Fingerprints, Authority, Certificates & TLS | Certificate health monitor — local cert stores, SSL/TLS expiry, HTML report |
 | 24 | **talon.ps1** | **T.A.L.O.N.** — Tracks Anomalies & Locates Otherwise-silent Nastiness | Persistence / autoruns audit — Run keys, startup folders, services, tasks, WMI subscriptions, IFEO hijacks, Winlogon, HTML report |
+| 25 | **totem.ps1** | **T.O.T.E.M.** — Trusted Observer of Transparent Execution Modules | TPM health audit — presence, spec version, ownership, readiness, BitLocker dependency, endorsement key, HTML report |
 
 ### Network & Remote
 
@@ -434,6 +435,20 @@ Sweeps the standard Windows persistence surfaces and inventories every entry so 
 
 ---
 
+### T.O.T.E.M.
+
+TPM health audit gating the four questions that matter for modern Windows management: "Can this machine run Windows 11?" "Is BitLocker going to unlock cleanly?" "Is this machine eligible for Autopilot attestation?" "Is the TPM provisioned and owned?"
+
+- **TPM status** via `Get-Tpm`: present / enabled / activated / ready / owned, manufacturer ID and text, manufacturer version, physical-presence interface version, auto-provisioning state, restart-pending flag
+- **Specification summary**: parses the raw `SpecVersion` string, labels as TPM 1.2 / TPM 2.0, flags Windows-11-readiness
+- **BitLocker dependency** via `Get-BitLockerVolume`: for each volume, lists every key protector and flags whether any is TPM-based (`Tpm`, `TpmPin`, `TpmPinStartupKey`, `TpmStartupKey`) so a technician can answer "if this TPM goes bad, which drives stop unlocking?"
+- **Attestation / Endorsement Key** via `Get-TpmEndorsementKeyInfo`: surfaces EK presence and manufacturer-certificate count — required for Windows Autopilot pre-provisioning and attested boot
+- **Red / yellow / green verdict** with specific remediation hints (enable in firmware, provision, clear-and-reprovision, vendor BIOS update for dTPM->fTPM, etc.)
+- Dark-themed HTML report with six summary cards including readiness, spec, BitLocker-volumes-depending-on-TPM, and EK presence
+- Auto-elevates; read-only audit
+
+---
+
 ## Network & Remote
 
 ### L.E.Y.L.I.N.E.
@@ -739,6 +754,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\artifact.p
 # T.A.L.O.N. — Persistence / autoruns audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\talon.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/talon.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
+# T.O.T.E.M. — TPM health audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\totem.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/totem.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
 # ── Network & Remote ─────────────────────────────────────────────────────────
 
 # L.E.Y.L.I.N.E. — Network diagnostics & remediation
@@ -821,6 +839,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\citadel.ps1       # Active Directory user and group management
 .\artifact.ps1         # Certificate health and SSL expiry monitor
 .\talon.ps1          # Persistence / autoruns audit
+.\totem.ps1          # TPM health audit
 
 # Network & Remote
 .\leyline.ps1       # Network diagnostics and remediation
@@ -881,6 +900,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **citadel.ps1** | None — user search and action selected interactively; stale threshold is 90 days (editable in script) |
 | **artifact.ps1** | None — stores and targets selected interactively or via `-Targets` parameter |
 | **talon.ps1** | None — every persistence surface is enumerated unconditionally |
+| **totem.ps1** | None — reads TPM state, BitLocker protectors, and endorsement key info unconditionally |
 | **leyline.ps1** | None — all tests run interactively; no persistent config |
 | **shade.ps1** | None — target, credentials, and operation selected interactively at runtime |
 | **lantern.ps1** | `$script:ScanPorts` — list of TCP ports checked during scan (editable in script) |
@@ -922,6 +942,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **citadel.ps1** | Log directory — `CITADEL_Stale_<timestamp>.html`; `CITADEL_PwdExpiry_<timestamp>.html` |
 | **artifact.ps1** | Log directory — `ARTIFACT_<timestamp>.html` (cert inventory & SSL results) |
 | **talon.ps1** | Log directory — `TALON_<timestamp>.html` (persistence / autoruns audit) |
+| **totem.ps1** | Log directory — `TOTEM_<timestamp>.html` (TPM health audit) |
 | **leyline.ps1** | Console only — no log file |
 | **shade.ps1** | Script directory — `SHADE_<MachineName>\` folder containing retrieved output files |
 | **lantern.ps1** | Log directory — `LANTERN_<timestamp>.html` and `LANTERN_<timestamp>.csv` |
