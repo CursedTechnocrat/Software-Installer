@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, TETHER, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -100,6 +100,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 50 | **revenant.ps1** | **R.E.V.E.N.A.N.T.** — Relocates, Extracts, Validates Environments, Networks, Accounts 'N Transfers | Profile migration and data transfer between machines or profiles |
 | 51 | **archive.ps1** | **A.R.C.H.I.V.E.** — Automated Repository Compressing & Housing Important Volume Exports | Pre-reimaging profile backup — ZIP to local path or network share |
 | 52 | **tether.ps1** | **T.E.T.H.E.R.** — Tests Endpoint Tethering: Hosted Environment Readiness | OneDrive Known-Folder-Move pre-migration validator — client, accounts, KFM status, content volume, recent sync errors, HTML report |
+| 53 | **exhume.ps1** | **E.X.H.U.M.E.** — Enumerates, eXposes & Hunts Unmigrated Mail Entries | Outlook PST / OST discovery — profile walk, drive-wide file scan, orphan / oversize / stale detection, HTML report |
 
 ---
 
@@ -529,6 +530,21 @@ Pre-migration validator that answers the single question a technician cares abou
 
 ---
 
+### E.X.H.U.M.E.
+
+Outlook data-file discovery that inventories every PST (and optionally OST) on the machine before a mail migration, flags the files that will be a problem, and cross-references them against configured Outlook profiles.
+
+- Profile walk: iterates `HKCU:\Software\Microsoft\Office\{14,15,16}.0\Outlook\Profiles` and extracts every mounted store path per profile, marks the default profile
+- Drive-wide file scan: recursively enumerates every local fixed drive for `*.pst` (and `*.ost` with `-IncludeOst`), skipping system folders to keep the scan fast
+- Orphan detection: any PST on disk that no configured profile references is flagged — often lost archives in old user-data folders after a domain migration
+- Oversize detection: PSTs ≥ 50 GB are flagged red as Exchange Online Import Service blockers; 10–50 GB flagged yellow as slow-import warnings
+- Stale detection: PSTs not accessed in 365+ days are flagged as archive-on-ingest candidates rather than primary-mailbox imports
+- Readiness verdict: red / yellow / green based on the worst finding, with specific issues and recommendations enumerated
+- Dark-themed HTML report with OrgName prefix from `config.json`, six summary cards (verdict, file count, total size, orphans, oversize, stale), and the full file inventory with per-file colour-coded size badges
+- `-ScanDrives C:,D:` to narrow the scan; `-IncludeOst` to add `.ost` caches (off by default since OSTs regenerate on the next machine); `-Unattended` for silent export
+
+---
+
 ## Requirements
 
 | Requirement | Notes |
@@ -675,6 +691,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\archive.ps
 
 # T.E.T.H.E.R. — OneDrive Known-Folder-Move pre-migration validator
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\tether.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/tether.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
+# E.X.H.U.M.E. — Outlook PST / OST discovery
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\exhume.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/exhume.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 ```
 
 > All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
@@ -731,6 +750,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\revenant.ps1       # Profile migration and data transfer
 .\archive.ps1        # Pre-reimaging profile backup to ZIP
 .\tether.ps1         # OneDrive Known-Folder-Move pre-migration validator
+.\exhume.ps1         # Outlook PST / OST discovery before mail migration
 ```
 
 All scripts must be run as Administrator.
@@ -780,6 +800,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **revenant.ps1** | `config.json` — `Revenant.DefaultDestination`; source, items, and destination also selectable interactively |
 | **archive.ps1** | `config.json` — `Archive.DefaultDestination`; profile, items, and destination also selectable interactively |
 | **tether.ps1** | None — reads HKCU OneDrive and User Shell Folders registry and enumerates Desktop / Documents / Pictures for the currently logged-on user |
+| **exhume.ps1** | `-ScanDrives` — comma-separated drive list to restrict the scan (defaults to all fixed local drives); `-IncludeOst` — include `.ost` caches in the scan (off by default) |
 
 ---
 
@@ -816,6 +837,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **revenant.ps1** | Log directory — `REVENANT_MigrationLog_<timestamp>.csv` |
 | **archive.ps1** | Script directory — `ARCHIVE_Log_<timestamp>.csv`; manifest inside ZIP |
 | **tether.ps1** | Log directory — `TETHER_<timestamp>.html` (OneDrive KFM readiness report) |
+| **exhume.ps1** | Log directory — `EXHUME_<timestamp>.html` (Outlook PST / OST discovery report) |
 
 ---
 

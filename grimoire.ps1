@@ -333,6 +333,15 @@ $Tools = @(
         Description = 'OneDrive Known-Folder-Move pre-migration validator  -  client, accounts, KFM, volume, sync errors, HTML report'
         Color       = 'Cyan'
         Category    = 'Data & Migration'
+    },
+    [PSCustomObject]@{
+        Key         = '53'
+        Name        = 'E.X.H.U.M.E.'
+        File        = 'exhume.ps1'
+        Version     = '3.0'
+        Description = 'Outlook PST / OST discovery  -  profiles, data files, orphans, oversize, stale archives, HTML report'
+        Color       = 'Yellow'
+        Category    = 'Data & Migration'
     }
 )
 
