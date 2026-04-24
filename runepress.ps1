@@ -20,7 +20,8 @@
 
 param(
     [switch]$Unattended,
-    [switch]$Transcript
+    [switch]$Transcript,
+    [switch]$WhatIf
 )
 
 # ===========================
@@ -246,6 +247,17 @@ function Install-ZipDriver {
     Write-Host "Using INF: $($SelectedInf.FullName)" -ForegroundColor Cyan
 
     # Install driver package via pnputil
+    if ($WhatIf) {
+        Write-Host "[~] WhatIf: would run  pnputil /add-driver `"$($SelectedInf.FullName)`" /install" -ForegroundColor Cyan
+        $script:InstallationLog += [PSCustomObject]@{
+            File   = $ZipFile.Name
+            Type   = "ZIP"
+            INF    = $SelectedInf.Name
+            Status = "WhatIf (not installed)"
+            Time   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        }
+        return $true
+    }
     Write-Host "Installing driver package..." -ForegroundColor Yellow
     try {
         $PnpResult = & pnputil /add-driver "$($SelectedInf.FullName)" /install 2>&1
@@ -291,6 +303,16 @@ function Install-ExeDriver {
     Write-Host ""
     Write-Host "Processing EXE: $($ExeFile.Name)" -ForegroundColor Cyan
     Write-Host "----------------------------------------------------------------" -ForegroundColor Cyan
+
+    if ($WhatIf) {
+        Write-Host "[~] WhatIf: would run  $($ExeFile.FullName) /S /silent /quiet /norestart" -ForegroundColor Cyan
+        $script:InstallationLog += [PSCustomObject]@{
+            File = $ExeFile.Name; Type = "EXE"; INF = "N/A"
+            Status = "WhatIf (not installed)"; Time = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        }
+        return $true
+    }
+
     Write-Host "Running silent installer..." -ForegroundColor Yellow
 
     try {
@@ -345,6 +367,16 @@ function Install-MsiDriver {
     Write-Host ""
     Write-Host "Processing MSI: $($MsiFile.Name)" -ForegroundColor Cyan
     Write-Host "----------------------------------------------------------------" -ForegroundColor Cyan
+
+    if ($WhatIf) {
+        Write-Host "[~] WhatIf: would run  msiexec /i `"$($MsiFile.FullName)`" /qn /norestart" -ForegroundColor Cyan
+        $script:InstallationLog += [PSCustomObject]@{
+            File = $MsiFile.Name; Type = "MSI"; INF = "N/A"
+            Status = "WhatIf (not installed)"; Time = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        }
+        return $true
+    }
+
     Write-Host "Running silent installer..." -ForegroundColor Yellow
 
     try {
@@ -433,6 +465,11 @@ function Add-NetworkPrinter {
     Write-Host " Step 3: Network Printer Configuration" -ForegroundColor Cyan
     Write-Host "================================================================" -ForegroundColor Cyan
     Write-Host ""
+
+    if ($WhatIf) {
+        Write-Host "[~] WhatIf: network printer addition skipped. No port or printer created." -ForegroundColor Cyan
+        return
+    }
 
     while ($true) {
         $response = Read-Host "Add a network printer? (Y/N)"

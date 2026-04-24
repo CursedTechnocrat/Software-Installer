@@ -678,10 +678,13 @@ function Build-HtmlReport {
     $showFlagTable = if ($flaggedTasks.Count -eq 0) { ' style="display:none"' } else { '' }
     $showMsTable   = if ($msFailed.Count -eq 0)     { ' style="display:none"' } else { '' }
 
+    $tkCfg     = Get-TKConfig
+    $orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $html  = Get-TKHtmlHead `
         -Title      'Service & Task Health Report' `
         -ScriptName 'G.A.R.G.O.Y.L.E.' `
-        -Subtitle   $MachineName `
+        -Subtitle   "$orgPrefix$MachineName" `
         -MetaItems  ([ordered]@{
             'Machine'   = $MachineName
             'Generated' = $ReportTimestamp

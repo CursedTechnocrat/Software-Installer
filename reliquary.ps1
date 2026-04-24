@@ -657,10 +657,13 @@ function Build-HtmlReport {
     $inactClass  = if ($InactiveData.Count   -gt 0) { 'warn' } else { 'ok' }
     $mfaClass    = if ($NoMfaData.Count      -gt 0) { 'err'  } else { 'ok' }
 
+    $tkCfg     = Get-TKConfig
+    $orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $htmlHead = Get-TKHtmlHead `
         -Title      'R.E.L.I.Q.U.A.R.Y. Audit Report' `
         -ScriptName 'R.E.L.I.Q.U.A.R.Y.' `
-        -Subtitle   "Microsoft 365 License &amp; User Security Audit -- $tenantDisplay" `
+        -Subtitle   "${orgPrefix}Microsoft 365 License &amp; User Security Audit -- $tenantDisplay" `
         -MetaItems  ([ordered]@{
             'Generated'    = $reportDate
             'Connected As' = $connectedAs

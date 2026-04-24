@@ -579,10 +579,13 @@ function Build-HtmlReport {
 
     $warnCountClass = if ($warnCount -gt 0) { 'warn' } else { 'ok' }
 
+    $tkCfg      = Get-TKConfig
+    $orgPrefix  = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $html  = Get-TKHtmlHead `
         -Title      'Disk & Storage Health Report' `
         -ScriptName 'T.H.R.E.S.H.O.L.D.' `
-        -Subtitle   $hostname `
+        -Subtitle   "$orgPrefix$hostname" `
         -MetaItems  ([ordered]@{
             'Host'      = $hostname
             'Generated' = $timestamp

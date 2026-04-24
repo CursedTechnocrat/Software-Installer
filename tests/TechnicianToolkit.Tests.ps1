@@ -398,9 +398,11 @@ Describe 'Legacy tool names must not reappear' {
 # ─────────────────────────────────────────────────────────────────────────────
 Describe '-WhatIf declared on destructive tools' {
     # Tools that make persistent, hard-to-reverse changes: file moves, registry
-    # writes, domain joins, disk encryption toggles, AV policy changes.
+    # writes, domain joins, disk encryption toggles, AV policy changes, driver
+    # and Windows Update installs, printer driver / network printer additions.
     $destructiveCases = @(
-        'revenant.ps1','archive.ps1','covenant.ps1','sigil.ps1','cleanse.ps1','cipher.ps1'
+        'revenant.ps1','archive.ps1','covenant.ps1','sigil.ps1','cleanse.ps1','cipher.ps1',
+        'forge.ps1','restoration.ps1','runepress.ps1'
     ) | ForEach-Object {
         @{ Name = $_; FullName = (Join-Path $PSScriptRoot "..\$_") }
     }

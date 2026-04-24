@@ -316,10 +316,13 @@ $overallBadge = if ($criticalCount -gt 0 -or $smartFailCount -gt 0) {
     "<span class='tk-badge-ok'>All Healthy</span>"
 }
 
+$tkCfg     = Get-TKConfig
+$orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
 $htmlHead = Get-TKHtmlHead `
     -Title     'Disk Health Assessment' `
     -ScriptName 'A.U.G.U.R.' `
-    -Subtitle   $env:COMPUTERNAME `
+    -Subtitle   "$orgPrefix$env:COMPUTERNAME" `
     -MetaItems  ([ordered]@{
         'Machine'   = $env:COMPUTERNAME
         'Run As'    = "$env:USERDOMAIN\$env:USERNAME"

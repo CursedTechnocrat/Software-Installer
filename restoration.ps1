@@ -22,7 +22,8 @@
 param(
     [switch]$Unattended,
     [switch]$AutoReboot,
-    [switch]$Transcript
+    [switch]$Transcript,
+    [switch]$WhatIf
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -234,10 +235,15 @@ try {
         $updates | ForEach-Object { Write-Host "    * $($_.Title)" -ForegroundColor $ColorSchema.Info }
         Write-Host ""
 
-        # Install updates without reboot
-        Install-WindowsUpdate -NotCategory "Drivers" -AutoReboot:$false -Confirm:$false
+        if ($WhatIf) {
+            Write-Host "[~] WhatIf: the $($updates.Count) update(s) above would be installed. No changes made." -ForegroundColor Cyan
+        }
+        else {
+            # Install updates without reboot
+            Install-WindowsUpdate -NotCategory "Drivers" -AutoReboot:$false -Confirm:$false
 
-        Write-Host "[+] Windows Updates installed successfully" -ForegroundColor $ColorSchema.Success
+            Write-Host "[+] Windows Updates installed successfully" -ForegroundColor $ColorSchema.Success
+        }
     }
 }
 catch {
@@ -284,7 +290,11 @@ else {
 # REBOOT DECISION - ONLY PROMPT IF REBOOT IS REQUIRED
 # ─────────────────────────────────────────────────────────────────────────────
 
-if ($rebootRequired) {
+if ($WhatIf) {
+    Write-Host "[~] WhatIf: reboot decision skipped — no updates were installed." -ForegroundColor Cyan
+    Write-Host ""
+}
+elseif ($rebootRequired) {
     Write-Host "  *** REBOOT REQUIRED ***" -ForegroundColor $ColorSchema.Warning
     Write-Host ""
 

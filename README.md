@@ -152,6 +152,7 @@ Automates printer driver extraction, installation, and network printer configura
 - Handles automatic driver extraction and INF-based installation via pnputil
 - Configures network printers via IP (TCP/IP port) or UNC path post-install
 - Generates a timestamped installation log (CSV) in the script directory
+- `-WhatIf` previews each driver install (pnputil / EXE silent / msiexec) and skips the network-printer stage, leaving no files or printers behind
 
 ---
 
@@ -164,6 +165,7 @@ Audits the device tree for driver problems and automates driver installation fro
 - Installs drivers from the current folder: ZIP (extracts and runs pnputil on INF), bare INF, EXE (silent), MSI (quiet)
 - Exports a full driver inventory CSV with device name, driver version, date, and manufacturer
 - Cleans up extracted driver staging folders automatically
+- `-WhatIf` lists pending Windows Update drivers and previews the extension-specific handler for each local file (extract / pnputil / silent EXE / msiexec) without running any of them
 
 ---
 
@@ -176,6 +178,7 @@ Automates Windows Update detection, installation, and reboot handling with minim
 - Installs available updates (drivers excluded) with no forced reboot
 - Checks reboot status and prompts only when required
 - 30-second reboot countdown with Escape key cancel
+- `-WhatIf` lists every pending update that would be installed and skips both the install and the reboot decision
 
 ---
 
@@ -711,9 +714,9 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **grimoire.ps1** | None — tool list is defined in the `$Tools` array in the script |
 | **covenant.ps1** | `config.json` — `Covenant.DefaultTimezone`, `Covenant.DefaultLocalAdminUser` |
 | **conjure.ps1** | `$RequiredSoftware` / `$RequiredSoftwareChoco` — required package IDs; `$OptionalSoftware` / `$OptionalSoftwareChoco` — optional package IDs; `$PackageManager` — default manager (`winget` or `choco`) |
-| **runepress.ps1** | `$ExtractRoot` — driver extraction staging folder (defaults to `.\ExtractedDrivers`) |
-| **forge.ps1** | None — driver sources scanned from current folder automatically |
-| **restoration.ps1** | None — power settings are detected and restored automatically |
+| **runepress.ps1** | `$ExtractRoot` — driver extraction staging folder (defaults to `.\ExtractedDrivers`); `-WhatIf` for dry run |
+| **forge.ps1** | None — driver sources scanned from current folder automatically; `-WhatIf` previews Windows Update and local driver installs |
+| **restoration.ps1** | None — power settings are detected and restored automatically; `-WhatIf` lists available updates without installing |
 | **hearth.ps1** | None — all settings entered via the interactive wizard; `config.json` is the output (see config key table above) |
 | **auspex.ps1** | `$ReportOutputPath` — folder where the HTML report is saved (defaults to script directory; accepts any local or UNC path) |
 | **ward.ps1** | None — audit runs automatically; stale threshold is 90 days (editable in script) |

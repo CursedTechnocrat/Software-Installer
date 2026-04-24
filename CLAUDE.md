@@ -148,8 +148,10 @@ $ColorSchema = @{
 ### Parameter Conventions
 
 - All interactive tools expose `[switch]$Unattended` — skips prompts, runs defaults.
-- Destructive tools (REVENANT, CLEANSE) also expose `[switch]$WhatIf` — previews actions without
-  executing them. GRIMOIRE auto-detects and passes `-WhatIf` to any tool that declares it.
+- Destructive or state-changing tools also expose `[switch]$WhatIf` — previews actions without
+  executing them. The current set is REVENANT, ARCHIVE, COVENANT, SIGIL, CLEANSE, CIPHER, FORGE,
+  RESTORATION, and RUNEPRESS. GRIMOIRE auto-detects and passes `-WhatIf` to any tool that declares
+  it, and the Pester suite (`'-WhatIf declared on destructive tools'`) enforces the list.
 - Tools that write logs expose `[switch]$Transcript`.
 
 ### Script Header Block

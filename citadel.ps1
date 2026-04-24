@@ -811,10 +811,13 @@ function Export-StaleReport {
 "@
     }
 
+    $tkCfg     = Get-TKConfig
+    $orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $html = (Get-TKHtmlHead `
         -Title     'C.I.T.A.D.E.L. Stale Accounts Report' `
         -ScriptName 'C.I.T.A.D.E.L.' `
-        -Subtitle  "Domain: $domain" `
+        -Subtitle  "${orgPrefix}Domain: $domain" `
         -MetaItems ([ordered]@{ 'Generated' = $reportTimestamp; 'Stale Threshold' = '90 days' }) `
         -NavItems  @('Stale User Accounts')) + @"
 
@@ -1121,10 +1124,13 @@ function Export-PasswordExpiryReport {
 "@
     }
 
+    $tkCfg     = Get-TKConfig
+    $orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $html = (Get-TKHtmlHead `
         -Title     'C.I.T.A.D.E.L. Password Expiry Report' `
         -ScriptName 'C.I.T.A.D.E.L.' `
-        -Subtitle  "Domain: $domain" `
+        -Subtitle  "${orgPrefix}Domain: $domain" `
         -MetaItems ([ordered]@{ 'Generated' = $reportTimestamp; 'Threshold' = "$thresholdDays days" }) `
         -NavItems  @('Users with Expiring Passwords')) + @"
 

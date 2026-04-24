@@ -278,9 +278,12 @@ $reportFile = Join-Path $reportDir "SCRYER_Report_$(Get-Date -Format 'yyyyMMdd_H
 Write-Host ""
 Write-Host "  [*] Building HTML report..." -ForegroundColor $ColorSchema.Progress
 
+$tkCfg     = Get-TKConfig
+$orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
 $html = Get-TKHtmlHead -Title "SCRYER Unified Report" `
     -ScriptName "S.C.R.Y.E.R." `
-    -Subtitle $env:COMPUTERNAME `
+    -Subtitle "$orgPrefix$env:COMPUTERNAME" `
     -MetaItems ([ordered]@{
         'Generated' = (Get-Date -Format 'yyyy-MM-dd HH:mm')
         'OS'        = "$osCaption (Build $osBuild)"

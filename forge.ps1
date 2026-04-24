@@ -24,7 +24,8 @@ param(
     [switch]$Unattended,
     [ValidateSet('Audit','WindowsUpdate','LocalInstall','Report')]
     [string]$Action = 'Audit',
-    [switch]$Transcript
+    [switch]$Transcript,
+    [switch]$WhatIf
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -185,6 +186,12 @@ function Invoke-WindowsUpdateDrivers {
             Write-Host ""
         }
 
+        if ($WhatIf) {
+            Write-Host ""
+            Write-Host "  [~] WhatIf: would install the driver updates listed above. No changes made." -ForegroundColor Cyan
+            return
+        }
+
         if (-not $Unattended) {
             Write-Host -NoNewline "  Install all driver updates now? (Y/N): " -ForegroundColor $C.Warning
             $confirm = (Read-Host).Trim().ToUpper()
@@ -234,6 +241,21 @@ function Invoke-LocalDriverInstall {
     Write-Host ("  [+] Found {0} file(s):" -f $driverFiles.Count) -ForegroundColor $C.Success
     $driverFiles | ForEach-Object { Write-Host ("    - {0}" -f $_.Name) -ForegroundColor $C.Info }
     Write-Host ""
+
+    if ($WhatIf) {
+        Write-Host "  [~] WhatIf: would process each file using its extension handler:" -ForegroundColor Cyan
+        foreach ($f in $driverFiles) {
+            switch ($f.Extension.ToLower()) {
+                '.zip' { Write-Host ("    [~] {0} — extract, then pnputil /add-driver /install on each .inf" -f $f.Name) -ForegroundColor Cyan }
+                '.inf' { Write-Host ("    [~] {0} — pnputil /add-driver /install" -f $f.Name) -ForegroundColor Cyan }
+                '.exe' { Write-Host ("    [~] {0} — silent install (/s /silent /quiet)" -f $f.Name) -ForegroundColor Cyan }
+                '.msi' { Write-Host ("    [~] {0} — msiexec /i /quiet /norestart" -f $f.Name) -ForegroundColor Cyan }
+            }
+        }
+        Write-Host ""
+        Write-Host "  [~] No files extracted or installed." -ForegroundColor Cyan
+        return
+    }
 
     if (-not $Unattended) {
         Write-Host -NoNewline "  Proceed with installation? (Y/N): " -ForegroundColor $C.Warning

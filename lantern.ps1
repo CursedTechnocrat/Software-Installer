@@ -477,10 +477,13 @@ function Build-HtmlReport {
     $subnet = Get-LocalSubnetPrefix
     $subnetLabel = if ($subnet) { "$subnet.0/24" } else { 'Unknown' }
 
+    $tkCfg     = Get-TKConfig
+    $orgPrefix = if (-not [string]::IsNullOrWhiteSpace($tkCfg.OrgName)) { "$(EscHtml $tkCfg.OrgName) -- " } else { '' }
+
     $htmlReport = (Get-TKHtmlHead `
         -Title      'L.A.N.T.E.R.N. Network Discovery Report' `
         -ScriptName 'L.A.N.T.E.R.N.' `
-        -Subtitle   'Network Discovery & Asset Inventory' `
+        -Subtitle   "${orgPrefix}Network Discovery & Asset Inventory" `
         -MetaItems  ([ordered]@{
             'Generated' = $generated
             'Subnet'    = $subnetLabel
