@@ -222,6 +222,15 @@ $Tools = @(
         Color       = 'Cyan'
         Category    = 'Diagnostics & Reporting'
     },
+    [PSCustomObject]@{
+        Key         = '17'
+        Name        = 'A.N.V.I.L.'
+        File        = 'anvil.ps1'
+        Version     = '3.0'
+        Description = 'BIOS / UEFI / firmware audit  -  system identity, Secure Boot, vendor channels, pending WU updates'
+        Color       = 'Yellow'
+        Category    = 'Diagnostics & Reporting'
+    },
     # ── Security (20–29) ─────────────────────────────────────────────
     [PSCustomObject]@{
         Key         = '20'

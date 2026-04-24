@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -68,6 +68,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 14 | **augur.ps1** | **A.U.G.U.R.** — Analyzes, Uncovers & Gauges Unit Reliability | Physical disk health — SMART status, wear prediction, failure forecast, hardware reliability, HTML report |
 | 15 | **cleanse.ps1** | **C.L.E.A.N.S.E.** — Cleans Leftover, Ephemeral And Neglected System Entries | Disk cleanup — user & system temp, Windows Update cache, browser caches, Recycle Bin |
 | 16 | **scryer.ps1** | **S.C.R.Y.E.R.** — System Consolidated Report Yielding Exhaustive Results | Unified diagnostic report — system info, users, disks, SMART, services in one HTML |
+| 17 | **anvil.ps1** | **A.N.V.I.L.** — Audits & Notates Vendor Inventory & Lifecycle | BIOS / UEFI / firmware audit — system identity, Secure Boot posture, vendor update channels, pending Windows Update firmware, HTML report |
 
 ### Security
 
@@ -295,6 +296,20 @@ Inspects every physical disk in the system for hardware-level reliability issues
 
 > **AUGUR vs THRESHOLD:** AUGUR answers "is this drive about to fail?" (SMART/hardware).
 > THRESHOLD answers "is this drive running out of space?" (volume usage/cleanup).
+
+---
+
+### A.N.V.I.L.
+
+BIOS / UEFI / firmware audit that answers the technician's question "is this machine's firmware in a supportable state?" before a deployment, reimage, or OS upgrade.
+
+- System identity: manufacturer, model, system SKU / service tag, UUID, serial number, BIOS vendor and version, BIOS release date, BIOS age in years
+- UEFI / Secure Boot posture: firmware type (UEFI vs legacy BIOS), system-disk partition style as a cross-check, Secure Boot state (Enabled / Disabled / Unsupported)
+- Vendor firmware-update channel detection — checks known install paths for Dell Command | Update, HP Image Assistant, HP Support Assistant, Lenovo System Update / Vantage, and Microsoft Surface UEFI Configurator. Vendor is auto-detected from `Win32_ComputerSystem.Manufacturer`.
+- Windows Update driver / firmware scan via PSWindowsUpdate (installed on demand); lists every pending update with KB ID, size, and severity
+- Readiness verdict: red / yellow / green based on firmware type, Secure Boot state, BIOS age (≥ 2 years flagged), vendor tooling presence, and WU backlog
+- Dark-themed HTML report with OrgName prefix and six summary cards
+- Auto-elevates and telemeters WU failures via `Write-TKError`
 
 ---
 
@@ -684,6 +699,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\cleanse.ps
 # S.C.R.Y.E.R. — Unified diagnostic HTML report
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\scryer.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/scryer.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
+# A.N.V.I.L. — BIOS / UEFI / firmware audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\anvil.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/anvil.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
 # ── Security ─────────────────────────────────────────────────────────────────
 
 # C.I.P.H.E.R. — BitLocker encryption management
@@ -772,6 +790,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\augur.ps1         # Physical disk health — SMART status, wear prediction, failure forecast
 .\cleanse.ps1       # Disk cleanup — temp files, update cache, browser caches, Recycle Bin
 .\scryer.ps1        # Unified diagnostic report — system, users, disks, SMART, services in one HTML
+.\anvil.ps1         # BIOS / UEFI / firmware audit and HTML report
 
 # Security
 .\cipher.ps1        # BitLocker drive encryption management
@@ -832,6 +851,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **augur.ps1** | None — scans all physical disks automatically; `-Unattended` for silent HTML export |
 | **cleanse.ps1** | None — categories selected interactively or all cleaned with `-Unattended`; `-WhatIf` for dry run |
 | **scryer.ps1** | `-OutputPath` — directory to write `SCRYER_Report_<timestamp>.html` (defaults to configured log directory) |
+| **anvil.ps1** | None — system identity, UEFI state, vendor channels, and Windows Update pending firmware are all auto-detected |
 | **cipher.ps1** | None — drive and action selected interactively at runtime |
 | **sigil.ps1** | None — categories selected interactively; screensaver timeout editable in script (default 600 s) |
 | **citadel.ps1** | None — user search and action selected interactively; stale threshold is 90 days (editable in script) |
@@ -871,6 +891,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **augur.ps1** | Log directory — `AUGUR_<timestamp>.html` (dark-themed HTML report) |
 | **cleanse.ps1** | Console only — cleanup summary printed at completion; no log file |
 | **scryer.ps1** | `-OutputPath` (defaults to log directory) — `SCRYER_Report_<timestamp>.html` (unified diagnostic report) |
+| **anvil.ps1** | Log directory — `ANVIL_<timestamp>.html` (BIOS / UEFI / firmware audit report) |
 | **cipher.ps1** | Console only — no log file |
 | **sigil.ps1** | Log directory — `SIGIL_BaselineLog_<timestamp>.csv` |
 | **citadel.ps1** | Log directory — `CITADEL_Stale_<timestamp>.html`; `CITADEL_PwdExpiry_<timestamp>.html` |
