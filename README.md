@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, CONCLAVE, GROVE, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON, TOTEM, PYRE, PALADIN) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, CONCLAVE, GROVE, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON, TOTEM, PYRE, PALADIN, BEACON) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -91,6 +91,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 30 | **leyline.ps1** | **L.E.Y.L.I.N.E.** — Locates, Examines & Yields Latency, Infrastructure, Network & Endpoints | Network diagnostics & remediation — adapters, ping, DNS, port tests, IP renew, stack reset |
 | 31 | **shade.ps1** | **S.H.A.D.E.** — Summons Hosts for Administrative Deployment & Execution | Remote machine execution via WinRM — run toolkit tools without physical access |
 | 32 | **lantern.ps1** | **L.A.N.T.E.R.N.** — Locates & Audits Network Topology, Enumerating Resources & Nodes | Network discovery — subnet ping sweep, DNS lookup, MAC addresses, port scan, HTML report |
+| 33 | **beacon.ps1** | **B.E.A.C.O.N.** — Broadcasts, Encryption, Authentication & Connections Of Networks | Wi-Fi profile audit — saved profiles via XML export, authentication/cipher tier, auto-connect risk, hidden SSID, MAC randomisation, optional key cleartext, HTML report |
 
 ### Cloud & Identity
 
@@ -549,6 +550,21 @@ Discovers all live hosts on the local /24 subnet and produces a network asset in
 
 ---
 
+### B.E.A.C.O.N.
+
+Wi-Fi profile audit. Answers "what wireless networks does this machine know, and which of them silently auto-connect to surfaces an attacker could spoof?"
+
+- **Profile inventory** via `netsh wlan export profile ... key=clear` to a per-run temp folder, parsed from the locale-stable WLAN profile XML schema (avoids the brittle locale-dependent text output of `netsh wlan show profile`)
+- **Per profile**: SSID, hidden flag, connection type (ESS / IBSS), connection mode (auto / manual), autoSwitch, authentication (Open / WEP / WPA / WPA2-PSK / WPA2-Enterprise / WPA3-SAE / OWE / etc.), encryption (none / WEP / TKIP / AES / GCMP), 802.1X usage, MAC randomization, key material (masked by default; cleartext only when `-IncludeKey` is supplied)
+- **Adapter inventory** via `Get-NetAdapter -Physical` filtered to `Native 802.11`: name, status, link speed, MAC, driver version and date
+- **Filtered tables**: open / weak profiles (broken WEP, deprecated TKIP, open-auth) and auto-connecting profiles (with risk tier badges)
+- **Red / yellow / green verdict**: red on open auto-connect, WEP, deprecated cipher; yellow on TKIP, autoSwitch, hidden+auto, MAC randomization off, > 25 saved profiles
+- Privacy posture banner in the HTML report makes it explicit whether keys were rendered in cleartext
+- Dark-themed HTML report with six summary cards
+- Auto-elevates; read-only audit; temp folder is wiped after parsing
+
+---
+
 ## Cloud & Identity
 
 ### T.A.L.I.S.M.A.N.
@@ -860,6 +876,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\shade.ps1"
 # L.A.N.T.E.R.N. — Network discovery & asset inventory
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\lantern.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/lantern.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
+# B.E.A.C.O.N. — Wi-Fi profile audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\beacon.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/beacon.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
 # ── Cloud & Identity ─────────────────────────────────────────────────────────
 
 # T.A.L.I.S.M.A.N. — Azure environment assessment
@@ -946,6 +965,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\leyline.ps1       # Network diagnostics and remediation
 .\shade.ps1       # Remote execution via WinRM
 .\lantern.ps1       # Network discovery and asset inventory
+.\beacon.ps1        # Wi-Fi profile audit
 
 # Cloud & Identity
 .\talisman.ps1      # Azure environment assessment and HTML report
@@ -1010,6 +1030,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **leyline.ps1** | None — all tests run interactively; no persistent config |
 | **shade.ps1** | None — target, credentials, and operation selected interactively at runtime |
 | **lantern.ps1** | `$script:ScanPorts` — list of TCP ports checked during scan (editable in script) |
+| **beacon.ps1** | `-IncludeKey` — opt-in switch to render WLAN profile pre-shared keys in cleartext (default: masked); read-only otherwise |
 | **talisman.ps1** | `-SubscriptionId` — target a specific Azure subscription; `-OutputPath` — HTML report destination; `-NoOpen` — suppress auto-open after export |
 | **reliquary.ps1** | None — tenant and report scope selected interactively at runtime |
 | **golem.ps1** | None — tenant, device scope, and report scope selected interactively at runtime |
@@ -1057,6 +1078,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **leyline.ps1** | Console only — no log file |
 | **shade.ps1** | Script directory — `SHADE_<MachineName>\` folder containing retrieved output files |
 | **lantern.ps1** | Log directory — `LANTERN_<timestamp>.html` and `LANTERN_<timestamp>.csv` |
+| **beacon.ps1** | Log directory — `BEACON_<timestamp>.html` (Wi-Fi profile audit). Per-profile XMLs are exported to a temp folder and deleted after parsing |
 | **talisman.ps1** | `-OutputPath` (default `%TEMP%`) — `azure-assessment-<timestamp>.html`; auto-opens in browser |
 | **reliquary.ps1** | Log directory — `RELIQUARY_<timestamp>.html` (combined license & mailbox report) |
 | **golem.ps1** | Log directory — `GOLEM_<timestamp>.html` (Intune / MDM compliance report) |

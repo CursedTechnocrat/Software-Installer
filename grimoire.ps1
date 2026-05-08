@@ -346,6 +346,15 @@ $Tools = @(
         Color       = 'Cyan'
         Category    = 'Network & Remote'
     },
+    [PSCustomObject]@{
+        Key         = '33'
+        Name        = 'B.E.A.C.O.N.'
+        File        = 'beacon.ps1'
+        Version     = '3.0'
+        Description = 'Wi-Fi profile audit  -  saved profiles, auth/cipher tier, auto-connect, hidden SSID, MAC randomisation, key material'
+        Color       = 'Yellow'
+        Category    = 'Network & Remote'
+    },
     # ── Cloud & Identity (40–49) ─────────────────────────────────────
     [PSCustomObject]@{
         Key         = '40'
