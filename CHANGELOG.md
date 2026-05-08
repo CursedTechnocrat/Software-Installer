@@ -7,7 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.5.0] - 2026-05-08
+
 ### Added
+- **Toolkit-wide version bump to 3.5.** Every tool's `.NOTES Version`, banner v-tag, `Get-TKHtmlFoot -ScriptName` footer, and GRIMOIRE registry `Version` field now reads `3.5`. The GRIMOIRE hub banner now reads `Hub v3.5` and the HEARTH banner reads `HEARTH v3.5`. PYRE moved from `3.1` to `3.5`. Every tool is now on a single major.minor line so a future "all-tools-on-vN" assertion can hold without exceptions.
 - **Pester `Tier-mapper data tables` Describe block** asserting the verdict-driving reference tables in PALADIN, BEACON, and PORTAL stay correctly populated. The block walks each script via the PowerShell AST, locates the named hashtable assignment / function definition, and re-evaluates just that node in the test scope (avoids dot-sourcing the tools whole, which would launch their main flow). Coverage:
   - **PALADIN** -- `$AsrRuleNames` covers >= 16 well-known ASR GUIDs, the abused-driver and LSASS-credential-theft GUIDs map to recognisable names, and every key is lowercase (so `Get-MpPreference`'s lowercase output looks them up cleanly).
   - **PALADIN** -- `Get-AsrActionLabel` returns the expected label for action codes 0 / 1 / 2 / 6 and falls back to `Unknown (<n>)` for unmapped codes.

@@ -32,7 +32,7 @@
     PS C:\> .\ritual.ps1 -Recipe Retire -ContinueOnError    # Ignore per-step failures
 
 .NOTES
-    Version : 3.0
+    Version : 3.5
 
 #>
 
@@ -99,7 +99,7 @@ function Show-RitualBanner {
     if (-not $Unattended) { Clear-Host }
     Write-Host ""
     Write-Host "  R.I.T.U.A.L. — Runs Integrated Tool Usage in Automation Loops" -ForegroundColor Cyan
-    Write-Host "  Workflow Orchestrator for the Technician Toolkit  v3.0" -ForegroundColor Cyan
+    Write-Host "  Workflow Orchestrator for the Technician Toolkit  v3.5" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -396,7 +396,7 @@ function Build-RollupHtml {
         }) `
         -NavItems   @('Overall', 'Steps')
 
-    $htmlFoot = Get-TKHtmlFoot -ScriptName 'R.I.T.U.A.L. v3.0'
+    $htmlFoot = Get-TKHtmlFoot -ScriptName 'R.I.T.U.A.L. v3.5'
 
     $html = $htmlHead + @"
 
