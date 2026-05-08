@@ -355,6 +355,15 @@ $Tools = @(
         Color       = 'Yellow'
         Category    = 'Network & Remote'
     },
+    [PSCustomObject]@{
+        Key         = '34'
+        Name        = 'P.O.R.T.A.L.'
+        File        = 'portal.ps1'
+        Version     = '3.0'
+        Description = 'VPN / Always-On VPN audit  -  built-in connections, app triggers, NRPT, tunnel interfaces, third-party clients'
+        Color       = 'Green'
+        Category    = 'Network & Remote'
+    },
     # ── Cloud & Identity (40–49) ─────────────────────────────────────
     [PSCustomObject]@{
         Key         = '40'

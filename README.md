@@ -19,7 +19,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | Running through Kaseya VSA LiveConnect | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
 | Need a guided, menu-driven workflow | **This repo** — full prompts and confirmations at every step |
 | Need fire-and-forget with parameter-only input | **[TechnicianToolkit-LiveConnect](https://github.com/CursedTechnocrat/TechnicianToolkit-LiveConnect)** |
-| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, CONCLAVE, GROVE, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON, TOTEM, PYRE, PALADIN, BEACON) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
+| Need tools with no LiveConnect counterpart (COVENANT, CONJURE, REVENANT, CIPHER, ARCHIVE, SHADE, RUNEPRESS, LEYLINE, FORGE, TALISMAN, CITADEL, LANTERN, THRESHOLD, AUGUR, CLEANSE, RELIQUARY, GOLEM, WRAITH, CONCLAVE, GROVE, TETHER, EXHUME, GARGOYLE, ARTIFACT, HEARTH, RITUAL, AUSPEX, WARD, SCRYER, RESTORATION, SIGIL, ANVIL, TALON, TOTEM, PYRE, PALADIN, BEACON, PORTAL) | **This repo** — these tools are interactive by nature or require auth flows incompatible with LiveConnect |
 
 ---
 
@@ -92,6 +92,7 @@ If you are running scripts through **Kaseya VSA LiveConnect**, that shell cannot
 | 31 | **shade.ps1** | **S.H.A.D.E.** — Summons Hosts for Administrative Deployment & Execution | Remote machine execution via WinRM — run toolkit tools without physical access |
 | 32 | **lantern.ps1** | **L.A.N.T.E.R.N.** — Locates & Audits Network Topology, Enumerating Resources & Nodes | Network discovery — subnet ping sweep, DNS lookup, MAC addresses, port scan, HTML report |
 | 33 | **beacon.ps1** | **B.E.A.C.O.N.** — Broadcasts, Encryption, Authentication & Connections Of Networks | Wi-Fi profile audit — saved profiles via XML export, authentication/cipher tier, auto-connect risk, hidden SSID, MAC randomisation, optional key cleartext, HTML report |
+| 34 | **portal.ps1** | **P.O.R.T.A.L.** — Profiles, Observes & Reports Tunnels, Authentication & Links | VPN / Always-On VPN audit — built-in user and all-user connections, auth/encryption tier, app triggers, NRPT, tunnel interfaces, third-party clients (Cisco / Palo Alto / Pulse / OpenVPN / WireGuard / Tailscale / WARP / etc.), HTML report |
 
 ### Cloud & Identity
 
@@ -565,6 +566,22 @@ Wi-Fi profile audit. Answers "what wireless networks does this machine know, and
 
 ---
 
+### P.O.R.T.A.L.
+
+VPN and Always-On VPN audit. Answers "what tunnels can leave this machine, are they configured to leak credentials, and is split-tunnel routing covered by NRPT?"
+
+- **Built-in Windows VPNs** via `Get-VpnConnection` (user scope) and `Get-VpnConnection -AllUserConnection` (all-user / Always-On candidate scope): name, server, tunnel type (PPTP / L2TP / SSTP / IKEv2 / Automatic), authentication methods (PAP / CHAP / MS-CHAPv2 / EAP / MachineCertificate), encryption level (NoEncryption / Optional / Required / Maximum), split-tunnel flag, connection state, profile type
+- **Always-On VPN app triggers** via `Get-VpnConnectionTrigger`: which applications and DNS suffixes auto-launch each VPN
+- **Name Resolution Policy Table** via `Get-DnsClientNrptPolicy`: namespace -> DNS server mappings, IPsec-required flag, DirectAccess servers
+- **Active VPN tunnel interfaces** via `Get-NetIPInterface` filtered to interfaces matching `VPN`/`Wintun`/`WireGuard`/`Tailscale`/`GlobalProtect`/`AnyConnect`/`PPP`
+- **Third-party VPN clients** via service-table probing: Cisco AnyConnect / Cisco Secure Client (`vpnagent`, `csc_vpnagent`), Palo Alto GlobalProtect (`PanGPS`, `PanGPA`), Ivanti / Pulse (`JuniperNetworksTunnelService`, `PulseService`), OpenVPN (interactive, legacy, GUI), WireGuard (manager + per-config tunnels), Tailscale, ZeroTier, Cloudflare WARP, NordVPN, Proton VPN, F5 BIG-IP Edge Client
+- **Red / yellow / green verdict**: red on PAP authentication or NoEncryption (Write-TKError telemetry fires for both -- credentials in cleartext / traffic in cleartext are immediate findings); yellow on CHAP, Optional encryption, split-tunnel without matching NRPT, multiple competing third-party VPN vendors
+- Special-case `NONE CONFIGURED` posture statement when zero built-in VPNs and zero third-party clients are detected -- not a finding, just an inventory result
+- Dark-themed HTML report with six summary cards and six detail sections
+- Auto-elevates; read-only audit
+
+---
+
 ## Cloud & Identity
 
 ### T.A.L.I.S.M.A.N.
@@ -879,6 +896,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\lantern.ps
 # B.E.A.C.O.N. — Wi-Fi profile audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\beacon.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/beacon.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
 
+# P.O.R.T.A.L. — VPN / Always-On VPN audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$(Get-Location)\portal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit/main/portal.ps1 -OutFile $f; [IO.File]::WriteAllText($f,[IO.File]::ReadAllText($f,[Text.Encoding]::UTF8),[Text.UTF8Encoding]::new($true)); & $f
+
 # ── Cloud & Identity ─────────────────────────────────────────────────────────
 
 # T.A.L.I.S.M.A.N. — Azure environment assessment
@@ -966,6 +986,7 @@ Select a tool by number. Control returns to the menu when the tool finishes.
 .\shade.ps1       # Remote execution via WinRM
 .\lantern.ps1       # Network discovery and asset inventory
 .\beacon.ps1        # Wi-Fi profile audit
+.\portal.ps1        # VPN / Always-On VPN audit
 
 # Cloud & Identity
 .\talisman.ps1      # Azure environment assessment and HTML report
@@ -1031,6 +1052,7 @@ The toolkit uses an optional `config.json` file in the toolkit directory. All sc
 | **shade.ps1** | None — target, credentials, and operation selected interactively at runtime |
 | **lantern.ps1** | `$script:ScanPorts` — list of TCP ports checked during scan (editable in script) |
 | **beacon.ps1** | `-IncludeKey` — opt-in switch to render WLAN profile pre-shared keys in cleartext (default: masked); read-only otherwise |
+| **portal.ps1** | None — enumerates VPN connections, NRPT, tunnel interfaces, and third-party VPN client services unconditionally; the third-party client catalog is an editable `$ThirdPartyClients` array in the script |
 | **talisman.ps1** | `-SubscriptionId` — target a specific Azure subscription; `-OutputPath` — HTML report destination; `-NoOpen` — suppress auto-open after export |
 | **reliquary.ps1** | None — tenant and report scope selected interactively at runtime |
 | **golem.ps1** | None — tenant, device scope, and report scope selected interactively at runtime |
@@ -1079,6 +1101,7 @@ All HTML reports and transcripts are saved to the configured `LogDirectory` from
 | **shade.ps1** | Script directory — `SHADE_<MachineName>\` folder containing retrieved output files |
 | **lantern.ps1** | Log directory — `LANTERN_<timestamp>.html` and `LANTERN_<timestamp>.csv` |
 | **beacon.ps1** | Log directory — `BEACON_<timestamp>.html` (Wi-Fi profile audit). Per-profile XMLs are exported to a temp folder and deleted after parsing |
+| **portal.ps1** | Log directory — `PORTAL_<timestamp>.html` (VPN / Always-On VPN audit) |
 | **talisman.ps1** | `-OutputPath` (default `%TEMP%`) — `azure-assessment-<timestamp>.html`; auto-opens in browser |
 | **reliquary.ps1** | Log directory — `RELIQUARY_<timestamp>.html` (combined license & mailbox report) |
 | **golem.ps1** | Log directory — `GOLEM_<timestamp>.html` (Intune / MDM compliance report) |
