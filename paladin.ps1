@@ -515,18 +515,56 @@ function Build-PaladinReport {
         [void]$findingsList.Append("<li class='tk-badge-ok'>Defender posture is clean -- real-time on, signatures fresh, no unresolved threats.</li>")
     }
 
-    # MAPS / cloud labels
-    $mapsLabel = switch ([int]$Pref.MAPSReporting) {
-        0 { 'Disabled' } 1 { 'Basic' } 2 { 'Advanced (MAPS)' } default { "Code $($Pref.MAPSReporting)" }
+    # When Get-MpPreference fails (Server Core, blocked GP, missing Defender)
+    # the $Pref object only carries CollectorError -- the numeric properties
+    # don't exist. PowerShell silently returns $null for missing properties
+    # and `[int]$null` lands on `0`, which would make the Cloud / Sample
+    # Submission table render every setting as "Disabled" (the 0-case label).
+    # That's misleading. Render the per-setting labels only when the
+    # collector succeeded; otherwise render an "unavailable" marker.
+    $prefAvailable = ($Pref -and -not $Pref.CollectorError)
+
+    if ($prefAvailable) {
+        $mapsLabel = switch ([int]$Pref.MAPSReporting) {
+            0 { 'Disabled' } 1 { 'Basic' } 2 { 'Advanced (MAPS)' } default { "Code $($Pref.MAPSReporting)" }
+        }
+        $sampleLabel = switch ([int]$Pref.SubmitSamplesConsent) {
+            0 { 'Always prompt' } 1 { 'Send safe samples' } 2 { 'Never send' } 3 { 'Send all samples' } default { "Code $($Pref.SubmitSamplesConsent)" }
+        }
+        $cloudLevelLabel = switch ([int]$Pref.CloudBlockLevel) {
+            0 { 'Default' } 2 { 'High' } 4 { 'High+' } 6 { 'Zero-tolerance' } default { "Code $($Pref.CloudBlockLevel)" }
+        }
+        $puaLabel = switch ([int]$Pref.PUAProtection) {
+            0 { 'Disabled' } 1 { 'Block' } 2 { 'Audit' } default { "Code $($Pref.PUAProtection)" }
+        }
+    } else {
+        $mapsLabel       = 'unavailable'
+        $sampleLabel     = 'unavailable'
+        $cloudLevelLabel = 'unavailable'
+        $puaLabel        = 'unavailable'
     }
-    $sampleLabel = switch ([int]$Pref.SubmitSamplesConsent) {
-        0 { 'Always prompt' } 1 { 'Send safe samples' } 2 { 'Never send' } 3 { 'Send all samples' } default { "Code $($Pref.SubmitSamplesConsent)" }
-    }
-    $cloudLevelLabel = switch ([int]$Pref.CloudBlockLevel) {
-        0 { 'Default' } 2 { 'High' } 4 { 'High+' } 6 { 'Zero-tolerance' } default { "Code $($Pref.CloudBlockLevel)" }
-    }
-    $puaLabel = switch ([int]$Pref.PUAProtection) {
-        0 { 'Disabled' } 1 { 'Block' } 2 { 'Audit' } default { "Code $($Pref.PUAProtection)" }
+
+    # The Cloud & Sample Submission card body is built conditionally: full
+    # table when preferences were readable, single notice card when not.
+    # Building it here (rather than embedding the if-else inside the heredoc)
+    # avoids interpolating boolean operators inside `$(...)` -- those don't
+    # evaluate cleanly across PS5.1's heredoc parser.
+    $cloudSampleBody = if ($prefAvailable) { @"
+<table class="tk-table"><tbody>
+        <tr><th>MAPS Reporting</th><td>$(EscHtml $mapsLabel)</td></tr>
+        <tr><th>Sample Submission Consent</th><td>$(EscHtml $sampleLabel)</td></tr>
+        <tr><th>Cloud Block Level</th><td>$(EscHtml $cloudLevelLabel)</td></tr>
+        <tr><th>Cloud Extended Timeout (s)</th><td>$(EscHtml $Pref.CloudExtendedTimeout)</td></tr>
+        <tr><th>PUA Protection</th><td>$(EscHtml $puaLabel)</td></tr>
+        <tr><th>Archive scanning</th><td>$(_ynWarn (-not $Pref.DisableArchiveScanning))</td></tr>
+        <tr><th>Email scanning</th><td>$(_ynWarn (-not $Pref.DisableEmailScanning))</td></tr>
+        <tr><th>Script scanning</th><td>$(_ynWarn (-not $Pref.DisableScriptScanning))</td></tr>
+        <tr><th>Removable-drive scanning</th><td>$(_ynWarn (-not $Pref.DisableRemovableDriveScanning))</td></tr>
+      </tbody></table>
+"@
+    } else { @"
+<div class="tk-info-box tk-badge-warn">Defender preferences could not be read on this machine -- cloud / sample submission posture is unknown.$(if ($Pref.CollectorError) { " Collector error: $(EscHtml $Pref.CollectorError)" } else { '' })</div>
+"@
     }
 
     # Signature age cell helper
@@ -722,17 +760,7 @@ function Build-PaladinReport {
   <div class="tk-section">
     <div class="tk-card-header"><span class="tk-section-title">Cloud &amp; Sample Submission</span></div>
     <div class="tk-card">
-      <table class="tk-table"><tbody>
-        <tr><th>MAPS Reporting</th><td>$(EscHtml $mapsLabel)</td></tr>
-        <tr><th>Sample Submission Consent</th><td>$(EscHtml $sampleLabel)</td></tr>
-        <tr><th>Cloud Block Level</th><td>$(EscHtml $cloudLevelLabel)</td></tr>
-        <tr><th>Cloud Extended Timeout (s)</th><td>$(EscHtml $Pref.CloudExtendedTimeout)</td></tr>
-        <tr><th>PUA Protection</th><td>$(EscHtml $puaLabel)</td></tr>
-        <tr><th>Archive scanning</th><td>$(_ynWarn (-not $Pref.DisableArchiveScanning))</td></tr>
-        <tr><th>Email scanning</th><td>$(_ynWarn (-not $Pref.DisableEmailScanning))</td></tr>
-        <tr><th>Script scanning</th><td>$(_ynWarn (-not $Pref.DisableScriptScanning))</td></tr>
-        <tr><th>Removable-drive scanning</th><td>$(_ynWarn (-not $Pref.DisableRemovableDriveScanning))</td></tr>
-      </tbody></table>
+      $cloudSampleBody
     </div>
   </div>
 
