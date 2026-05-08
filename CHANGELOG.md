@@ -59,6 +59,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `scryer.ps1` `-OutputPath` — `ValidateScript` that accepts empty string, an existing path, or a path whose parent exists (so the tool can create a new output directory).
 
 ### Changed
+- **`C.O.D.E.X.` version bumped from 1.0 to 3.0** to align with the rest of the toolkit. The script's `.NOTES Version`, banner v-tag, `Get-TKHtmlFoot -ScriptName` footer, and GRIMOIRE registry `Version` field now read `3.0`. Behaviour is unchanged; the bump is purely cosmetic so a future "all-tools-on-vN" assertion can hold without an exception.
 - **README logging table corrected for seven tools** whose emitted filename prefixes drifted at the v2→v3 rename and were never updated. `auspex.ps1`, `gargoyle.ps1`, `citadel.ps1`, `artifact.ps1`, `shade.ps1`, `reliquary.ps1`, and `revenant.ps1` now show the prefixes their source actually produces (`AUSPEX_`, `GARGOYLE_`, `CITADEL_Stale_`/`CITADEL_PwdExpiry_`, `ARTIFACT_`, `SHADE_`, `RELIQUARY_`, `REVENANT_MigrationLog_`).
 - **README "no LiveConnect counterpart" row expanded** to include the six tools that were missing from it: WARD, AUSPEX, SCRYER, CONJURE, RESTORATION, SIGIL.
 - **`README.md` SHADE description** — retrieved-output folder reference corrected from `SPECTER_<MachineName>\` to `SHADE_<MachineName>\`.
