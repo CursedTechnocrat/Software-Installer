@@ -9,7 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [3.5.0] - 2026-05-08
+## [3.5.0] - 2026-05-11
 
 ### Added
 - **Toolkit-wide version bump to 3.5.** Every tool's `.NOTES Version`, banner v-tag, `Get-TKHtmlFoot -ScriptName` footer, and GRIMOIRE registry `Version` field now reads `3.5`. The GRIMOIRE hub banner now reads `Hub v3.5` and the HEARTH banner reads `HEARTH v3.5`. PYRE moved from `3.1` to `3.5`. Every tool is now on a single major.minor line so a future "all-tools-on-vN" assertion can hold without exceptions.
